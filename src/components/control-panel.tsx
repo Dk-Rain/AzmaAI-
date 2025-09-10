@@ -8,7 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { 
     PenSquare, Loader2, Check, AlertCircle, Sparkles, 
-    Trash2, Search, Library, PlusCircle, FolderPlus, MountainIcon, Folder, File, GripVertical 
+    Trash2, Search, Library, PlusCircle, FolderPlus, MountainIcon, Folder, File, GripVertical, ChevronDown, MoreHorizontal, Edit
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { DocumentContent, References, StyleOptions, FontType } from '@/types';
@@ -50,6 +50,8 @@ import type { AcademicTaskType } from '@/types/academic-task-types';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from './ui/dialog';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './ui/collapsible';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
 
 
 interface ControlPanelProps {
@@ -99,6 +101,11 @@ export function ControlPanel({
   const [searchQuery, setSearchQuery] = useState('');
   const [newTaskLocation, setNewTaskLocation] = useState<string>('standalone');
   const [isNewTaskDialogOpen, setIsNewTaskDialogOpen] = useState(false);
+  const [expandedProjects, setExpandedProjects] = useState<string[]>([]);
+  const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
+  const [itemToRename, setItemToRename] = useState<{id: string, name: string, type: 'project' | 'document', projectId?: string} | null>(null);
+  const [newName, setNewName] = useState('');
+
   const { toast } = useToast();
   
   const generationForm = useForm<GenerationFormValues>({
@@ -117,7 +124,10 @@ export function ControlPanel({
     try {
       const storedWorkspace = localStorage.getItem('azma_workspace');
       if (storedWorkspace) {
-        setWorkspace(JSON.parse(storedWorkspace));
+        const parsedWorkspace = JSON.parse(storedWorkspace);
+        setWorkspace(parsedWorkspace);
+        // By default, expand all projects that have documents
+        setExpandedProjects(parsedWorkspace.projects.filter((p: Project) => p.documents.length > 0).map((p: Project) => p.id));
       }
     } catch (error) {
       console.error("Failed to load workspace from localStorage", error);
@@ -281,6 +291,10 @@ export function ControlPanel({
             }
             return p;
         });
+        // Expand the project where the new doc was added
+        if (!expandedProjects.includes(location)) {
+          setExpandedProjects(prev => [...prev, location]);
+        }
     }
     saveWorkspace(newWorkspace);
     loadDocument(newDocItem);
@@ -293,6 +307,41 @@ export function ControlPanel({
   const handleConfirmNewTask = () => {
     createNewDocument(newTaskLocation);
     setIsNewTaskDialogOpen(false); // Close dialog after confirming
+  }
+  
+  const handleRename = () => {
+    if (!itemToRename || !newName) return;
+    
+    let newWorkspace = {...workspace};
+    if(itemToRename.type === 'project') {
+      newWorkspace.projects = newWorkspace.projects.map(p => 
+        p.id === itemToRename.id ? {...p, name: newName} : p
+      );
+    } else { // type === 'document'
+      if (itemToRename.projectId) {
+        newWorkspace.projects = newWorkspace.projects.map(p => 
+            p.id === itemToRename.projectId ? {...p, documents: p.documents.map(d => d.id === itemToRename.id ? {...d, title: newName, content: {...d.content, title: newName}} : d) } : p
+        );
+      } else {
+        newWorkspace.standaloneDocuments = newWorkspace.standaloneDocuments.map(d => d.id === itemToRename.id ? {...d, title: newName, content: {...d.content, title: newName}} : d);
+      }
+      // If the renamed document is the one currently being edited, update the editor title as well.
+      if (content.title === itemToRename.name) {
+          setContent({...content, title: newName});
+      }
+    }
+    
+    saveWorkspace(newWorkspace);
+    toast({ title: 'Item Renamed' });
+    setIsRenameDialogOpen(false);
+    setItemToRename(null);
+    setNewName('');
+  }
+
+  const openRenameDialog = (item: {id: string, name: string, type: 'project' | 'document', projectId?: string}) => {
+    setItemToRename(item);
+    setNewName(item.name);
+    setIsRenameDialogOpen(true);
   }
 
 
@@ -431,62 +480,136 @@ export function ControlPanel({
         </TabsList>
         <TabsContent value="projects" className="flex-1 overflow-auto">
             <ScrollArea className="h-full">
-                <div className="p-4 space-y-4">
+                <div className="p-4 space-y-1">
                     {filteredWorkspace.projects.map(project => (
-                        <div key={project.id} className="space-y-2">
-                             <div className="flex justify-between items-center group">
-                                <div className="flex items-center gap-2 font-semibold">
+                        <Collapsible 
+                          key={project.id}
+                          open={expandedProjects.includes(project.id)}
+                          onOpenChange={(isOpen) => {
+                            setExpandedProjects(prev => isOpen ? [...prev, project.id] : prev.filter(id => id !== project.id))
+                          }}
+                          className="space-y-2"
+                        >
+                            <div className="flex justify-between items-center group pr-2">
+                                <CollapsibleTrigger className="flex items-center gap-2 font-semibold text-left flex-1 py-1 group/trigger">
+                                    <ChevronDown className="h-5 w-5 text-muted-foreground transition-transform duration-200 group-data-[state=closed]/trigger:-rotate-90" />
                                     <Folder className="h-5 w-5 text-primary" />
                                     <span>{project.name}</span>
-                                </div>
-                                <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100">
-                                            <Trash2 className="h-4 w-4 text-destructive" />
-                                        </Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                        <AlertDialogHeader>
-                                        <AlertDialogTitle>Delete Project?</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                            This will delete the project and all documents inside it. This action cannot be undone.
-                                        </AlertDialogDescription>
-                                        </AlertDialogHeader>
-                                        <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => deleteProject(project.id)}>Delete</AlertDialogAction>
-                                        </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                </AlertDialog>
+                                </CollapsibleTrigger>
+                                
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100">
+                                          <MoreHorizontal className="h-4 w-4" />
+                                      </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                      <DropdownMenuItem onClick={() => openRenameDialog({id: project.id, name: project.name, type: 'project'})}>
+                                          <Edit className="mr-2 h-4 w-4"/> Rename
+                                      </DropdownMenuItem>
+                                      <AlertDialog>
+                                          <AlertDialogTrigger asChild>
+                                              <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
+                                                  <Trash2 className="mr-2 h-4 w-4"/> Delete
+                                              </DropdownMenuItem>
+                                          </AlertDialogTrigger>
+                                          <AlertDialogContent>
+                                              <AlertDialogHeader>
+                                              <AlertDialogTitle>Delete Project?</AlertDialogTitle>
+                                              <AlertDialogDescription>
+                                                  This will delete the project and all documents inside it. This action cannot be undone.
+                                              </AlertDialogDescription>
+                                              </AlertDialogHeader>
+                                              <AlertDialogFooter>
+                                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                              <AlertDialogAction onClick={() => deleteProject(project.id)}>Delete</AlertDialogAction>
+                                              </AlertDialogFooter>
+                                          </AlertDialogContent>
+                                      </AlertDialog>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
                             </div>
-                            <div className="pl-4 border-l-2 border-muted ml-2 space-y-1">
+
+                            <CollapsibleContent className="pl-4 border-l-2 border-muted ml-4 space-y-1">
                                 {project.documents.length > 0 ? project.documents.map(doc => (
                                     <div key={doc.id} className="flex justify-between items-center group pl-2">
                                         <button onClick={() => loadDocument(doc)} className="flex items-center gap-2 text-left flex-1 py-1">
                                             <File className="h-4 w-4 text-muted-foreground" />
                                             <span className="text-sm truncate">{doc.title}</span>
                                         </button>
-                                         <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100" onClick={() => deleteDocument(doc.id, project.id)}>
-                                            <Trash2 className="h-4 w-4 text-destructive" />
-                                        </Button>
+                                          <DropdownMenu>
+                                              <DropdownMenuTrigger asChild>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100">
+                                                    <MoreHorizontal className="h-4 w-4" />
+                                                </Button>
+                                              </DropdownMenuTrigger>
+                                              <DropdownMenuContent align="end">
+                                                  <DropdownMenuItem onClick={() => openRenameDialog({id: doc.id, name: doc.title, type: 'document', projectId: project.id})}>
+                                                      <Edit className="mr-2 h-4 w-4"/> Rename
+                                                  </DropdownMenuItem>
+                                                  <AlertDialog>
+                                                      <AlertDialogTrigger asChild>
+                                                        <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
+                                                            <Trash2 className="mr-2 h-4 w-4"/> Delete
+                                                        </DropdownMenuItem>
+                                                      </AlertDialogTrigger>
+                                                      <AlertDialogContent>
+                                                          <AlertDialogHeader>
+                                                          <AlertDialogTitle>Delete Document?</AlertDialogTitle>
+                                                          <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
+                                                          </AlertDialogHeader>
+                                                          <AlertDialogFooter>
+                                                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                          <AlertDialogAction onClick={() => deleteDocument(doc.id, project.id)}>Delete</AlertDialogAction>
+                                                          </AlertDialogFooter>
+                                                      </AlertDialogContent>
+                                                  </AlertDialog>
+                                              </DropdownMenuContent>
+                                          </DropdownMenu>
                                     </div>
                                 )) : <p className="text-xs text-muted-foreground pl-4 py-1">No documents in this project.</p>}
-                            </div>
-                        </div>
+                            </CollapsibleContent>
+                        </Collapsible>
                     ))}
 
                     {(filteredWorkspace.projects.length > 0 && filteredWorkspace.standaloneDocuments.length > 0) && <Separator />}
                     
-                    <div className="space-y-2">
+                    <div className="space-y-1">
                          {filteredWorkspace.standaloneDocuments.map(doc => (
-                            <div key={doc.id} className="flex justify-between items-center group">
+                            <div key={doc.id} className="flex justify-between items-center group pr-2">
                                 <button onClick={() => loadDocument(doc)} className="flex items-center gap-2 text-left flex-1 py-1">
                                     <File className="h-5 w-5 text-muted-foreground" />
                                     <span className="font-medium text-sm truncate">{doc.title}</span>
                                 </button>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100" onClick={() => deleteDocument(doc.id)}>
-                                    <Trash2 className="h-4 w-4 text-destructive" />
-                                </Button>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100">
+                                          <MoreHorizontal className="h-4 w-4" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                        <DropdownMenuItem onClick={() => openRenameDialog({id: doc.id, name: doc.title, type: 'document'})}>
+                                            <Edit className="mr-2 h-4 w-4"/> Rename
+                                        </DropdownMenuItem>
+                                        <AlertDialog>
+                                            <AlertDialogTrigger asChild>
+                                              <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
+                                                  <Trash2 className="mr-2 h-4 w-4"/> Delete
+                                              </DropdownMenuItem>
+                                            </AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                <AlertDialogTitle>Delete Document?</AlertDialogTitle>
+                                                <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                <AlertDialogAction onClick={() => deleteDocument(doc.id)}>Delete</AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
                             </div>
                          ))}
                     </div>
@@ -593,7 +716,7 @@ export function ControlPanel({
                     <div className="space-y-4">
                         <h3 className="text-base font-semibold">Customize Style</h3>
                         <div className="space-y-2">
-                             <FormLabel>Font Family</FormLabel>
+                             <Label>Font Family</Label>
                             <Select
                                 value={styles.fontFamily}
                                 onValueChange={(value: FontType) => setStyles({ ...styles, fontFamily: value })}
@@ -610,7 +733,7 @@ export function ControlPanel({
                         </div>
                         <div className="space-y-2">
                             <div className="flex justify-between">
-                            <FormLabel>Font Size</FormLabel>
+                            <Label>Font Size</Label>
                             <span>{styles.fontSize}pt</span>
                             </div>
                             <Slider
@@ -623,7 +746,7 @@ export function ControlPanel({
                         </div>
                         <div className="space-y-2">
                             <div className="flex justify-between">
-                            <FormLabel>Line Spacing</FormLabel>
+                            <Label>Line Spacing</Label>
                             <span>{styles.lineHeight.toFixed(1)}</span>
                             </div>
                             <Slider
@@ -636,7 +759,7 @@ export function ControlPanel({
                         </div>
                         <div className="space-y-2">
                             <div className="flex justify-between">
-                            <FormLabel>Margins</FormLabel>
+                            <Label>Margins</Label>
                             <span>{styles.margin.toFixed(2)}cm</span>
                             </div>
                             <Slider
@@ -710,6 +833,31 @@ export function ControlPanel({
             </ScrollArea>
         </TabsContent>
       </Tabs>
+      
+      <Dialog open={isRenameDialogOpen} onOpenChange={setIsRenameDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rename {itemToRename?.type}</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="name" className="text-right">Name</Label>
+              <Input
+                id="name"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                className="col-span-3"
+              />
+            </div>
+          </div>
+          <DialogClose asChild>
+            <div className="flex justify-end gap-2">
+              <Button variant="ghost">Cancel</Button>
+              <Button onClick={handleRename}>Save</Button>
+            </div>
+          </DialogClose>
+        </DialogContent>
+      </Dialog>
 
       <div className="mt-auto p-4 border-t">
         <Disclaimer />
@@ -717,7 +865,3 @@ export function ControlPanel({
     </aside>
   );
 }
-
-    
-
-    
