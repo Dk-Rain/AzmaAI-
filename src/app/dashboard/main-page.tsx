@@ -208,9 +208,6 @@ export function MainPage() {
 
   const isPremium = user?.isPremium || false;
   
-  const displayTitle = content.title.split(' ').slice(0, 10).join(' ') + (content.title.split(' ').length > 10 ? '...' : '');
-
-
   return (
     <div className="flex h-screen w-full bg-muted/30 print:block">
       <ControlPanel
@@ -226,7 +223,7 @@ export function MainPage() {
         <header className="flex h-16 items-center gap-4 border-b bg-background px-6 print:hidden">
           <div className="flex-1">
             <h1 className="text-lg font-semibold md:text-xl truncate" title={content.title}>
-              {displayTitle}
+              {content.title}
             </h1>
           </div>
           
