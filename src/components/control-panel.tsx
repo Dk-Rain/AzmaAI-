@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { 
     PenSquare, Loader2, Check, AlertCircle, Sparkles, 
-    Trash2, Search, Library, PlusCircle, FolderPlus, MountainIcon 
+    Trash2, Search, Library, PlusCircle, FolderPlus, MountainIcon, Folder, File, GripVertical 
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { DocumentContent, References, StyleOptions, FontType } from '@/types';
@@ -45,6 +45,7 @@ import { Disclaimer } from './disclaimer';
 import { Separator } from './ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { AcademicTaskType } from '@/types/academic-task-types';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
 
 
 interface ControlPanelProps {
@@ -60,12 +61,24 @@ const referenceSchema = z.object({
   numReferences: z.coerce.number().min(1).max(20),
 });
 
-type HistoryItem = {
+type DocumentItem = {
   id: string;
   title: string;
   content: DocumentContent;
   references: References;
   timestamp: string;
+}
+
+type Project = {
+  id: string;
+  name: string;
+  documents: DocumentItem[];
+  timestamp: string;
+}
+
+type Workspace = {
+  projects: Project[];
+  standaloneDocuments: DocumentItem[];
 }
 
 export function ControlPanel({
@@ -78,7 +91,7 @@ export function ControlPanel({
 }: ControlPanelProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isManagingRefs, setIsManagingRefs] = useState(false);
-  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [workspace, setWorkspace] = useState<Workspace>({ projects: [], standaloneDocuments: [] });
   const [searchQuery, setSearchQuery] = useState('');
   const { toast } = useToast();
   
@@ -96,15 +109,24 @@ export function ControlPanel({
   
   useEffect(() => {
     try {
-      const storedHistory = localStorage.getItem('azma_history');
-      if (storedHistory) {
-        setHistory(JSON.parse(storedHistory));
+      const storedWorkspace = localStorage.getItem('azma_workspace');
+      if (storedWorkspace) {
+        setWorkspace(JSON.parse(storedWorkspace));
       }
     } catch (error) {
-      console.error("Failed to load history from localStorage", error);
+      console.error("Failed to load workspace from localStorage", error);
     }
   }, []);
 
+  const saveWorkspace = (newWorkspace: Workspace) => {
+    try {
+        setWorkspace(newWorkspace);
+        localStorage.setItem('azma_workspace', JSON.stringify(newWorkspace));
+    } catch (error) {
+        console.error("Failed to save workspace to localStorage", error);
+    }
+  }
+  
   useEffect(() => {
     if (taskType) {
       const format = academicTaskFormats[taskType as AcademicTaskType];
@@ -127,30 +149,50 @@ export function ControlPanel({
     }
   }, [taskType]);
   
-  const filteredHistory = useMemo(() => {
-    if (!searchQuery) return history;
-    return history.filter(item => item.title.toLowerCase().includes(searchQuery.toLowerCase()));
-  }, [history, searchQuery]);
 
-  const saveToHistory = (documentContent: DocumentContent, documentReferences: References) => {
+  const filteredWorkspace = useMemo(() => {
+    if (!searchQuery) return workspace;
+    const lowercasedQuery = searchQuery.toLowerCase();
+
+    const filteredProjects = workspace.projects.map(project => {
+        const filteredDocs = project.documents.filter(doc => doc.title.toLowerCase().includes(lowercasedQuery));
+        if (project.name.toLowerCase().includes(lowercasedQuery) || filteredDocs.length > 0) {
+            return {...project, documents: filteredDocs};
+        }
+        return null;
+    }).filter((p): p is Project => p !== null);
+
+    const filteredStandaloneDocs = workspace.standaloneDocuments.filter(doc => doc.title.toLowerCase().includes(lowercasedQuery));
+    
+    return {
+        projects: filteredProjects,
+        standaloneDocuments: filteredStandaloneDocs,
+    };
+}, [workspace, searchQuery]);
+
+  const saveDocument = (documentContent: DocumentContent, documentReferences: References) => {
     if (!documentContent.title || documentContent.title.includes('New Research Paper Title')) return;
-    try {
-      const newHistoryItem: HistoryItem = {
-        id: new Date().toISOString(),
-        title: documentContent.title,
-        content: documentContent,
-        references: documentReferences,
-        timestamp: new Date().toLocaleString(),
-      };
-      const updatedHistory = [newHistoryItem, ...history.filter(item => item.title !== newHistoryItem.title).slice(0, 19)]; // Keep max 20 items, prevent duplicates
-      setHistory(updatedHistory);
-      localStorage.setItem('azma_history', JSON.stringify(updatedHistory));
-    } catch (error) {
-      console.error("Failed to save to history in localStorage", error);
+    
+    const newDoc: DocumentItem = {
+      id: new Date().toISOString(),
+      title: documentContent.title,
+      content: documentContent,
+      references: documentReferences,
+      timestamp: new Date().toLocaleString(),
+    };
+    
+    const newWorkspace = {...workspace};
+    // Simple approach: Add as a standalone doc for now. Moving docs can be a future feature.
+    const existingIndex = newWorkspace.standaloneDocuments.findIndex(doc => doc.title === newDoc.title);
+    if(existingIndex > -1) {
+        newWorkspace.standaloneDocuments[existingIndex] = newDoc;
+    } else {
+        newWorkspace.standaloneDocuments = [newDoc, ...newWorkspace.standaloneDocuments];
     }
+    saveWorkspace(newWorkspace);
   };
 
-  const loadFromHistory = (item: HistoryItem) => {
+  const loadDocument = (item: DocumentItem) => {
     setContent(item.content);
     setReferences(item.references);
     generationForm.setValue('topic', item.content.title);
@@ -164,19 +206,39 @@ export function ControlPanel({
     });
   };
 
-  const deleteFromHistory = (id: string) => {
-    try {
-      const updatedHistory = history.filter(item => item.id !== id);
-      setHistory(updatedHistory);
-      localStorage.setItem('azma_history', JSON.stringify(updatedHistory));
-      toast({
-        title: 'Project Deleted',
-        description: `The selected item has been removed from your projects.`,
-      });
-    } catch (error) {
-      console.error("Failed to delete from history in localStorage", error);
+  const deleteDocument = (id: string, projectId?: string) => {
+    let newWorkspace = {...workspace};
+    if (projectId) {
+        newWorkspace.projects = newWorkspace.projects.map(p => 
+            p.id === projectId ? {...p, documents: p.documents.filter(d => d.id !== id)} : p
+        );
+    } else {
+        newWorkspace.standaloneDocuments = newWorkspace.standaloneDocuments.filter(d => d.id !== id);
     }
+    saveWorkspace(newWorkspace);
+    toast({ title: 'Document Deleted' });
   };
+  
+  const deleteProject = (id: string) => {
+    let newWorkspace = {...workspace, projects: workspace.projects.filter(p => p.id !== id)};
+    saveWorkspace(newWorkspace);
+    toast({ variant: 'destructive', title: 'Project Deleted' });
+  }
+
+  const handleNewProject = () => {
+    const projectName = prompt("Enter the name for your new project folder:");
+    if (projectName) {
+      const newProject: Project = {
+        id: new Date().toISOString(),
+        name: projectName,
+        documents: [],
+        timestamp: new Date().toLocaleString(),
+      };
+      const newWorkspace = { ...workspace, projects: [newProject, ...workspace.projects] };
+      saveWorkspace(newWorkspace);
+      toast({ title: 'Project Created', description: `Folder "${projectName}" has been added.`});
+    }
+  }
 
   const handleNewTask = () => {
     const defaultTask: AcademicTaskType = 'Research Paper';
@@ -223,7 +285,7 @@ export function ControlPanel({
     } else {
       setContent(data);
       setReferences([]);
-      saveToHistory(data, []);
+      saveDocument(data, []);
       toast({
         title: 'Content Generated',
         description: 'Your document has been created and saved to your projects.',
@@ -260,7 +322,7 @@ export function ControlPanel({
       });
     } else {
       setReferences(data);
-      saveToHistory(content, data);
+      saveDocument(content, data);
       toast({
         title: 'References Updated',
         description: 'The reference list has been populated and saved.',
@@ -280,7 +342,7 @@ export function ControlPanel({
             <Button variant="outline" className="flex-1" onClick={handleNewTask}>
                 <PlusCircle /> New Task
             </Button>
-            <Button variant="outline" className="flex-1">
+            <Button variant="outline" className="flex-1" onClick={handleNewProject}>
                 <FolderPlus /> Add Project
             </Button>
         </div>
@@ -303,30 +365,74 @@ export function ControlPanel({
         </TabsList>
         <TabsContent value="projects" className="flex-1 overflow-auto">
             <ScrollArea className="h-full">
-                {filteredHistory.length > 0 ? (
-                  filteredHistory.map((item) => (
-                    <div key={item.id} className="p-2 border-b group hover:bg-muted/50 rounded-md mx-4">
-                       <div className="flex justify-between items-center">
-                        <button
-                          onClick={() => loadFromHistory(item)}
-                          className="text-left flex-1"
-                        >
-                          <p className="text-sm font-medium truncate">{item.title}</p>
-                          <p className="text-xs text-muted-foreground">{item.timestamp}</p>
-                        </button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100" onClick={() => deleteFromHistory(item.id)}>
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                       </div>
+                <div className="p-4 space-y-4">
+                    {filteredWorkspace.projects.map(project => (
+                        <div key={project.id} className="space-y-2">
+                             <div className="flex justify-between items-center group">
+                                <div className="flex items-center gap-2 font-semibold">
+                                    <Folder className="h-5 w-5 text-primary" />
+                                    <span>{project.name}</span>
+                                </div>
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100">
+                                            <Trash2 className="h-4 w-4 text-destructive" />
+                                        </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                        <AlertDialogTitle>Delete Project?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            This will delete the project and all documents inside it. This action cannot be undone.
+                                        </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => deleteProject(project.id)}>Delete</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            </div>
+                            <div className="pl-4 border-l-2 border-muted ml-2 space-y-1">
+                                {project.documents.length > 0 ? project.documents.map(doc => (
+                                    <div key={doc.id} className="flex justify-between items-center group pl-2">
+                                        <button onClick={() => loadDocument(doc)} className="flex items-center gap-2 text-left flex-1 py-1">
+                                            <File className="h-4 w-4 text-muted-foreground" />
+                                            <span className="text-sm truncate">{doc.title}</span>
+                                        </button>
+                                         <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100" onClick={() => deleteDocument(doc.id, project.id)}>
+                                            <Trash2 className="h-4 w-4 text-destructive" />
+                                        </Button>
+                                    </div>
+                                )) : <p className="text-xs text-muted-foreground pl-4 py-1">No documents in this project.</p>}
+                            </div>
+                        </div>
+                    ))}
+
+                    <Separator />
+                    
+                    <div className="space-y-2">
+                         {filteredWorkspace.standaloneDocuments.map(doc => (
+                            <div key={doc.id} className="flex justify-between items-center group">
+                                <button onClick={() => loadDocument(doc)} className="flex items-center gap-2 text-left flex-1 py-1">
+                                    <File className="h-5 w-5 text-muted-foreground" />
+                                    <span className="font-medium text-sm truncate">{doc.title}</span>
+                                </button>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100" onClick={() => deleteDocument(doc.id)}>
+                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                            </div>
+                         ))}
                     </div>
-                  ))
-                ) : (
-                  <div className="text-center text-sm text-muted-foreground p-8">
-                    <Library className="mx-auto h-10 w-10 mb-2" />
-                    <p className="font-semibold">No Projects Yet</p>
-                    <p>Your generated documents will appear here.</p>
-                  </div>
-                )}
+
+                    {filteredWorkspace.projects.length === 0 && filteredWorkspace.standaloneDocuments.length === 0 && (
+                         <div className="text-center text-sm text-muted-foreground p-8">
+                            <Library className="mx-auto h-10 w-10 mb-2" />
+                            <p className="font-semibold">No Projects Yet</p>
+                            <p>Your generated documents will appear here.</p>
+                        </div>
+                    )}
+                </div>
               </ScrollArea>
         </TabsContent>
         <TabsContent value="edit" className="flex-1 overflow-auto">
