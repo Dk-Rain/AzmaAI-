@@ -37,7 +37,7 @@ const generateReferencesPrompt = ai.definePrompt({
   name: 'generateReferencesPrompt',
   input: {schema: ManageReferencesInputSchema},
   output: {schema: z.object({references: z.array(z.string()).describe('An array of references.')})},
-  prompt: `You are an expert academic reference generator. Generate {{numReferences}} references for the topic: {{{topic}}}. Return just the references.  Do not include any additional information.  Each reference should be on a new line.
+  prompt: `You are an expert academic reference generator. Generate {{numReferences}} references for the topic: {{{topic}}}. All references must be formatted according to the APA 7th edition style guide. Return just the references.  Do not include any additional information.  Each reference should be on a new line.
 
 References: `,
 });
@@ -93,6 +93,9 @@ const manageReferencesFlow = ai.defineFlow(
         });
       }
     }
+
+    // Sort references alphabetically
+    verifiedReferences.sort((a, b) => a.referenceText.localeCompare(b.referenceText));
 
     return {
       references: verifiedReferences,
