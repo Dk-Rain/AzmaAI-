@@ -52,12 +52,12 @@ const manageReferencesFlow = ai.defineFlow(
     const {output: generatedReferencesOutput} = await generateReferencesPrompt(input);
     const references = generatedReferencesOutput.references;
 
-    const verifiedReferences: ManageReferencesOutputSchema['references'] = [];
+    const verifiedReferences: ManageReferencesOutput['references'] = [];
     const unverifiedReferences: string[] = [];
 
     for (const referenceText of references) {
-      // Extract DOI from the reference text (this is a simplified approach; more robust DOI extraction might be needed)
-      const doiRegex = /10.\w+\/\w+/g;
+      // Extract DOI from the reference text
+      const doiRegex = /10\.\d{4,9}\/[-._;()/:A-Z0-9]+/i;
       const doiMatch = referenceText.match(doiRegex);
       const doi = doiMatch ? doiMatch[0] : undefined;
 
@@ -67,23 +67,31 @@ const manageReferencesFlow = ai.defineFlow(
           // Call CrossRef API to verify DOI
           const crossrefApiResponse = await fetch(`https://api.crossref.org/works/${doi}`);
           if (crossrefApiResponse.ok) {
-            isVerified = true;
-          } else {
-            unverifiedReferences.push(referenceText);
+            const result = await crossrefApiResponse.json();
+            if (result.status === 'ok') {
+              isVerified = true;
+            }
           }
         } catch (error) {
           console.error(`Error verifying DOI ${doi}:`, error);
-          unverifiedReferences.push(referenceText);
         }
+      }
+      
+      if(isVerified) {
+        verifiedReferences.push({
+          referenceText,
+          doi,
+          isVerified,
+        });
       } else {
         unverifiedReferences.push(referenceText);
+        // Also add to verifiedReferences with isVerified: false
+        verifiedReferences.push({
+          referenceText,
+          doi,
+          isVerified: false,
+        });
       }
-
-      verifiedReferences.push({
-        referenceText,
-        doi,
-        isVerified,
-      });
     }
 
     return {
