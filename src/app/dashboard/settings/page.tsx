@@ -8,6 +8,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from '@/components/ui/card';
 import {
   Select,
@@ -16,9 +17,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { ArrowLeft, Brush, User, Globe } from 'lucide-react';
+import { ArrowLeft, Brush, User, Globe, Bell, Mail, Smartphone } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Separator } from '@/components/ui/separator';
 
 export default function SettingsPage() {
   const { setTheme, theme } = useTheme();
@@ -70,6 +73,50 @@ export default function SettingsPage() {
                             </div>
                         </div>
                     </CardContent>
+                </Card>
+                 <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><Bell /> Notifications</CardTitle>
+                        <CardDescription>
+                            Configure how you receive notifications.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="grid gap-6">
+                       <div className="flex items-center justify-between space-x-4">
+                          <div className="space-y-1">
+                            <h4 className="font-medium">Responses</h4>
+                            <p className="text-sm text-muted-foreground">
+                                Get notified when AI responds to requests that take time, like research or image generation.
+                            </p>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                             <Smartphone className="h-5 w-5 text-muted-foreground"/>
+                             <Switch id="responses-push" defaultChecked />
+                          </div>
+                        </div>
+                        <Separator />
+                         <div className="flex items-center justify-between space-x-4">
+                          <div className="space-y-1">
+                            <h4 className="font-medium">Tasks</h4>
+                             <p className="text-sm text-muted-foreground">
+                                Get notified when tasks you’ve created have updates.
+                            </p>
+                          </div>
+                          <div className="flex items-center space-x-4">
+                            <div className="flex items-center space-x-2">
+                               <Smartphone className="h-5 w-5 text-muted-foreground"/>
+                               <Switch id="tasks-push" defaultChecked/>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                               <Mail className="h-5 w-5 text-muted-foreground"/>
+                               <Switch id="tasks-email" />
+                            </div>
+                          </div>
+                        </div>
+                    </CardContent>
+                    <CardFooter>
+                        <Button variant="outline">Manage tasks</Button>
+                    </CardFooter>
                 </Card>
                 <Card>
                     <CardHeader>
