@@ -12,31 +12,29 @@ export default function LandingPage() {
           <School className="h-6 w-6 mr-2 text-primary" />
           <span className="font-headline">AzmaAI</span>
         </Link>
-        <nav className="ml-auto hidden md:flex gap-4 sm:gap-6">
-          <Link href="#features" className="text-sm font-medium hover:underline underline-offset-4" prefetch={false}>
+        <nav className="ml-auto flex items-center gap-4 sm:gap-6">
+          <Link href="#features" className="text-sm font-medium hover:underline underline-offset-4 hidden md:inline-flex" prefetch={false}>
             Features
           </Link>
-          <Link href="#pricing" className="text-sm font-medium hover:underline underline-offset-4" prefetch={false}>
+          <Link href="#pricing" className="text-sm font-medium hover:underline underline-offset-4 hidden md:inline-flex" prefetch={false}>
             Pricing
           </Link>
-          <Link href="/about" className="text-sm font-medium hover:underline underline-offset-4" prefetch={false}>
+          <Link href="/about" className="text-sm font-medium hover:underline underline-offset-4 hidden md:inline-flex" prefetch={false}>
             About
           </Link>
-          <Link href="#" className="text-sm font-medium hover:underline underline-offset-4" prefetch={false}>
+          <Link href="#" className="text-sm font-medium hover:underline underline-offset-4 hidden md:inline-flex" prefetch={false}>
             Contact
           </Link>
-        </nav>
-        <nav className="ml-auto flex md:hidden gap-2">
-            <Link href="/login" className="inline-flex h-9 items-center justify-center rounded-md px-4 py-2 text-sm font-medium" prefetch={false}>
-                Login
-            </Link>
-            <Link
-                href="/signup"
-                className="inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
-                prefetch={false}
-            >
-                Sign Up
-            </Link>
+          <Link href="/login" className="text-sm font-medium hover:underline underline-offset-4" prefetch={false}>
+              Login
+          </Link>
+          <Link
+              href="/signup"
+              className="inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+              prefetch={false}
+          >
+              Sign Up
+          </Link>
         </nav>
       </header>
       <main className="flex-1">
