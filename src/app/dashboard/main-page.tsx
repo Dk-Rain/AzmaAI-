@@ -67,7 +67,7 @@ export function MainPage() {
   const router = useRouter();
   
   useEffect(() => {
-    const userData = localStorage.getItem('stipsLiteUser');
+    const userData = localStorage.getItem('azmaUser');
     if (userData) {
       const parsedUser = JSON.parse(userData);
       // For demo purposes, let's assume 'Student' and 'Researcher' are premium for now
@@ -79,7 +79,7 @@ export function MainPage() {
   }, [router]);
 
   const handleLogout = () => {
-    localStorage.removeItem('stipsLiteUser');
+    localStorage.removeItem('azmaUser');
     toast({ title: 'Logged out successfully.' });
     router.push('/login');
   };

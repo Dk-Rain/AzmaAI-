@@ -47,7 +47,7 @@ export default function ArchivedChatsPage() {
     // In a real app, this would be a separate list.
     // For now, we'll just use the main history as a stand-in.
     try {
-      const storedHistory = localStorage.getItem('stipsLite_history');
+      const storedHistory = localStorage.getItem('azma_history');
       if (storedHistory) {
         setArchived(JSON.parse(storedHistory));
       }
@@ -79,7 +79,7 @@ export default function ArchivedChatsPage() {
       const updatedHistory = archived.filter(item => item.id !== id);
       setArchived(updatedHistory);
       // Persist this change if you want it to be permanent for the session
-      localStorage.setItem('stipsLite_history', JSON.stringify(updatedHistory)); 
+      localStorage.setItem('azma_history', JSON.stringify(updatedHistory)); 
       toast({
         variant: 'destructive',
         title: 'Project Deleted Permanently',

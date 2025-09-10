@@ -26,7 +26,7 @@ export default function LoginPage() {
         // Simulate saving user data to be accessible by dashboard
         try {
           // In a real app, you'd fetch this from your backend
-          localStorage.setItem('stipsLiteUser', JSON.stringify({ fullName: 'Demo User', email: email, role: 'Student' }));
+          localStorage.setItem('azmaUser', JSON.stringify({ fullName: 'Demo User', email: email, role: 'Student' }));
         } catch (error) {
            console.error("Could not save user to localStorage", error);
         }
@@ -42,7 +42,7 @@ export default function LoginPage() {
           <div className="grid gap-2 text-center">
             <Link href="/" className="flex items-center justify-center font-bold text-xl" prefetch={false}>
                 <MountainIcon className="h-6 w-6 mr-2" />
-                <span>StipsLite AI</span>
+                <span>AZMA AI</span>
             </Link>
             <h1 className="text-3xl font-bold">Login</h1>
             <p className="text-balance text-muted-foreground">

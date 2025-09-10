@@ -95,7 +95,7 @@ export function ControlPanel({
   
   useEffect(() => {
     try {
-      const storedHistory = localStorage.getItem('stipsLite_history');
+      const storedHistory = localStorage.getItem('azma_history');
       if (storedHistory) {
         setHistory(JSON.parse(storedHistory));
       }
@@ -143,7 +143,7 @@ export function ControlPanel({
       };
       const updatedHistory = [newHistoryItem, ...history.filter(item => item.title !== newHistoryItem.title).slice(0, 19)]; // Keep max 20 items, prevent duplicates
       setHistory(updatedHistory);
-      localStorage.setItem('stipsLite_history', JSON.stringify(updatedHistory));
+      localStorage.setItem('azma_history', JSON.stringify(updatedHistory));
     } catch (error) {
       console.error("Failed to save to history in localStorage", error);
     }
@@ -167,7 +167,7 @@ export function ControlPanel({
     try {
       const updatedHistory = history.filter(item => item.id !== id);
       setHistory(updatedHistory);
-      localStorage.setItem('stipsLite_history', JSON.stringify(updatedHistory));
+      localStorage.setItem('azma_history', JSON.stringify(updatedHistory));
       toast({
         title: 'Project Deleted',
         description: `The selected item has been removed from your projects.`,
@@ -271,7 +271,7 @@ export function ControlPanel({
     <aside className="w-full md:w-[450px] border-r bg-background flex flex-col">
       <div className="flex items-center gap-2 p-4 border-b">
         <MountainIcon className="h-8 w-8 text-primary" />
-        <h1 className="text-xl font-bold">StipsLite AI</h1>
+        <h1 className="text-xl font-bold">AZMA AI</h1>
       </div>
 
       <div className="p-4 space-y-2 border-b">

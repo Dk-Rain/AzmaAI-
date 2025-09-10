@@ -42,7 +42,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     try {
-      const userData = localStorage.getItem('stipsLiteUser');
+      const userData = localStorage.getItem('azmaUser');
       if (userData) {
         const parsedData: UserData = JSON.parse(userData);
         setUser(parsedData);
@@ -68,7 +68,7 @@ export default function ProfilePage() {
     setTimeout(() => {
       try {
         const updatedUser: UserData = { ...user, fullName, phoneNumber, username, photoUrl: photoPreview || photoUrl };
-        localStorage.setItem('stipsLiteUser', JSON.stringify(updatedUser));
+        localStorage.setItem('azmaUser', JSON.stringify(updatedUser));
         setUser(updatedUser);
         setPhotoUrl(updatedUser.photoUrl);
         setPhotoPreview(null); // Clear preview after save

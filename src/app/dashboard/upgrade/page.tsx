@@ -48,7 +48,7 @@ export default function UpgradePage() {
 
   useEffect(() => {
     try {
-        const userData = localStorage.getItem('stipsLiteUser');
+        const userData = localStorage.getItem('azmaUser');
         if (userData) {
             setUser(JSON.parse(userData));
         } else {
@@ -69,7 +69,7 @@ export default function UpgradePage() {
   }
   
   const handleContactSales = () => {
-    window.location.href = "mailto:sales@stipslite.com?subject=Enterprise%20Plan%20Inquiry";
+    window.location.href = "mailto:sales@azma.com?subject=Enterprise%20Plan%20Inquiry";
   };
 
   const currentPlan = user?.role ? pricing[user.role.toLowerCase() as keyof typeof pricing] : null;
@@ -126,7 +126,7 @@ export default function UpgradePage() {
                         </div>
                     </div>
                     <CardHeader>
-                        <CardTitle>{currentPlan?.name || 'StipsLite Premium'}</CardTitle>
+                        <CardTitle>{currentPlan?.name || 'AZMA Premium'}</CardTitle>
                         <CardDescription>Premium Subscription for {user?.role}</CardDescription>
                         <div className="text-4xl font-bold">
                            ₦{currentPlan ? (isYearly ? currentPlan.yearly.toLocaleString() : currentPlan.monthly.toLocaleString()) : '...'}
@@ -181,7 +181,7 @@ export default function UpgradePage() {
                     <TableRow>
                       <TableHead className="w-[250px]">Feature</TableHead>
                       <TableHead>Free Plan (Trial)</TableHead>
-                      <TableHead>StipsLite Premium</TableHead>
+                      <TableHead>AZMA Premium</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>

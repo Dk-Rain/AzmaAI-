@@ -12,7 +12,7 @@ const lato = Lato({ subsets: ['latin'], weight: '400', variable: '--font-lato' }
 
 
 export const metadata: Metadata = {
-  title: 'StipsLite AI',
+  title: 'AZMA AI',
   description: 'Effortless Academic Assistance, Powered by AI',
 };
 

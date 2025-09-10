@@ -58,7 +58,7 @@ export default function SettingsPage() {
 
   const handleDeleteAll = () => {
     try {
-      localStorage.removeItem('stipsLite_history');
+      localStorage.removeItem('azma_history');
       toast({
         variant: 'destructive',
         title: 'All Chats Deleted',
