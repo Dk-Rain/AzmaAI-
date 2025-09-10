@@ -13,7 +13,7 @@ import type { AcademicTaskType } from '@/types/academic-task-types';
 import { ControlPanel } from '@/components/control-panel';
 import { DocumentEditor } from '@/components/document-editor';
 import { Button } from '@/components/ui/button';
-import { exportDocxAction } from '@/app/actions';
+import { exportDocxAction, exportTxtAction } from '@/app/actions';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -84,48 +84,13 @@ export function MainPage() {
     toast({ title: 'Logged out successfully.' });
     router.push('/login');
   };
-
-  const handleExport = async (format: 'docx' | 'pdf' | 'xls' | 'txt') => {
-    setIsExporting(true);
-    toast({
-      title: 'Exporting Document',
-      description: `Your document is being converted to .${format} format.`,
-    });
-
-    if (format !== 'docx') {
-        // Placeholder for other formats
-         setTimeout(() => {
-            setIsExporting(false);
-             toast({
-                title: 'Export Successful',
-                description: `Your document has been downloaded as a .${format} file.`,
-            });
-         }, 1500)
-         return;
-    }
-
-    const { data, error } = await exportDocxAction(
-      content,
-      references,
-      styles
-    );
-
-    setIsExporting(false);
-
-    if (error || !data) {
-      toast({
-        variant: 'destructive',
-        title: 'Export Failed',
-        description: error || 'An unknown error occurred.',
-      });
-      return;
-    }
-
-    try {
+  
+  const triggerDownload = (filename: string, content: string, mimeType: string) => {
+     try {
       const link = document.createElement('a');
-      link.href = `data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,${data}`;
+      link.href = `${mimeType},${encodeURIComponent(content)}`;
       const safeTitle = content.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-      link.download = `${safeTitle || 'document'}.docx`;
+      link.download = filename;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -140,6 +105,74 @@ export function MainPage() {
         description: 'Could not trigger the file download.',
       });
     }
+  }
+
+
+  const handleExport = async (format: 'docx' | 'pdf' | 'xls' | 'txt') => {
+    setIsExporting(true);
+    toast({
+      title: 'Exporting Document',
+      description: `Your document is being converted to .${format} format.`,
+    });
+
+    const safeTitle = (content.title || 'document').replace(/[^a-z0-9]/gi, '_').toLowerCase();
+
+    if (format === 'txt') {
+        const { data, error } = await exportTxtAction(content, references);
+        setIsExporting(false);
+        if (error || !data) {
+            return toast({ variant: 'destructive', title: 'Export Failed', description: error || 'An unknown error occurred.' });
+        }
+        const blob = new Blob([data], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${safeTitle}.txt`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        return toast({ title: 'Export Successful', description: 'Your document has been downloaded.' });
+    }
+
+    if (format === 'docx') {
+        const { data, error } = await exportDocxAction(
+          content,
+          references,
+          styles
+        );
+
+        setIsExporting(false);
+
+        if (error || !data) {
+          return toast({
+            variant: 'destructive',
+            title: 'Export Failed',
+            description: error || 'An unknown error occurred.',
+          });
+        }
+        
+        const link = document.createElement('a');
+        link.href = `data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,${data}`;
+        link.download = `${safeTitle}.docx`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        return toast({
+            title: 'Export Successful',
+            description: 'Your document has been downloaded.',
+        });
+    }
+
+     // Placeholder for other formats
+     setTimeout(() => {
+        setIsExporting(false);
+         toast({
+            title: 'Export Successful',
+            description: `Your document has been downloaded as a .${format} file (placeholder).`,
+        });
+     }, 1500)
+     return;
   };
 
   const isPremium = user?.isPremium || false;
@@ -190,11 +223,11 @@ export function MainPage() {
                         <FileType className="mr-2 h-4 w-4"/>
                         <span>Export to .docx</span>
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleExport('pdf')} disabled={!isPremium}>
+                    <DropdownMenuItem onClick={() => handleExport('pdf')} disabled={true || !isPremium}>
                         <FileType className="mr-2 h-4 w-4"/>
                         <span>Export to .pdf</span>
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleExport('xls')} disabled={!isPremium}>
+                    <DropdownMenuItem onClick={() => handleExport('xls')} disabled={true || !isPremium}>
                         <FileSpreadsheet className="mr-2 h-4 w-4"/>
                         <span>Export to .xls</span>
                     </DropdownMenuItem>

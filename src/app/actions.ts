@@ -7,6 +7,35 @@ import { exportToDocx } from '@/lib/docx-exporter';
 import type { DocumentContent, References, StyleOptions } from '@/types';
 import type { GenerationFormValues } from '@/types';
 
+function formatAsText(content: DocumentContent, references: References): string {
+    let text = `Title: ${content.title}\n\n`;
+    text += `Abstract:\n${content.abstract}\n\n`;
+    text += '-----------------\n\n';
+
+    content.sections.forEach(section => {
+        text += `## ${section.title} ##\n\n`;
+        text += `${section.content}\n\n`;
+
+        if(section.subSections && section.subSections.length > 0) {
+            section.subSections.forEach(sub => {
+                text += `### ${sub.title} ###\n\n`;
+                text += `${sub.content}\n\n`;
+            });
+        }
+    });
+
+    if (references.length > 0) {
+        text += '-----------------\n\n';
+        text += '## References ##\n\n';
+        references.forEach(ref => {
+            text += `- ${ref.referenceText}\n`;
+        });
+    }
+
+    return text;
+}
+
+
 export async function generateContentAction(values: GenerationFormValues) {
   try {
     const generatedContent = await generateAcademicContent(values);
@@ -83,4 +112,17 @@ export async function exportDocxAction(
     console.error(error);
     return { data: null, error: 'Failed to export document.' };
   }
+}
+
+export async function exportTxtAction(
+  content: DocumentContent,
+  references: References,
+) {
+    try {
+        const text = formatAsText(content, references);
+        return { data: text, error: null };
+    } catch(error) {
+        console.error(error);
+        return { data: null, error: 'Failed to export document as .txt' };
+    }
 }
