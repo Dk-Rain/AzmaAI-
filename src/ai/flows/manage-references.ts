@@ -50,7 +50,7 @@ const manageReferencesFlow = ai.defineFlow(
   },
   async input => {
     const {output: generatedReferencesOutput} = await generateReferencesPrompt(input);
-    const references = generatedReferencesOutput.references;
+    const references = generatedReferencesOutput!.references;
 
     const verifiedReferences: ManageReferencesOutput['references'] = [];
     const unverifiedReferences: string[] = [];

@@ -486,7 +486,7 @@ export function ControlPanel({
                                 <div key={index} className="text-sm p-2 border-b">
                                 <p>{ref.referenceText}</p>
                                 {ref.isVerified ? (
-                                    <Badge variant="secondary" className="mt-1 bg-green-500/20 text-green-700 dark:text-green-400">
+                                    <Badge variant="secondary" className="mt-1 bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300">
                                     <Check className="mr-1 h-3 w-3" /> Verified
                                     </Badge>
                                 ) : (
