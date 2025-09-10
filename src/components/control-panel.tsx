@@ -117,7 +117,7 @@ export function ControlPanel({
         }));
       
       const newContent: DocumentContent = {
-        title: content.title.includes("Your Academic Paper Title") ? `${taskType} Title` : content.title,
+        title: content.title.includes("Your Academic Paper Title") || content.title.includes("New Research Paper Title") || content.title.includes("New Assignment Title") ? `New ${taskType} Title` : content.title,
         abstract: `This is a placeholder abstract for the ${taskType}.`,
         sections,
       };
@@ -132,7 +132,7 @@ export function ControlPanel({
   }, [history, searchQuery]);
 
   const saveToHistory = (documentContent: DocumentContent, documentReferences: References) => {
-    if (!documentContent.title || documentContent.title.includes('Your Academic Paper Title')) return;
+    if (!documentContent.title || documentContent.title.includes('New Research Paper Title')) return;
     try {
       const newHistoryItem: HistoryItem = {
         id: new Date().toISOString(),
@@ -270,8 +270,8 @@ export function ControlPanel({
   return (
     <aside className="w-full md:w-[450px] border-r bg-background flex flex-col">
       <div className="flex items-center gap-2 p-4 border-b">
-        <PenSquare className="h-8 w-8 text-primary" />
-        <h1 className="text-xl font-bold">Stipslite AI</h1>
+        <MountainIcon className="h-8 w-8 text-primary" />
+        <h1 className="text-xl font-bold">STIPS Lite</h1>
       </div>
 
       <div className="p-4 space-y-2 border-b">
@@ -515,5 +515,3 @@ export function ControlPanel({
     </aside>
   );
 }
-
-    

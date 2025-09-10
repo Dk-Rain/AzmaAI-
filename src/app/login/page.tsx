@@ -33,9 +33,9 @@ export default function LoginPage() {
       <div className="flex items-center justify-center py-12">
         <div className="mx-auto grid w-[350px] gap-6">
           <div className="grid gap-2 text-center">
-            <Link href="/" className="flex items-center justify-center" prefetch={false}>
-                <MountainIcon className="h-6 w-6" />
-                <span className="sr-only">Stipslite AI</span>
+            <Link href="/" className="flex items-center justify-center font-bold text-xl" prefetch={false}>
+                <MountainIcon className="h-6 w-6 mr-2" />
+                <span>STIPS Lite</span>
             </Link>
             <h1 className="text-3xl font-bold">Login</h1>
             <p className="text-balance text-muted-foreground">
