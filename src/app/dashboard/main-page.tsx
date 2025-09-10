@@ -8,9 +8,9 @@ import { academicTaskFormats } from '@/types/academic-task-formats';
 import type { AcademicTaskType } from '@/types/academic-task-types';
 
 
-import { ControlPanel } from './control-panel';
-import { DocumentEditor } from './document-editor';
-import { Button } from './ui/button';
+import { ControlPanel } from '@/components/control-panel';
+import { DocumentEditor } from '@/components/document-editor';
+import { Button } from '@/components/ui/button';
 import { exportDocxAction } from '@/app/actions';
 
 const defaultTask: AcademicTaskType = 'Research Paper';
@@ -129,5 +129,3 @@ export function MainPage() {
     </div>
   );
 }
-
-    
