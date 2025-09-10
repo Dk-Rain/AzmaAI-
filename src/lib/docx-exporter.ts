@@ -18,6 +18,10 @@ export async function exportToDocx(
   references: References,
   styles: StyleOptions
 ) {
+  if (!content) {
+    throw new Error('Content is not defined');
+  }
+
   const doc = new Document({
     styles: {
       paragraphStyles: [
@@ -68,7 +72,7 @@ export async function exportToDocx(
         },
         children: [
           new Paragraph({
-            children: [new TextRun(content.title)],
+            children: [new TextRun(content.title || '')],
             heading: HeadingLevel.TITLE,
             alignment: AlignmentType.CENTER,
             style: 'default',
@@ -79,28 +83,28 @@ export async function exportToDocx(
             style: 'h1',
           }),
           new Paragraph({
-            children: [new TextRun({ text: content.abstract, italics: true })],
+            children: [new TextRun({ text: content.abstract || '', italics: true })],
             style: 'default',
           }),
-          ...content.sections.flatMap((section) => [
+          ...(content.sections || []).flatMap((section) => [
             new Paragraph({
-              children: [new TextRun(section.title)],
+              children: [new TextRun(section.title || '')],
               heading: HeadingLevel.HEADING_1,
               style: 'h1',
             }),
             new Paragraph({
-              children: [new TextRun(section.content)],
+              children: [new TextRun(section.content || '')],
               style: 'default',
             }),
             ...(section.subSections
               ? section.subSections.flatMap((subSection) => [
                   new Paragraph({
-                    children: [new TextRun(subSection.title)],
+                    children: [new TextRun(subSection.title || '')],
                     heading: HeadingLevel.HEADING_2,
                     style: 'h2',
                   }),
                   new Paragraph({
-                    children: [new TextRun(subSection.content)],
+                    children: [new TextRun(subSection.content || '')],
                     style: 'default',
                   }),
                 ])
