@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import type { DocumentContent, References, StyleOptions } from '@/types';
 import { GenerationSchema, GenerationFormValues } from '@/types';
 import { academicTaskTypes } from '@/types/academic-task-types';
+import { academicTaskFormats } from '@/types/academic-task-formats';
 
 import {
   generateContentAction,
@@ -42,6 +43,7 @@ import { Badge } from '@/components/ui/badge';
 import { Disclaimer } from './disclaimer';
 import { Separator } from './ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import type { AcademicTaskType } from '@/types/academic-task-types';
 
 
 interface ControlPanelProps {
@@ -78,7 +80,19 @@ export function ControlPanel({
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const { toast } = useToast();
+  
+  const generationForm = useForm<GenerationFormValues>({
+    resolver: zodResolver(GenerationSchema),
+    defaultValues: { topic: '', parameters: '', taskType: 'Research Paper' },
+  });
 
+  const referenceForm = useForm<z.infer<typeof referenceSchema>>({
+    resolver: zodResolver(referenceSchema),
+    defaultValues: { numReferences: 5 },
+  });
+
+  const taskType = generationForm.watch('taskType');
+  
   useEffect(() => {
     try {
       const storedHistory = localStorage.getItem('stipslite_history');
@@ -89,6 +103,28 @@ export function ControlPanel({
       console.error("Failed to load history from localStorage", error);
     }
   }, []);
+
+  useEffect(() => {
+    if (taskType) {
+      const format = academicTaskFormats[taskType as AcademicTaskType];
+      const sections = format
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => line.startsWith('- '))
+        .map(line => ({
+          title: line.substring(2).trim(),
+          content: `Placeholder for ${line.substring(2).trim()}`,
+        }));
+      
+      const newContent: DocumentContent = {
+        title: content.title.includes("Your Academic Paper Title") ? `${taskType} Title` : content.title,
+        abstract: `This is a placeholder abstract for the ${taskType}.`,
+        sections,
+      };
+
+      setContent(newContent);
+    }
+  }, [taskType]);
   
   const filteredHistory = useMemo(() => {
     if (!searchQuery) return history;
@@ -117,6 +153,10 @@ export function ControlPanel({
     setContent(item.content);
     setReferences(item.references);
     generationForm.setValue('topic', item.content.title);
+    if(item.content.title) {
+        const taskTypeGuess = Object.keys(academicTaskFormats).find(t => item.content.title.toLowerCase().includes(t.toLowerCase())) as AcademicTaskType | undefined;
+        generationForm.setValue('taskType', taskTypeGuess || 'Research Paper');
+    }
     toast({
       title: 'Loaded from Projects',
       description: `Loaded document "${item.title}".`,
@@ -137,27 +177,25 @@ export function ControlPanel({
     }
   };
 
-  const generationForm = useForm<GenerationFormValues>({
-    resolver: zodResolver(GenerationSchema),
-    defaultValues: { topic: '', parameters: '', taskType: 'Research Paper' },
-  });
-
-  const referenceForm = useForm<z.infer<typeof referenceSchema>>({
-    resolver: zodResolver(referenceSchema),
-    defaultValues: { numReferences: 5 },
-  });
-
   const handleNewTask = () => {
+    const defaultTask: AcademicTaskType = 'Research Paper';
+    const format = academicTaskFormats[defaultTask];
+      const sections = format
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => line.startsWith('- '))
+        .map(line => ({
+          title: line.substring(2).trim(),
+          content: `Placeholder for ${line.substring(2).trim()}`,
+        }));
+
     setContent({
-        title: 'Your Academic Paper Title',
+        title: `New ${defaultTask} Title`,
         abstract: 'This is a placeholder for your abstract. Generate content to begin.',
-        sections: [
-            { title: 'Introduction', content: 'This is a placeholder for your introduction.' },
-            { title: 'Conclusion', content: 'This is a placeholder for your conclusion.' },
-        ],
+        sections,
     });
     setReferences([]);
-    generationForm.reset({ topic: '', parameters: '' });
+    generationForm.reset({ topic: '', parameters: '', taskType: defaultTask });
     toast({
         title: 'New Task Started',
         description: 'Ready for a new document.',
@@ -194,11 +232,11 @@ export function ControlPanel({
 
   async function onManageReferences() {
     const topic = generationForm.getValues('topic') || content.title;
-    if (!topic || topic === 'Your Academic Paper Title') {
+    if (!topic || topic.includes('Title')) {
       toast({
         variant: 'destructive',
         title: 'Topic Required',
-        description: 'Please enter a topic before generating references.',
+        description: 'Please enter a topic or generate content before generating references.',
       });
       return;
     }
@@ -477,3 +515,5 @@ export function ControlPanel({
     </aside>
   );
 }
+
+    

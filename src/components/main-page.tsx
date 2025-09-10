@@ -4,27 +4,32 @@ import { useState } from 'react';
 import { Download, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { DocumentContent, References, StyleOptions } from '@/types';
+import { academicTaskFormats } from '@/types/academic-task-formats';
+import type { AcademicTaskType } from '@/types/academic-task-types';
+
 
 import { ControlPanel } from './control-panel';
 import { DocumentEditor } from './document-editor';
 import { Button } from './ui/button';
 import { exportDocxAction } from '@/app/actions';
 
+const defaultTask: AcademicTaskType = 'Research Paper';
+const format = academicTaskFormats[defaultTask];
+const sections = format
+  .split('\n')
+  .map(line => line.trim())
+  .filter(line => line.startsWith('- '))
+  .map(line => ({
+    title: line.substring(2).trim(),
+    content: `Placeholder for ${line.substring(2).trim()}`,
+  }));
+
+
 const initialContent: DocumentContent = {
-  title: 'Your Academic Paper Title',
+  title: `New ${defaultTask} Title`,
   abstract:
     'This is a placeholder for your abstract. Generate content to begin.',
-  sections: [
-    {
-      title: 'Introduction',
-      content:
-        'This is a placeholder for your introduction. Define a topic and parameters, then click "Generate Content" to populate this section.',
-    },
-    {
-      title: 'Conclusion',
-      content: 'This is a placeholder for your conclusion.',
-    },
-  ],
+  sections,
 };
 
 export function MainPage() {
@@ -124,3 +129,5 @@ export function MainPage() {
     </div>
   );
 }
+
+    
