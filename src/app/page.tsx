@@ -11,9 +11,6 @@ export default function LandingPage() {
           <span>STIPS Lite</span>
         </Link>
         <nav className="ml-auto flex gap-4 sm:gap-6">
-           <Link href="/about" className="text-sm font-medium hover:underline underline-offset-4" prefetch={false}>
-            About
-          </Link>
           <Link href="/login" className="text-sm font-medium hover:underline underline-offset-4" prefetch={false}>
             Login
           </Link>
@@ -48,7 +45,7 @@ export default function LandingPage() {
                     Sign Up for Free
                   </Link>
                   <Link
-                    href="#features"
+                    href="/about"
                     className="inline-flex h-10 items-center justify-center rounded-md border border-input bg-background px-8 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
                     prefetch={false}
                   >
