@@ -43,8 +43,12 @@ export async function exportToDocx(
           basedOn: 'Default',
           next: 'Default',
           run: {
+            size: (styles.fontSize + 4) * 2,
             bold: true,
           },
+          paragraph: {
+            spacing: { before: 240, after: 120 },
+          }
         },
         {
           id: 'h2',
@@ -52,8 +56,24 @@ export async function exportToDocx(
           basedOn: 'Default',
           next: 'Default',
           run: {
+            size: (styles.fontSize + 2) * 2,
             bold: true,
           },
+           paragraph: {
+            spacing: { before: 200, after: 100 },
+          }
+        },
+         {
+          id: 'abstract',
+          name: 'Abstract',
+          basedOn: 'Default',
+          next: 'Default',
+          run: {
+            italics: true,
+          },
+           paragraph: {
+            indent: { left: 720, right: 720 }
+          }
         },
       ],
     },
@@ -71,53 +91,55 @@ export async function exportToDocx(
         },
         children: [
           new Paragraph({
-            children: [new TextRun(content.title || '')],
+            text: content.title || '',
             heading: HeadingLevel.TITLE,
             alignment: AlignmentType.CENTER,
             style: 'default',
           }),
+          new Paragraph({ text: '' }), // Spacer
           new Paragraph({
-            children: [new TextRun('Abstract')],
+            text: 'Abstract',
             heading: HeadingLevel.HEADING_1,
             style: 'h1',
           }),
           new Paragraph({
-            children: [new TextRun({ text: content.abstract || '', italics: true })],
-            style: 'default',
+            text: content.abstract || '',
+            style: 'abstract',
           }),
+          new Paragraph({ text: '' }), // Spacer
           ...(content.sections || []).flatMap((section) => [
             new Paragraph({
-              children: [new TextRun(section.title || '')],
+              text: section.title || '',
               heading: HeadingLevel.HEADING_1,
               style: 'h1',
             }),
             new Paragraph({
-              children: [new TextRun(section.content || '')],
+              text: section.content || '',
               style: 'default',
             }),
-            ...(section.subSections
-              ? section.subSections.flatMap((subSection) => [
+            ...(section.subSections || []).flatMap((subSection) => [
+                  new Paragraph({ text: '' }), // Spacer
                   new Paragraph({
-                    children: [new TextRun(subSection.title || '')],
+                    text: subSection.title || '',
                     heading: HeadingLevel.HEADING_2,
                     style: 'h2',
                   }),
                   new Paragraph({
-                    children: [new TextRun(subSection.content || '')],
+                    text: subSection.content || '',
                     style: 'default',
                   }),
                 ])
-              : []),
           ]),
+          new Paragraph({ text: '' }), // Spacer
           new Paragraph({
-            children: [new TextRun('References')],
+            text: 'References',
             heading: HeadingLevel.HEADING_1,
             style: 'h1',
           }),
-          ...references.map(
+          ...(references || []).map(
             (ref) =>
               new Paragraph({
-                children: [new TextRun(ref.referenceText)],
+                text: ref.referenceText,
                 style: 'default',
                 bullet: {
                   level: 0,
