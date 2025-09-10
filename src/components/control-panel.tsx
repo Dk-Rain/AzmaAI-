@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { 
     PenSquare, Loader2, Check, AlertCircle, Sparkles, 
-    Trash2, Search, Library, PlusCircle, FolderPlus 
+    Trash2, Search, Library, PlusCircle, FolderPlus, MountainIcon 
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { DocumentContent, References, StyleOptions } from '@/types';
