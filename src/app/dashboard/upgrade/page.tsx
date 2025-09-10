@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import {
@@ -15,9 +15,42 @@ import {
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { ArrowLeft, CheckCircle2, Star } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+
+
+type UserData = {
+  role: string;
+};
+
+const pricing = {
+    student: { monthly: 2000, yearly: 8000, name: 'Student Plan' },
+    professional: { monthly: 2000, yearly: 8000, name: 'Professional Plan' },
+    researcher: { monthly: 8000, yearly: 20000, name: 'Researcher Plan' },
+    professor: { monthly: 8000, yearly: 20000, name: 'Professor Plan' },
+    teacher: { monthly: 5000, yearly: 15000, name: 'Teacher Plan' },
+};
+
 
 export default function UpgradePage() {
   const [isYearly, setIsYearly] = useState(false);
+  const [user, setUser] = useState<UserData | null>(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    try {
+        const userData = localStorage.getItem('stipsLiteUser');
+        if (userData) {
+            setUser(JSON.parse(userData));
+        } else {
+            router.push('/login');
+        }
+    } catch (error) {
+        console.error("Failed to parse user data from localStorage", error);
+        router.push('/login');
+    }
+  }, [router]);
+
+  const currentPlan = user?.role ? pricing[user.role.toLowerCase() as keyof typeof pricing] : null;
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
@@ -47,7 +80,7 @@ export default function UpgradePage() {
                     <CardHeader>
                         <CardTitle>Free</CardTitle>
                         <CardDescription>For trying things out</CardDescription>
-                        <div className="text-4xl font-bold">$0 <span className="text-sm font-normal text-muted-foreground">/ forever</span></div>
+                        <div className="text-4xl font-bold">₦0 <span className="text-sm font-normal text-muted-foreground">/ forever</span></div>
                     </CardHeader>
                     <CardContent className="grid gap-4">
                         <div className="flex items-center gap-2">
@@ -71,9 +104,12 @@ export default function UpgradePage() {
                         </div>
                     </div>
                     <CardHeader>
-                        <CardTitle>StipsLite Monthly</CardTitle>
-                        <CardDescription>Monthly Subscription for StipsLite AI</CardDescription>
-                        <div className="text-4xl font-bold">${isYearly ? '200' : '20'} <span className="text-sm font-normal text-muted-foreground">/ {isYearly ? 'year' : 'month'}</span></div>
+                        <CardTitle>{currentPlan?.name || 'StipsLite Premium'}</CardTitle>
+                        <CardDescription>Premium Subscription for {user?.role}</CardDescription>
+                        <div className="text-4xl font-bold">
+                           ₦{currentPlan ? (isYearly ? currentPlan.yearly.toLocaleString() : currentPlan.monthly.toLocaleString()) : '...'}
+                           <span className="text-sm font-normal text-muted-foreground">/ {isYearly ? 'year' : 'month'}</span>
+                        </div>
                     </CardHeader>
                     <CardContent className="grid gap-4">
                         <div className="flex items-center gap-2">
