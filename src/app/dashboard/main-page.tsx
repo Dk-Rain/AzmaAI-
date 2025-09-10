@@ -59,6 +59,7 @@ export function MainPage() {
     fontSize: 12,
     lineHeight: 1.5,
     margin: 2.54,
+    fontFamily: 'Literata',
   });
   const [isExporting, setIsExporting] = useState(false);
   const [user, setUser] = useState<UserData | null>(null);

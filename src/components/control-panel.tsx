@@ -9,8 +9,8 @@ import {
     Trash2, Search, Library, PlusCircle, FolderPlus, MountainIcon 
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import type { DocumentContent, References, StyleOptions } from '@/types';
-import { GenerationSchema, GenerationFormValues } from '@/types';
+import type { DocumentContent, References, StyleOptions, FontType } from '@/types';
+import { GenerationSchema, GenerationFormValues, availableFonts } from '@/types';
 import { academicTaskTypes } from '@/types/academic-task-types';
 import { academicTaskFormats } from '@/types/academic-task-formats';
 
@@ -406,6 +406,22 @@ export function ControlPanel({
                     {/* Style Customization */}
                     <div className="space-y-4">
                         <h3 className="text-base font-semibold">Customize Style</h3>
+                        <div className="space-y-2">
+                             <FormLabel>Font Family</FormLabel>
+                            <Select
+                                value={styles.fontFamily}
+                                onValueChange={(value: FontType) => setStyles({ ...styles, fontFamily: value })}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select a font" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {availableFonts.map(font => (
+                                        <SelectItem key={font} value={font}>{font}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
                         <div className="space-y-2">
                             <div className="flex justify-between">
                             <FormLabel>Font Size</FormLabel>

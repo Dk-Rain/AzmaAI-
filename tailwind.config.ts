@@ -11,6 +11,9 @@ export default {
     extend: {
       fontFamily: {
         sans: ['var(--font-sans)', 'sans-serif'],
+        literata: ['var(--font-literata)', 'serif'],
+        lato: ['var(--font-lato)', 'sans-serif'],
+        georgia: ['var(--font-georgia)', 'serif'],
         body: ['var(--font-sans)', 'sans-serif'],
         headline: ['var(--font-sans)', 'sans-serif'],
         code: ['monospace'],

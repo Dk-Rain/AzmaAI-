@@ -11,7 +11,6 @@ import {
 } from 'docx';
 import type { DocumentContent, References, StyleOptions } from '@/types';
 
-const FONT_FAMILY = 'Literata';
 
 export async function exportToDocx(
   content: DocumentContent,
@@ -31,7 +30,7 @@ export async function exportToDocx(
           basedOn: 'Normal',
           next: 'Normal',
           run: {
-            font: FONT_FAMILY,
+            font: styles.fontFamily,
             size: styles.fontSize * 2,
           },
           paragraph: {

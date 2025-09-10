@@ -6,6 +6,7 @@ import { Button } from './ui/button';
 import { Loader2, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { regenerateSectionAction } from '@/app/actions';
+import { cn } from '@/lib/utils';
 
 interface DocumentEditorProps {
   content: DocumentContent;
@@ -74,6 +75,15 @@ export function DocumentEditor({
     }
   };
 
+  const fontClassMap = {
+    'Literata': 'font-literata',
+    'Lato': 'font-lato',
+    'Georgia': 'font-georgia',
+    'Times New Roman': 'font-serif',
+    'Arial': 'font-sans',
+    'Calibri': 'font-sans',
+  };
+
   const paperStyles = {
     fontSize: `${styles.fontSize}pt`,
     lineHeight: styles.lineHeight,
@@ -110,7 +120,10 @@ export function DocumentEditor({
 
   return (
     <div
-      className="max-w-4xl mx-auto bg-card p-[var(--margin-cm)] shadow-lg rounded-lg"
+      className={cn(
+        "max-w-4xl mx-auto bg-card p-[var(--margin-cm)] shadow-lg rounded-lg",
+        fontClassMap[styles.fontFamily]
+        )}
       style={paperStyles}
     >
       <h1

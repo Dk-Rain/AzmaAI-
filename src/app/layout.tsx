@@ -1,12 +1,15 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
-import { Inter } from 'next/font/google';
+import { Inter, Literata, Lato } from 'next/font/google';
 import { Suspense } from 'react';
 import Loading from './loading';
 import { ThemeProvider } from '@/components/theme-provider';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
+const literata = Literata({ subsets: ['latin'], variable: '--font-literata' });
+const lato = Lato({ subsets: ['latin'], weight: '400', variable: '--font-lato' });
+
 
 export const metadata: Metadata = {
   title: 'StipsLite AI',
@@ -20,7 +23,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`font-sans antialiased ${inter.variable}`}>
+      <body className={`font-sans antialiased ${inter.variable} ${literata.variable} ${lato.variable}`}>
         <ThemeProvider
             attribute="class"
             defaultTheme="system"

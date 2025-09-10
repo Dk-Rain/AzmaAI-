@@ -9,10 +9,22 @@ export type DocumentContent = ArrangeContentOutput;
 export type Section = ArrangeContentOutput['sections'][0];
 export type SubSection = NonNullable<Section['subSections']>[0];
 
+export const availableFonts = [
+  'Literata',
+  'Calibri',
+  'Times New Roman',
+  'Arial',
+  'Lato',
+  'Georgia',
+] as const;
+export type FontType = (typeof availableFonts)[number];
+
+
 export type StyleOptions = {
   fontSize: number;
   lineHeight: number;
   margin: number; // in cm
+  fontFamily: FontType;
 };
 
 export type References = ManageReferencesOutput['references'];
