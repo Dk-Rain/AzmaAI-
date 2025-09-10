@@ -34,6 +34,24 @@ export async function exportToDocx(
             spacing: { line: styles.lineHeight * 240 },
           },
         },
+        {
+          id: 'h1',
+          name: 'Heading 1',
+          basedOn: 'Default',
+          next: 'Default',
+          run: {
+            bold: true,
+          },
+        },
+        {
+          id: 'h2',
+          name: 'Heading 2',
+          basedOn: 'Default',
+          next: 'Default',
+          run: {
+            bold: true,
+          },
+        },
       ],
     },
     sections: [
@@ -50,53 +68,53 @@ export async function exportToDocx(
         },
         children: [
           new Paragraph({
-            text: content.title,
+            children: [new TextRun(content.title)],
             heading: HeadingLevel.TITLE,
             alignment: AlignmentType.CENTER,
             style: 'default',
           }),
           new Paragraph({
-            text: 'Abstract',
+            children: [new TextRun('Abstract')],
             heading: HeadingLevel.HEADING_1,
-            style: 'default',
+            style: 'h1',
           }),
           new Paragraph({
-            text: content.abstract,
+            children: [new TextRun({ text: content.abstract, italics: true })],
             style: 'default',
           }),
           ...content.sections.flatMap((section) => [
             new Paragraph({
-              text: section.title,
+              children: [new TextRun(section.title)],
               heading: HeadingLevel.HEADING_1,
-              style: 'default',
+              style: 'h1',
             }),
             new Paragraph({
-              text: section.content,
+              children: [new TextRun(section.content)],
               style: 'default',
             }),
             ...(section.subSections
               ? section.subSections.flatMap((subSection) => [
                   new Paragraph({
-                    text: subSection.title,
+                    children: [new TextRun(subSection.title)],
                     heading: HeadingLevel.HEADING_2,
-                    style: 'default',
+                    style: 'h2',
                   }),
                   new Paragraph({
-                    text: subSection.content,
+                    children: [new TextRun(subSection.content)],
                     style: 'default',
                   }),
                 ])
               : []),
           ]),
           new Paragraph({
-            text: 'References',
+            children: [new TextRun('References')],
             heading: HeadingLevel.HEADING_1,
-            style: 'default',
+            style: 'h1',
           }),
           ...references.map(
             (ref) =>
               new Paragraph({
-                text: ref.referenceText,
+                children: [new TextRun(ref.referenceText)],
                 style: 'default',
                 bullet: {
                   level: 0,
