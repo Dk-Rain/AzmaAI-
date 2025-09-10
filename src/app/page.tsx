@@ -19,12 +19,6 @@ export default function LandingPage() {
           <Link href="#pricing" className="text-sm font-medium hover:underline underline-offset-4 hidden md:inline-flex" prefetch={false}>
             Pricing
           </Link>
-          <Link href="/about" className="text-sm font-medium hover:underline underline-offset-4 hidden md:inline-flex" prefetch={false}>
-            About
-          </Link>
-          <Link href="#" className="text-sm font-medium hover:underline underline-offset-4 hidden md:inline-flex" prefetch={false}>
-            Contact
-          </Link>
           <Link href="/login" className="text-sm font-medium hover:underline underline-offset-4" prefetch={false}>
               Login
           </Link>
