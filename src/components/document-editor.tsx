@@ -121,7 +121,7 @@ export function DocumentEditor({
   return (
     <div
       className={cn(
-        "max-w-4xl mx-auto bg-card p-[var(--margin-cm)] shadow-lg rounded-lg",
+        "max-w-4xl mx-auto bg-card p-[var(--margin-cm)] shadow-lg rounded-lg printable-area",
         fontClassMap[styles.fontFamily]
         )}
       style={paperStyles}
@@ -148,7 +148,7 @@ export function DocumentEditor({
       </div>
 
       {content.sections.map((section, index) => (
-        <div key={index} className="mb-6 group relative">
+        <div key={index} className="mb-6 group relative print:break-inside-avoid">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-bold mb-2">
               {section.title}
@@ -156,7 +156,7 @@ export function DocumentEditor({
             <Button
               variant="ghost"
               size="sm"
-              className="opacity-0 group-hover:opacity-100 transition-opacity"
+              className="opacity-0 group-hover:opacity-100 transition-opacity print:hidden"
               onClick={() => handleRegenerate(section.title)}
               disabled={!!regeneratingSection}
             >
@@ -179,7 +179,7 @@ export function DocumentEditor({
           {section.subSections && section.subSections.length > 0 && (
             <div className="ml-6 mt-4">
               {section.subSections.map((sub, subIndex) => (
-                <div key={subIndex} className="mb-4">
+                <div key={subIndex} className="mb-4 print:break-inside-avoid">
                   <h3 className="text-lg font-semibold mb-1">
                     {sub.title}
                   </h3>

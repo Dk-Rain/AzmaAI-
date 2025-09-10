@@ -432,7 +432,7 @@ export function ControlPanel({
   }
 
   return (
-    <aside className="w-full md:w-[450px] border-r bg-background flex flex-col">
+    <aside className="w-full md:w-[450px] border-r bg-background flex flex-col print:hidden">
       <div className="flex items-center gap-2 p-4 border-b">
         <MountainIcon className="h-8 w-8 text-primary" />
         <h1 className="text-xl font-bold">AZMA AI</h1>

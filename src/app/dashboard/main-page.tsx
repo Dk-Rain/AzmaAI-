@@ -13,7 +13,7 @@ import type { AcademicTaskType } from '@/types/academic-task-types';
 import { ControlPanel } from '@/components/control-panel';
 import { DocumentEditor } from '@/components/document-editor';
 import { Button } from '@/components/ui/button';
-import { exportDocxAction, exportTxtAction } from '@/app/actions';
+import { exportDocxAction, exportTxtAction, exportCsvAction } from '@/app/actions';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -117,6 +117,34 @@ export function MainPage() {
 
     const safeTitle = (content.title || 'document').replace(/[^a-z0-9]/gi, '_').toLowerCase();
 
+    if (format === 'pdf') {
+        window.print();
+        setIsExporting(false);
+        toast({
+            title: 'Print to PDF',
+            description: 'Please use your browser\'s print dialog to save as PDF.'
+        })
+        return;
+    }
+
+    if (format === 'xls') {
+        const { data, error } = await exportCsvAction(content, references);
+        setIsExporting(false);
+        if (error || !data) {
+            return toast({ variant: 'destructive', title: 'Export Failed', description: error || 'An unknown error occurred.' });
+        }
+        const blob = new Blob([data], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${safeTitle}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        return toast({ title: 'Export Successful', description: 'Your document has been downloaded as a .csv file.' });
+    }
+
     if (format === 'txt') {
         const { data, error } = await exportTxtAction(content, references);
         setIsExporting(false);
@@ -163,16 +191,6 @@ export function MainPage() {
             description: 'Your document has been downloaded.',
         });
     }
-
-     // Placeholder for other formats
-     setTimeout(() => {
-        setIsExporting(false);
-         toast({
-            title: 'Export Successful',
-            description: `Your document has been downloaded as a .${format} file (placeholder).`,
-        });
-     }, 1500)
-     return;
   };
 
   const isPremium = user?.isPremium || false;
@@ -181,7 +199,7 @@ export function MainPage() {
 
 
   return (
-    <div className="flex h-screen w-full bg-muted/30">
+    <div className="flex h-screen w-full bg-muted/30 print:block">
       <ControlPanel
         setContent={setContent}
         setReferences={setReferences}
@@ -191,8 +209,8 @@ export function MainPage() {
         content={content}
       />
 
-      <main className="flex-1 flex flex-col overflow-hidden">
-        <header className="flex h-16 items-center gap-4 border-b bg-background px-6">
+      <main className="flex-1 flex flex-col overflow-hidden print:overflow-visible">
+        <header className="flex h-16 items-center gap-4 border-b bg-background px-6 print:hidden">
           <div className="flex-1">
             <h1 className="text-lg font-semibold md:text-xl truncate" title={content.title}>
               {displayTitle}
@@ -211,7 +229,7 @@ export function MainPage() {
                 <ChevronDown className="ml-2 h-4 w-4"/>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-48" align="end">
+            <DropdownMenuContent className="w-56" align="end">
                 <DropdownMenuLabel>Export Options</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuGroup>
@@ -223,13 +241,13 @@ export function MainPage() {
                         <FileType className="mr-2 h-4 w-4"/>
                         <span>Export to .docx</span>
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleExport('pdf')} disabled={true || !isPremium}>
+                    <DropdownMenuItem onClick={() => handleExport('pdf')} disabled={!isPremium}>
                         <FileType className="mr-2 h-4 w-4"/>
                         <span>Export to .pdf</span>
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleExport('xls')} disabled={true || !isPremium}>
+                    <DropdownMenuItem onClick={() => handleExport('xls')} disabled={!isPremium}>
                         <FileSpreadsheet className="mr-2 h-4 w-4"/>
-                        <span>Export to .xls</span>
+                        <span>Export to .csv (Excel)</span>
                     </DropdownMenuItem>
                 </DropdownMenuGroup>
                 {!isPremium && (
@@ -283,7 +301,7 @@ export function MainPage() {
           </DropdownMenu>
 
         </header>
-        <div className="flex-1 overflow-auto p-4 md:p-8">
+        <div className="flex-1 overflow-auto p-4 md:p-8 print:p-0 print:overflow-visible">
           <DocumentEditor
             content={content}
             setContent={setContent}

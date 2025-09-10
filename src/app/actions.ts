@@ -35,6 +35,32 @@ function formatAsText(content: DocumentContent, references: References): string 
     return text;
 }
 
+function formatAsCsv(content: DocumentContent, references: References): string {
+    const escapeCsv = (str: string) => `"${str.replace(/"/g, '""')}"`;
+    
+    let csv = 'Type,Title,Content\n';
+    csv += `Title,${escapeCsv(content.title)},""\n`;
+    csv += `Abstract,${escapeCsv(content.abstract)},""\n`;
+
+    content.sections.forEach(section => {
+        csv += `Section,${escapeCsv(section.title)},${escapeCsv(section.content)}\n`;
+        if (section.subSections) {
+            section.subSections.forEach(sub => {
+                csv += `Sub-Section,${escapeCsv(sub.title)},${escapeCsv(sub.content)}\n`;
+            });
+        }
+    });
+
+    if (references.length > 0) {
+        csv += 'Reference,"",\n'; // Add a header for references
+        references.forEach(ref => {
+            csv += `Reference Item,${escapeCsv(ref.referenceText)},${escapeCsv(ref.doi || '')}\n`;
+        });
+    }
+
+    return csv;
+}
+
 
 export async function generateContentAction(values: GenerationFormValues) {
   try {
@@ -124,5 +150,18 @@ export async function exportTxtAction(
     } catch(error) {
         console.error(error);
         return { data: null, error: 'Failed to export document as .txt' };
+    }
+}
+
+export async function exportCsvAction(
+  content: DocumentContent,
+  references: References,
+) {
+    try {
+        const csv = formatAsCsv(content, references);
+        return { data: csv, error: null };
+    } catch(error) {
+        console.error(error);
+        return { data: null, error: 'Failed to export document as .csv' };
     }
 }
