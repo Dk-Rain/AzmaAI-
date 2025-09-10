@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { PenSquare, Download, Loader2 } from 'lucide-react';
+import { Download, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { DocumentContent, References, StyleOptions } from '@/types';
 
@@ -91,6 +91,7 @@ export function MainPage() {
         styles={styles}
         setStyles={setStyles}
         references={references}
+        content={content}
       />
 
       <main className="flex-1 flex flex-col overflow-hidden">

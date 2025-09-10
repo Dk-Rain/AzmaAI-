@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { PenSquare, Loader2, Check, AlertCircle, Sparkles } from 'lucide-react';
+import { PenSquare, Loader2, Check, AlertCircle, Sparkles, History, Trash2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { DocumentContent, References, StyleOptions } from '@/types';
 
@@ -41,6 +41,7 @@ interface ControlPanelProps {
   styles: StyleOptions;
   setStyles: (styles: StyleOptions) => void;
   references: References;
+  content: DocumentContent;
 }
 
 const generationSchema = z.object({
@@ -52,17 +53,79 @@ const referenceSchema = z.object({
   numReferences: z.coerce.number().min(1).max(20),
 });
 
+type HistoryItem = {
+  id: string;
+  title: string;
+  content: DocumentContent;
+  references: References;
+  timestamp: string;
+}
+
 export function ControlPanel({
   setContent,
   setReferences,
   styles,
   setStyles,
   references,
+  content
 }: ControlPanelProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isManagingRefs, setIsManagingRefs] = useState(false);
+  const [history, setHistory] = useState<HistoryItem[]>([]);
   const { toast } = useToast();
 
+  useEffect(() => {
+    try {
+      const storedHistory = localStorage.getItem('stipslite_history');
+      if (storedHistory) {
+        setHistory(JSON.parse(storedHistory));
+      }
+    } catch (error) {
+      console.error("Failed to load history from localStorage", error);
+    }
+  }, []);
+
+  const saveToHistory = (documentContent: DocumentContent, documentReferences: References) => {
+    try {
+      const newHistoryItem: HistoryItem = {
+        id: new Date().toISOString(),
+        title: documentContent.title,
+        content: documentContent,
+        references: documentReferences,
+        timestamp: new Date().toLocaleString(),
+      };
+      const updatedHistory = [newHistoryItem, ...history.slice(0, 19)]; // Keep max 20 items
+      setHistory(updatedHistory);
+      localStorage.setItem('stipslite_history', JSON.stringify(updatedHistory));
+    } catch (error) {
+      console.error("Failed to save to history in localStorage", error);
+    }
+  };
+
+  const loadFromHistory = (item: HistoryItem) => {
+    setContent(item.content);
+    setReferences(item.references);
+    generationForm.setValue('topic', item.content.title);
+    toast({
+      title: 'Loaded from History',
+      description: `Loaded document "${item.title}".`,
+    });
+  };
+
+  const deleteFromHistory = (id: string) => {
+    try {
+      const updatedHistory = history.filter(item => item.id !== id);
+      setHistory(updatedHistory);
+      localStorage.setItem('stipslite_history', JSON.stringify(updatedHistory));
+      toast({
+        title: 'History Item Deleted',
+        description: `The selected item has been removed from your history.`,
+      });
+    } catch (error) {
+      console.error("Failed to delete from history in localStorage", error);
+    }
+  };
+  
   const generationForm = useForm<z.infer<typeof generationSchema>>({
     resolver: zodResolver(generationSchema),
     defaultValues: { topic: '', parameters: '' },
@@ -95,9 +158,11 @@ export function ControlPanel({
       });
     } else {
       setContent(data);
+      setReferences([]); // Reset references for new content
+      saveToHistory(data, []);
       toast({
         title: 'Content Generated',
-        description: 'Your document has been updated.',
+        description: 'Your document has been created and saved to history.',
       });
     }
   }
@@ -131,9 +196,10 @@ export function ControlPanel({
       });
     } else {
       setReferences(data);
+      saveToHistory(content, data);
       toast({
         title: 'References Updated',
-        description: 'The reference list has been populated.',
+        description: 'The reference list has been populated and saved to history.',
       });
     }
   }
@@ -203,6 +269,39 @@ export function ControlPanel({
                   </Button>
                 </form>
               </Form>
+            </AccordionContent>
+          </AccordionItem>
+          
+          <AccordionItem value="history">
+            <AccordionTrigger className="text-base font-semibold">
+              History
+            </AccordionTrigger>
+            <AccordionContent>
+              <ScrollArea className="h-64 w-full">
+                {history.length > 0 ? (
+                  history.map((item) => (
+                    <div key={item.id} className="p-2 border-b group hover:bg-muted/50 rounded-md">
+                       <div className="flex justify-between items-center">
+                        <button
+                          onClick={() => loadFromHistory(item)}
+                          className="text-left flex-1"
+                        >
+                          <p className="text-sm font-medium truncate">{item.title}</p>
+                          <p className="text-xs text-muted-foreground">{item.timestamp}</p>
+                        </button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100" onClick={() => deleteFromHistory(item.id)}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                       </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center text-sm text-muted-foreground p-4">
+                    <History className="mx-auto h-8 w-8 mb-2" />
+                    No history yet.
+                  </div>
+                )}
+              </ScrollArea>
             </AccordionContent>
           </AccordionItem>
 

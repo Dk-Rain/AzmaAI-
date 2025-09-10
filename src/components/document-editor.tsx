@@ -114,7 +114,7 @@ export function DocumentEditor({
       style={paperStyles}
     >
       <h1
-        className="text-3xl font-bold text-center mb-6 font-headline"
+        className="text-3xl font-bold text-center mb-6"
         contentEditable
         suppressContentEditableWarning
         onBlur={handleTitleBlur}
@@ -123,7 +123,7 @@ export function DocumentEditor({
       </h1>
 
       <div className="mb-8">
-        <h2 className="text-xl font-bold mb-2 font-headline">Abstract</h2>
+        <h2 className="text-xl font-bold mb-2">Abstract</h2>
         <div
           className="text-muted-foreground italic"
           contentEditable
@@ -137,7 +137,7 @@ export function DocumentEditor({
       {content.sections.map((section, index) => (
         <div key={index} className="mb-6 group relative">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold mb-2 font-headline">
+            <h2 className="text-xl font-bold mb-2">
               {section.title}
             </h2>
             <Button
@@ -167,7 +167,7 @@ export function DocumentEditor({
             <div className="ml-6 mt-4">
               {section.subSections.map((sub, subIndex) => (
                 <div key={subIndex} className="mb-4">
-                  <h3 className="text-lg font-semibold mb-1 font-headline">
+                  <h3 className="text-lg font-semibold mb-1">
                     {sub.title}
                   </h3>
                   <div
