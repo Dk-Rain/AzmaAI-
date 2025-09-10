@@ -1,13 +1,13 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { MountainIcon, Target, Lightbulb, Handshake } from 'lucide-react';
+import { MountainIcon, Target, Lightbulb, Handshake, School } from 'lucide-react';
 
 export default function AboutPage() {
   return (
     <div className="flex flex-col min-h-screen bg-background">
        <header className="px-4 lg:px-6 h-14 flex items-center">
         <Link href="/" className="flex items-center justify-center font-bold text-xl" prefetch={false}>
-          <MountainIcon className="h-6 w-6 mr-2" />
+          <School className="h-6 w-6 mr-2 text-primary" />
           <span>AZMA AI</span>
         </Link>
         <nav className="ml-auto flex gap-4 sm:gap-6">
@@ -111,22 +111,22 @@ export default function AboutPage() {
 
       </main>
       <footer className="flex flex-col gap-2 sm:flex-row py-6 w-full shrink-0 items-center px-4 md:px-6 border-t">
-        <p className="text-xs text-muted-foreground">&copy; 2025 AZMA AI. All rights reserved.</p>
+        <p className="text-xs text-muted-foreground">&copy; AzmaAI – Academic Zenith for Manuscripts & Assignments.</p>
         <nav className="sm:ml-auto flex gap-4 sm:gap-6">
-          <Link href="#" className="text-xs hover:underline underline-offset-4" prefetch={false}>
-            Platform Rules
+          <Link href="/about" className="text-xs hover:underline underline-offset-4" prefetch={false}>
+            About
+          </Link>
+          <Link href="/#features" className="text-xs hover:underline underline-offset-4" prefetch={false}>
+            Features
+          </Link>
+          <Link href="/#pricing" className="text-xs hover:underline underline-offset-4" prefetch={false}>
+            Pricing
           </Link>
           <Link href="#" className="text-xs hover:underline underline-offset-4" prefetch={false}>
             Contact
           </Link>
-          <Link href="#" className="text-xs hover:underline underline-offset-4" prefetch={false}>
-            License
-          </Link>
-          <Link href="#" className="text-xs hover:underline underline-offset-4" prefetch={false}>
-            Terms of Service
-          </Link>
            <Link href="#" className="text-xs hover:underline underline-offset-4" prefetch={false}>
-            Privacy
+            Privacy Policy
           </Link>
         </nav>
       </footer>

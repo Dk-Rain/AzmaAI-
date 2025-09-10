@@ -1,170 +1,272 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { MountainIcon, BrainCircuit, ListTodo, Printer, Wallet } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { CheckCircle, FolderOpen, Gauge, Library, Lock, PlayCircle, Rocket, School, BookOpenCheck } from 'lucide-react';
+import Image from 'next/image';
 
 export default function LandingPage() {
   return (
-    <div className="flex flex-col min-h-screen bg-background">
-      <header className="px-4 lg:px-6 h-14 flex items-center">
+    <div className="flex flex-col min-h-screen bg-background text-foreground">
+      <header className="px-4 lg:px-6 h-14 flex items-center sticky top-0 z-50 bg-background/80 backdrop-blur-sm">
         <Link href="#" className="flex items-center justify-center font-bold text-xl" prefetch={false}>
-          <MountainIcon className="h-6 w-6 mr-2" />
-          <span>AZMA AI</span>
+          <School className="h-6 w-6 mr-2 text-primary" />
+          <span className="font-headline">AzmaAI</span>
         </Link>
-        <nav className="ml-auto flex gap-4 sm:gap-6">
-          <Link href="/login" className="text-sm font-medium hover:underline underline-offset-4" prefetch={false}>
-            Login
+        <nav className="ml-auto hidden md:flex gap-4 sm:gap-6">
+          <Link href="#features" className="text-sm font-medium hover:underline underline-offset-4" prefetch={false}>
+            Features
           </Link>
-          <Link
-            href="/signup"
-            className="inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
-            prefetch={false}
-          >
-            Sign Up
+          <Link href="#pricing" className="text-sm font-medium hover:underline underline-offset-4" prefetch={false}>
+            Pricing
           </Link>
+          <Link href="/about" className="text-sm font-medium hover:underline underline-offset-4" prefetch={false}>
+            About
+          </Link>
+          <Link href="#" className="text-sm font-medium hover:underline underline-offset-4" prefetch={false}>
+            Contact
+          </Link>
+        </nav>
+        <nav className="ml-auto flex md:hidden gap-2">
+            <Link href="/login" className="inline-flex h-9 items-center justify-center rounded-md px-4 py-2 text-sm font-medium" prefetch={false}>
+                Login
+            </Link>
+            <Link
+                href="/signup"
+                className="inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
+                prefetch={false}
+            >
+                Sign Up
+            </Link>
         </nav>
       </header>
       <main className="flex-1">
-        <section className="w-full py-12 md:py-24 lg:py-32 xl:py-48">
-          <div className="container px-4 md:px-6">
-            <div className="grid gap-6 lg:grid-cols-2 lg:gap-12">
-              <div className="flex flex-col justify-center space-y-4">
-                <div className="space-y-2">
-                  <h1 className="text-3xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none">
-                    Effortless Academic Assistance, Powered by AI
-                  </h1>
-                  <p className="max-w-[600px] text-muted-foreground md:text-xl">
-                    From task submission to AI-driven research and finding print centers, AZMA AI is your all-in-one platform for academic success.
-                  </p>
-                </div>
-                <div className="flex flex-col gap-2 min-[400px]:flex-row">
-                  <Link
-                    href="/signup"
-                    className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-8 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
-                    prefetch={false}
-                  >
-                    Sign Up for Free
-                  </Link>
-                  <Link
-                    href="/about"
-                    className="inline-flex h-10 items-center justify-center rounded-md border border-input bg-background px-8 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
-                    prefetch={false}
-                  >
-                    Learn More
-                  </Link>
-                </div>
+        {/* Hero Section */}
+        <section className="w-full py-20 md:py-32 lg:py-40 bg-gray-50 dark:bg-gray-900/50">
+          <div className="container px-4 md:px-6 text-center">
+            <div className="max-w-3xl mx-auto space-y-4">
+              <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl font-headline">
+                From Topic to Thesis — Smarter with AzmaAI
+              </h1>
+              <p className="max-w-2xl mx-auto text-lg text-muted-foreground">
+                Your AI-powered academic assistant that writes, formats, and cites your assignments, manuscripts, and research papers in minutes.
+              </p>
+              <div className="flex flex-col gap-2 min-[400px]:flex-row justify-center">
+                <Link
+                  href="/signup"
+                  className="inline-flex h-12 items-center justify-center rounded-md bg-primary px-8 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  prefetch={false}
+                >
+                  Start Writing Free
+                </Link>
+                <Link
+                  href="#"
+                  className="inline-flex h-12 items-center justify-center rounded-md border border-input bg-background px-8 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
+                  prefetch={false}
+                >
+                  <PlayCircle className="mr-2 h-5 w-5" />
+                  Watch Demo
+                </Link>
               </div>
-               <img
-                src="https://picsum.photos/seed/1/600/400"
-                width="600"
-                height="400"
-                alt="AI abstract"
-                className="mx-auto aspect-video overflow-hidden rounded-xl object-cover object-center sm:w-full lg:order-last"
-                data-ai-hint="abstract technology"
+            </div>
+          </div>
+        </section>
+
+        {/* How It Works Section */}
+        <section className="w-full py-12 md:py-24 lg:py-32">
+          <div className="container px-4 md:px-6">
+            <div className="text-center space-y-3 mb-12">
+              <h2 className="text-3xl font-bold tracking-tight">How It Works</h2>
+              <p className="mx-auto max-w-2xl text-muted-foreground">A seamless process in three simple steps.</p>
+            </div>
+            <div className="mx-auto grid max-w-5xl items-start gap-8 sm:grid-cols-3 md:gap-12">
+              <div className="grid gap-2 text-center">
+                <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-4">
+                    <span className="text-2xl font-bold">1</span>
+                </div>
+                <h3 className="text-lg font-bold">Enter Your Topic</h3>
+                <p className="text-sm text-muted-foreground">Input your assignment or thesis requirements.</p>
+              </div>
+              <div className="grid gap-2 text-center">
+                <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-4">
+                    <span className="text-2xl font-bold">2</span>
+                </div>
+                <h3 className="text-lg font-bold">Generate & Format</h3>
+                <p className="text-sm text-muted-foreground">AzmaAI writes and formats in your chosen academic style.</p>
+              </div>
+              <div className="grid gap-2 text-center">
+                <div className="w-16 h-16 bg-primary/10 text-primary rounded-full flex items-center justify-center mx-auto mb-4">
+                    <span className="text-2xl font-bold">3</span>
+                </div>
+                <h3 className="text-lg font-bold">Download & Submit</h3>
+                <p className="text-sm text-muted-foreground">Export ready-to-use Word/PDF documents.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Key Features Section */}
+        <section id="features" className="w-full py-12 md:py-24 lg:py-32 bg-gray-50 dark:bg-gray-900/50">
+          <div className="container px-4 md:px-6">
+            <div className="text-center space-y-3 mb-12">
+              <h2 className="text-3xl font-bold tracking-tight">Key Features</h2>
+              <p className="mx-auto max-w-2xl text-muted-foreground">Everything you need for academic excellence.</p>
+            </div>
+            <div className="mx-auto grid max-w-5xl items-start gap-8 sm:grid-cols-2 lg:grid-cols-3 md:gap-12">
+              <div className="grid gap-2">
+                <Gauge className="h-8 w-8 text-accent" />
+                <h3 className="text-lg font-bold">Auto Formatting</h3>
+                <p className="text-sm text-muted-foreground">Fonts, spacing, margins, citations done for you.</p>
+              </div>
+              <div className="grid gap-2">
+                <BookOpenCheck className="h-8 w-8 text-accent" />
+                <h3 className="text-lg font-bold">Verified References</h3>
+                <p className="text-sm text-muted-foreground">Real academic DOIs, APA/MLA/Chicago styles.</p>
+              </div>
+              <div className="grid gap-2">
+                <Rocket className="h-8 w-8 text-accent" />
+                <h3 className="text-lg font-bold">Fast & Smart</h3>
+                <p className="text-sm text-muted-foreground">Get drafts in minutes, not weeks.</p>
+              </div>
+              <div className="grid gap-2">
+                <FolderOpen className="h-8 w-8 text-accent" />
+                <h3 className="text-lg font-bold">Multiple Templates</h3>
+                <p className="text-sm text-muted-foreground">Essays, theses, research proposals, term papers.</p>
+              </div>
+              <div className="grid gap-2">
+                <Lock className="h-8 w-8 text-accent" />
+                <h3 className="text-lg font-bold">Safe & Private</h3>
+                <p className="text-sm text-muted-foreground">Your data stays secure.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Demo Preview Section */}
+        <section className="w-full py-12 md:py-24 lg:py-32">
+          <div className="container grid items-center gap-6 px-4 md:px-6 lg:grid-cols-2 lg:gap-10">
+            <div className="space-y-4">
+              <h2 className="text-3xl font-bold tracking-tight">See AzmaAI in Action</h2>
+              <p className="text-muted-foreground md:text-xl/relaxed">
+                Watch how easily you can go from a simple topic to a fully-formatted academic paper, complete with accurate citations. No more tedious manual work.
+              </p>
+              <Link
+                href="/signup"
+                className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-8 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90"
+                prefetch={false}
+              >
+                Try AzmaAI Now
+              </Link>
+            </div>
+            <div className="mx-auto w-full max-w-md">
+              <Image
+                src="https://picsum.photos/seed/app-preview/600/400"
+                width={600}
+                height={400}
+                alt="App Preview"
+                className="rounded-xl shadow-lg"
+                data-ai-hint="app interface"
               />
             </div>
           </div>
         </section>
 
-        <section id="features" className="w-full py-12 md:py-24 lg:py-32 bg-muted">
+        {/* Testimonials Section */}
+        <section className="w-full py-12 md:py-24 lg:py-32 bg-gray-50 dark:bg-gray-900/50">
           <div className="container px-4 md:px-6">
-            <div className="flex flex-col items-center justify-center space-y-4 text-center">
-              <div className="space-y-2">
-                <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">Key Features</h2>
-                <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  Everything You Need to Succeed. Our platform is packed with features designed to streamline your academic workflow and boost your productivity.
-                </p>
-              </div>
+            <div className="text-center space-y-3 mb-12">
+              <h2 className="text-3xl font-bold tracking-tight">Loved by Students & Academics</h2>
             </div>
-            <div className="mx-auto grid max-w-5xl items-start gap-8 sm:grid-cols-2 md:gap-12 lg:grid-cols-2 xl:grid-cols-4 mt-12">
-              <div className="grid gap-1 text-center">
-                <BrainCircuit className="h-10 w-10 mx-auto text-primary" />
-                <h3 className="text-lg font-bold">Azuma AI Research</h3>
-                <p className="text-sm text-muted-foreground">Get intelligent suggestions and resources for your tasks.</p>
-              </div>
-              <div className="grid gap-1 text-center">
-                <ListTodo className="h-10 w-10 mx-auto text-primary" />
-                <h3 className="text-lg font-bold">Task Management</h3>
-                <p className="text-sm text-muted-foreground">Submit, track, and manage all your academic tasks in one place.</p>
-              </div>
-              <div className="grid gap-1 text-center">
-                <Printer className="h-10 w-10 mx-auto text-primary" />
-                <h3 className="text-lg font-bold">Print Centers</h3>
-                <p className="text-sm text-muted-foreground">Easily find and connect with registered printing services near you.</p>
-              </div>
-              <div className="grid gap-1 text-center">
-                <Wallet className="h-10 w-10 mx-auto text-primary" />
-                <h3 className="text-lg font-bold">Wallet & Payments</h3>
-                <p className="text-sm text-muted-foreground">Manage your balance and view transaction history with ease.</p>
-              </div>
+            <div className="mx-auto grid max-w-5xl items-start gap-8 sm:grid-cols-3 md:gap-12">
+              <Card>
+                <CardContent className="p-6">
+                  <p className="mb-4">"AzmaAI helped me finish my thesis two weeks early!"</p>
+                  <p className="font-semibold">🎓 Final Year Student</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-6">
+                  <p className="mb-4">"No more formatting stress — my assignments look professional."</p>
+                  <p className="font-semibold">📖 University Freshman</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-6">
+                  <p className="mb-4">"Game-changer for research writing!"</p>
+                  <p className="font-semibold">🧑‍🏫 Lecturer</p>
+                </CardContent>
+              </Card>
             </div>
-          </div>
-        </section>
-        
-        <section className="w-full py-12 md:py-24 lg:py-32">
-          <div className="container grid items-center justify-center gap-4 px-4 text-center md:px-6">
-            <div className="space-y-3">
-              <h2 className="text-3xl font-bold tracking-tighter md:text-4xl/tight">How It Works</h2>
-              <p className="mx-auto max-w-[600px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                Get Started in 3 Simple Steps
-              </p>
-            </div>
-            <div className="mx-auto grid max-w-5xl items-start gap-8 sm:grid-cols-3 md:gap-12 mt-8">
-              <div className="grid gap-1">
-                <h3 className="text-lg font-bold">1. Create Your Account</h3>
-                <p className="text-sm text-muted-foreground">Sign up for free and set up your student profile in minutes.</p>
-              </div>
-              <div className="grid gap-1">
-                <h3 className="text-lg font-bold">2. Submit & Enhance Tasks</h3>
-                <p className="text-sm text-muted-foreground">Enter your task details and use our AI to get research suggestions.</p>
-              </div>
-              <div className="grid gap-1">
-                <h3 className="text-lg font-bold">3. Track & Complete</h3>
-                <p className="text-sm text-muted-foreground">Monitor your task progress, manage payments, and achieve your goals.</p>
-              </div>
-            </div>
-          </div>
-        </section>
-        
-        <section className="w-full py-12 md:py-24 lg:py-32 border-t">
-          <div className="container px-4 md:px-6">
-            <div className="flex flex-col items-center justify-center space-y-4 text-center">
-                <div className="space-y-2">
-                  <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">Ready to Boost Your Academic Performance?</h2>
-                  <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                    Join thousands of students who are already using AZMA AI to excel.
-                  </p>
-                </div>
-                <div className="flex flex-col gap-2 min-[400px]:flex-row">
-                  <Link
-                    href="/signup"
-                    className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-8 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50"
-                    prefetch={false}
-                  >
-                    Get Started Now
-                  </Link>
-                </div>
-              </div>
           </div>
         </section>
 
+        {/* Pricing Section */}
+        <section id="pricing" className="w-full py-12 md:py-24 lg:py-32">
+          <div className="container px-4 md:px-6">
+             <div className="text-center space-y-3 mb-12">
+              <h2 className="text-3xl font-bold tracking-tight">Pricing Plans</h2>
+              <p className="mx-auto max-w-2xl text-muted-foreground">Choose a plan that fits your academic needs.</p>
+            </div>
+            <div className="mx-auto grid max-w-5xl items-start gap-8 sm:grid-cols-3 md:gap-12">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Free Plan</CardTitle>
+                  <CardDescription>Limited pages, limited references.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                    <p className="text-3xl font-bold">₦0</p>
+                    <p className="text-sm text-muted-foreground">For getting started</p>
+                </CardContent>
+                <CardFooter>
+                  <Button variant="outline" className="w-full" asChild><Link href="/signup">Get Started</Link></Button>
+                </CardFooter>
+              </Card>
+               <Card className="border-primary shadow-lg">
+                <CardHeader>
+                  <CardTitle>Student Plan</CardTitle>
+                  <CardDescription>Unlimited assignments, export to Word/PDF.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                    <p className="text-3xl font-bold">₦2,000<span className="text-sm font-normal text-muted-foreground">/mo</span></p>
+                    <p className="text-sm text-muted-foreground">Perfect for coursework</p>
+                </CardContent>
+                <CardFooter>
+                  <Button className="w-full" asChild><Link href="/signup">Choose Student</Link></Button>
+                </CardFooter>
+              </Card>
+               <Card>
+                <CardHeader>
+                  <CardTitle>Pro Plan</CardTitle>
+                  <CardDescription>+ plagiarism check, advanced templates.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                    <p className="text-3xl font-bold">₦8,000<span className="text-sm font-normal text-muted-foreground">/mo</span></p>
+                    <p className="text-sm text-muted-foreground">For serious researchers</p>
+                </CardContent>
+                <CardFooter>
+                  <Button variant="outline" className="w-full" asChild><Link href="/signup">Choose Pro</Link></Button>
+                </CardFooter>
+              </Card>
+            </div>
+          </div>
+        </section>
       </main>
       <footer className="flex flex-col gap-2 sm:flex-row py-6 w-full shrink-0 items-center px-4 md:px-6 border-t">
-        <p className="text-xs text-muted-foreground">&copy; 2025 AZMA AI. All rights reserved.</p>
+        <p className="text-xs text-muted-foreground">&copy; AzmaAI – Academic Zenith for Manuscripts & Assignments.</p>
         <nav className="sm:ml-auto flex gap-4 sm:gap-6">
-          <Link href="#" className="text-xs hover:underline underline-offset-4" prefetch={false}>
-            Platform Rules
+          <Link href="/about" className="text-xs hover:underline underline-offset-4" prefetch={false}>
+            About
+          </Link>
+          <Link href="#features" className="text-xs hover:underline underline-offset-4" prefetch={false}>
+            Features
+          </Link>
+          <Link href="#pricing" className="text-xs hover:underline underline-offset-4" prefetch={false}>
+            Pricing
           </Link>
           <Link href="#" className="text-xs hover:underline underline-offset-4" prefetch={false}>
             Contact
           </Link>
-          <Link href="#" className="text-xs hover:underline underline-offset-4" prefetch={false}>
-            License
-          </Link>
-          <Link href="#" className="text-xs hover:underline underline-offset-4" prefetch={false}>
-            Terms of Service
-          </Link>
            <Link href="#" className="text-xs hover:underline underline-offset-4" prefetch={false}>
-            Privacy
+            Privacy Policy
           </Link>
         </nav>
       </footer>
