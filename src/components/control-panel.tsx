@@ -157,7 +157,7 @@ export function ControlPanel({
       
       const newContent: DocumentContent = {
         title: content.title.includes("Your Academic Paper Title") || content.title.includes("New Research Paper Title") || content.title.includes("New Assignment Title") ? `New ${taskType} Title` : content.title,
-        abstract: `This is a placeholder abstract for the ${taskType}.`,
+        abstract: '',
         sections,
       };
 
@@ -270,7 +270,7 @@ export function ControlPanel({
     
     const newDocContent: DocumentContent = {
         title: `New ${defaultTask} - ${new Date().toLocaleTimeString()}`,
-        abstract: 'This is a placeholder for your abstract. Generate content to begin.',
+        abstract: '',
         sections,
     };
     const newDocItem: DocumentItem = {

@@ -40,8 +40,7 @@ const sections = format
 
 const initialContent: DocumentContent = {
   title: `New ${defaultTask} Title`,
-  abstract:
-    'This is a placeholder for your abstract. Generate content to begin.',
+  abstract: '',
   sections,
 };
 

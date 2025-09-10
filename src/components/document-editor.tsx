@@ -135,17 +135,7 @@ export function DocumentEditor({
         {content.title}
       </h1>
 
-      <div className="mb-8">
-        <h2 className="text-xl font-bold mb-2">Abstract</h2>
-        <div
-          className="text-muted-foreground italic"
-          contentEditable
-          suppressContentEditableWarning
-          onBlur={handleAbstractBlur}
-        >
-          {content.abstract}
-        </div>
-      </div>
+      
 
       {content.sections.map((section, index) => (
         <div key={index} className="mb-6 group relative print:break-inside-avoid">
