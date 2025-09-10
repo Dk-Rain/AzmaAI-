@@ -10,6 +10,8 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { DocumentContent, References, StyleOptions } from '@/types';
+import { GenerationSchema, GenerationFormValues } from '@/types';
+import { academicTaskTypes } from '@/types/academic-task-types';
 
 import {
   generateContentAction,
@@ -25,6 +27,13 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
@@ -43,11 +52,6 @@ interface ControlPanelProps {
   references: References;
   content: DocumentContent;
 }
-
-const generationSchema = z.object({
-  topic: z.string().min(5, 'Topic must be at least 5 characters.'),
-  parameters: z.string().optional(),
-});
 
 const referenceSchema = z.object({
   numReferences: z.coerce.number().min(1).max(20),
@@ -133,9 +137,9 @@ export function ControlPanel({
     }
   };
 
-  const generationForm = useForm<z.infer<typeof generationSchema>>({
-    resolver: zodResolver(generationSchema),
-    defaultValues: { topic: '', parameters: '' },
+  const generationForm = useForm<GenerationFormValues>({
+    resolver: zodResolver(GenerationSchema),
+    defaultValues: { topic: '', parameters: '', taskType: 'Research Paper' },
   });
 
   const referenceForm = useForm<z.infer<typeof referenceSchema>>({
@@ -160,17 +164,14 @@ export function ControlPanel({
     });
   }
 
-  async function onGenerate(values: z.infer<typeof generationSchema>) {
+  async function onGenerate(values: GenerationFormValues) {
     setIsGenerating(true);
     toast({
       title: 'Generating Content...',
       description: 'The AI is crafting your document. This may take a moment.',
     });
 
-    const { data, error } = await generateContentAction(
-      values.topic,
-      values.parameters || 'A standard academic paper structure.'
-    );
+    const { data, error } = await generateContentAction(values);
 
     setIsGenerating(false);
 
@@ -299,6 +300,28 @@ export function ControlPanel({
                         className="space-y-4"
                         >
                         <h3 className="text-base font-semibold">Generate Content</h3>
+                        <FormField
+                            control={generationForm.control}
+                            name="taskType"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Task Type</FormLabel>
+                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                    <SelectTrigger>
+                                    <SelectValue placeholder="Select a task type" />
+                                    </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    {academicTaskTypes.map(task => (
+                                        <SelectItem key={task} value={task}>{task}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
                         <FormField
                             control={generationForm.control}
                             name="topic"

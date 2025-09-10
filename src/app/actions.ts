@@ -5,16 +5,14 @@ import { arrangeContentIntoAcademicFormat } from '@/ai/flows/arrange-content-int
 import { manageReferences } from '@/ai/flows/manage-references';
 import { exportToDocx } from '@/lib/docx-exporter';
 import type { DocumentContent, References, StyleOptions } from '@/types';
+import type { GenerationFormValues } from '@/types';
 
-export async function generateContentAction(topic: string, parameters: string) {
+export async function generateContentAction(values: GenerationFormValues) {
   try {
-    const generatedContent = await generateAcademicContent({
-      topic,
-      parameters,
-    });
+    const generatedContent = await generateAcademicContent(values);
 
     const arrangedContent = await arrangeContentIntoAcademicFormat({
-      topic,
+      topic: values.topic,
       content: JSON.stringify(generatedContent),
     });
 
@@ -43,7 +41,8 @@ export async function regenerateSectionAction(
       
       Please provide only the new content for the "${sectionTitle}" section. Output just the text content.`;
 
-    const result = await generateAcademicContent({ topic, parameters });
+    // Note: taskType is not directly used here as we are regenerating a small part
+    const result = await generateAcademicContent({ topic, parameters, taskType: 'Assignment' });
 
     // Assuming the AI returns the regenerated content in the first section
     const newContent = result.sections[0]?.content;

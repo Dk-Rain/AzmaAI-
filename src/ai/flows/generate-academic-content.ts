@@ -10,11 +10,14 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import { academicTaskTypes } from '@/types/academic-task-types';
+
 
 const GenerateAcademicContentInputSchema = z.object({
+  taskType: z.enum(academicTaskTypes).describe('The type of academic task.'),
   topic: z.string().describe('The topic of the academic content to generate.'),
   parameters: z
-    .string()
+    .string().optional()
     .describe(
       'Specific parameters or instructions for generating the content, such as desired sections, focus areas, or specific arguments to include.'
     ),
@@ -27,7 +30,7 @@ const GenerateAcademicContentOutputSchema = z.object({
   title: z.string().describe('The title of the generated academic content.'),
   abstract: z.string().describe('A brief summary of the generated content.'),
   sections: z
-    .array(z.object({title: z.string(), content: z.string()}))
+    .array(z.object({ title: z.string(), content: z.string() }))
     .describe('The sections of the generated academic content.'),
 });
 export type GenerateAcademicContentOutput = z.infer<
@@ -45,8 +48,10 @@ const generateAcademicContentPrompt = ai.definePrompt({
   input: {schema: GenerateAcademicContentInputSchema},
   output: {schema: GenerateAcademicContentOutputSchema},
   prompt: `You are an expert academic content generator. Please generate
-content on the following topic, according to the given parameters.
+content for the following task type, topic, and parameters. Structure the output
+according to the standard format for the specified task type.
 
+Task Type: {{{taskType}}}
 Topic: {{{topic}}}
 Parameters: {{{parameters}}}
 
