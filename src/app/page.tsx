@@ -8,7 +8,7 @@ export default function LandingPage() {
       <header className="px-4 lg:px-6 h-14 flex items-center">
         <Link href="#" className="flex items-center justify-center font-bold text-xl" prefetch={false}>
           <MountainIcon className="h-6 w-6 mr-2" />
-          <span>STIPS Lite</span>
+          <span>StipsLite AI</span>
         </Link>
         <nav className="ml-auto flex gap-4 sm:gap-6">
           <Link href="/login" className="text-sm font-medium hover:underline underline-offset-4" prefetch={false}>
@@ -33,7 +33,7 @@ export default function LandingPage() {
                     Effortless Academic Assistance, Powered by AI
                   </h1>
                   <p className="max-w-[600px] text-muted-foreground md:text-xl">
-                    From task submission to AI-driven research and finding print centers, STIPS Lite is your all-in-one platform for academic success.
+                    From task submission to AI-driven research and finding print centers, StipsLite AI is your all-in-one platform for academic success.
                   </p>
                 </div>
                 <div className="flex flex-col gap-2 min-[400px]:flex-row">
@@ -131,7 +131,7 @@ export default function LandingPage() {
                 <div className="space-y-2">
                   <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">Ready to Boost Your Academic Performance?</h2>
                   <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                    Join thousands of students who are already using STIPS Lite to excel.
+                    Join thousands of students who are already using StipsLite AI to excel.
                   </p>
                 </div>
                 <div className="flex flex-col gap-2 min-[400px]:flex-row">
@@ -149,7 +149,7 @@ export default function LandingPage() {
 
       </main>
       <footer className="flex flex-col gap-2 sm:flex-row py-6 w-full shrink-0 items-center px-4 md:px-6 border-t">
-        <p className="text-xs text-muted-foreground">&copy; 2025 STIPS Lite. All rights reserved.</p>
+        <p className="text-xs text-muted-foreground">&copy; 2025 StipsLite AI. All rights reserved.</p>
         <nav className="sm:ml-auto flex gap-4 sm:gap-6">
           <Link href="#" className="text-xs hover:underline underline-offset-4" prefetch={false}>
             Platform Rules

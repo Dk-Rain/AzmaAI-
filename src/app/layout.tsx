@@ -6,7 +6,7 @@ import { Inter } from 'next/font/google';
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 
 export const metadata: Metadata = {
-  title: 'STIPS Lite',
+  title: 'StipsLite AI',
   description: 'Effortless Academic Assistance, Powered by AI',
 };
 
