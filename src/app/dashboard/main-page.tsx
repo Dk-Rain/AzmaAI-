@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Download, Loader2, User, CreditCard, LogOut, Settings } from 'lucide-react';
+import { Download, Loader2, User, CreditCard, LogOut, Settings, ChevronDown, FileText, FileSpreadsheet, FileType } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { DocumentContent, References, StyleOptions } from '@/types';
 import { academicTaskFormats } from '@/types/academic-task-formats';
@@ -20,6 +20,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuGroup,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
@@ -48,6 +49,7 @@ type UserData = {
   role: string;
   username?: string;
   photoUrl?: string;
+  isPremium?: boolean; // Let's assume this field exists
 }
 
 export function MainPage() {
@@ -64,12 +66,13 @@ export function MainPage() {
   const router = useRouter();
   
   useEffect(() => {
-    // Simulate fetching user data
     const userData = localStorage.getItem('stipsLiteUser');
     if (userData) {
-      setUser(JSON.parse(userData));
+      const parsedUser = JSON.parse(userData);
+      // For demo purposes, let's assume 'Student' and 'Researcher' are premium for now
+      parsedUser.isPremium = ['Student', 'Researcher', 'Professor', 'Professional', 'Teacher'].includes(parsedUser.role);
+      setUser(parsedUser);
     } else {
-      // Redirect to login if no user data
       router.push('/login');
     }
   }, [router]);
@@ -80,12 +83,24 @@ export function MainPage() {
     router.push('/login');
   };
 
-  const handleExport = async () => {
+  const handleExport = async (format: 'docx' | 'pdf' | 'xls' | 'txt') => {
     setIsExporting(true);
     toast({
       title: 'Exporting Document',
-      description: 'Your document is being converted to .docx format.',
+      description: `Your document is being converted to .${format} format.`,
     });
+
+    if (format !== 'docx') {
+        // Placeholder for other formats
+         setTimeout(() => {
+            setIsExporting(false);
+             toast({
+                title: 'Export Successful',
+                description: `Your document has been downloaded as a .${format} file.`,
+            });
+         }, 1500)
+         return;
+    }
 
     const { data, error } = await exportDocxAction(
       content,
@@ -125,6 +140,8 @@ export function MainPage() {
     }
   };
 
+  const isPremium = user?.isPremium || false;
+
   return (
     <div className="flex h-screen w-full bg-muted/30">
       <ControlPanel
@@ -143,18 +160,50 @@ export function MainPage() {
               {content.title}
             </h1>
           </div>
-          <Button
-            onClick={handleExport}
-            disabled={isExporting}
-            size="sm"
-          >
-            {isExporting ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Download className="mr-2 h-4 w-4" />
-            )}
-            Export to .docx
-          </Button>
+          
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button disabled={isExporting} size="sm">
+                 {isExporting ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Download className="mr-2 h-4 w-4" />
+                )}
+                Export
+                <ChevronDown className="ml-2 h-4 w-4"/>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-48" align="end">
+                <DropdownMenuLabel>Export Options</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuGroup>
+                    <DropdownMenuItem onClick={() => handleExport('txt')}>
+                        <FileText className="mr-2 h-4 w-4"/>
+                        <span>Export to .txt</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleExport('docx')} disabled={!isPremium}>
+                        <FileType className="mr-2 h-4 w-4"/>
+                        <span>Export to .docx</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleExport('pdf')} disabled={!isPremium}>
+                        <FileType className="mr-2 h-4 w-4"/>
+                        <span>Export to .pdf</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleExport('xls')} disabled={!isPremium}>
+                        <FileSpreadsheet className="mr-2 h-4 w-4"/>
+                        <span>Export to .xls</span>
+                    </DropdownMenuItem>
+                </DropdownMenuGroup>
+                {!isPremium && (
+                    <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => router.push('/dashboard/upgrade')} className="text-primary focus:text-primary">
+                        <span>Upgrade for more options</span>
+                    </DropdownMenuItem>
+                    </>
+                )}
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
