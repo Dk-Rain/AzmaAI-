@@ -157,7 +157,7 @@ export function ControlPanel({
     const filteredProjects = workspace.projects.map(project => {
         const filteredDocs = project.documents.filter(doc => doc.title.toLowerCase().includes(lowercasedQuery));
         if (project.name.toLowerCase().includes(lowercasedQuery) || filteredDocs.length > 0) {
-            return {...project, documents: filteredDocs};
+            return {...project, documents: filteredDocs.length > 0 ? filteredDocs : project.documents};
         }
         return null;
     }).filter((p): p is Project => p !== null);
@@ -258,7 +258,7 @@ export function ControlPanel({
         sections,
     });
     setReferences([]);
-    generationForm.reset({ topic: '', parameters: '', taskType: defaultTask });
+    generationForm.reset({ topic: '', parameters: '', taskType: defaultTask, numPages: 1 });
     toast({
         title: 'New Task Started',
         description: 'Ready for a new document.',
@@ -409,7 +409,7 @@ export function ControlPanel({
                         </div>
                     ))}
 
-                    <Separator />
+                    {(filteredWorkspace.projects.length > 0 && filteredWorkspace.standaloneDocuments.length > 0) && <Separator />}
                     
                     <div className="space-y-2">
                          {filteredWorkspace.standaloneDocuments.map(doc => (
