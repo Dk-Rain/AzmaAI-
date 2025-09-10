@@ -12,9 +12,17 @@ import {
   CardTitle,
   CardFooter,
 } from '@/components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { ArrowLeft, CheckCircle2, Star } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Star, XCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 
@@ -146,9 +154,72 @@ export default function UpgradePage() {
                     </CardFooter>
                 </Card>
             </div>
+             <Card className="mt-8">
+              <CardHeader>
+                <CardTitle>Feature Comparison</CardTitle>
+                <CardDescription>
+                  See what you get with each plan at a glance.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[250px]">Feature</TableHead>
+                      <TableHead>Free Plan (Trial)</TableHead>
+                      <TableHead>StipsLite Premium</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    <TableRow>
+                      <TableCell className="font-medium">AI Words</TableCell>
+                      <TableCell>1,000 / day</TableCell>
+                      <TableCell>Unlimited</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell className="font-medium">Documents</TableCell>
+                      <TableCell>3 / day</TableCell>
+                      <TableCell>Unlimited</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell className="font-medium">Data Analysis Tools</TableCell>
+                      <TableCell className="flex items-center gap-2"><XCircle className="h-5 w-5 text-muted-foreground" /> Limited</TableCell>
+                      <TableCell className="flex items-center gap-2"><CheckCircle2 className="h-5 w-5 text-primary" /> Full Suite</TableCell>
+                    </TableRow>
+                     <TableRow>
+                      <TableCell className="font-medium">Diagram/Image Support</TableCell>
+                      <TableCell className="flex items-center gap-2"><XCircle className="h-5 w-5 text-muted-foreground" /> None</TableCell>
+                      <TableCell className="flex items-center gap-2"><CheckCircle2 className="h-5 w-5 text-primary" /> Advanced AI Diagrams</TableCell>
+                    </TableRow>
+                     <TableRow>
+                      <TableCell className="font-medium">Research Structures</TableCell>
+                      <TableCell className="flex items-center gap-2"><XCircle className="h-5 w-5 text-muted-foreground" /> Not Included</TableCell>
+                      <TableCell className="flex items-center gap-2"><CheckCircle2 className="h-5 w-5 text-primary" /> Pre-built Structures</TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell className="font-medium">Export Formats</TableCell>
+                      <TableCell>PDF, DOCX (basic only)</TableCell>
+                      <TableCell>All formats (PDF, DOCX, PPT, XLS, etc.)</TableCell>
+                    </TableRow>
+                     <TableRow>
+                      <TableCell className="font-medium">Collaboration</TableCell>
+                      <TableCell className="flex items-center gap-2"><XCircle className="h-5 w-5 text-muted-foreground" /> Single User</TableCell>
+                      <TableCell className="flex items-center gap-2"><CheckCircle2 className="h-5 w-5 text-primary" /> Multi-user Access</TableCell>
+                    </TableRow>
+                     <TableRow>
+                      <TableCell className="font-medium">Customer Support</TableCell>
+                      <TableCell>Community only</TableCell>
+                      <TableCell>Priority Email + Live Chat</TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
           </div>
         </main>
       </div>
     </div>
   );
 }
+
+    
