@@ -237,15 +237,15 @@ export function MainPage() {
                         <FileText className="mr-2 h-4 w-4"/>
                         <span>Export to .txt</span>
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleExport('docx')} disabled={!isPremium}>
+                    <DropdownMenuItem onClick={() => handleExport('docx')}>
                         <FileType className="mr-2 h-4 w-4"/>
                         <span>Export to .docx</span>
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleExport('pdf')} disabled={!isPremium}>
+                    <DropdownMenuItem onClick={() => handleExport('pdf')}>
                         <FileType className="mr-2 h-4 w-4"/>
                         <span>Export to .pdf</span>
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleExport('xls')} disabled={!isPremium}>
+                    <DropdownMenuItem onClick={() => handleExport('xls')}>
                         <FileSpreadsheet className="mr-2 h-4 w-4"/>
                         <span>Export to .csv (Excel)</span>
                     </DropdownMenuItem>
