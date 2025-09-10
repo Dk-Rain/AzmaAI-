@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { ArrowLeft, Brush, User, Globe, Bell, Mail, Smartphone } from 'lucide-react';
+import { ArrowLeft, Brush, User, Globe, Bell, Mail, Smartphone, Share2, Archive, Trash2, Database } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -152,6 +152,60 @@ export default function SettingsPage() {
                             </Select>
                         </div>
                     </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><Database /> Data Controls</CardTitle>
+                        <CardDescription>
+                            Manage your data and privacy settings.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="grid gap-6">
+                       <div className="flex items-center justify-between space-x-4">
+                          <div className="space-y-1">
+                            <h4 className="font-medium">Improve the model for everyone</h4>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                             <Switch id="improve-model-for-everyone" defaultChecked />
+                          </div>
+                        </div>
+                        <Separator />
+                         <div className="flex items-center justify-between space-x-4">
+                          <div className="space-y-1">
+                            <h4 className="font-medium">Shared links</h4>
+                          </div>
+                          <Button variant="outline">
+                            <Share2 className="mr-2 h-4 w-4" />
+                            Manage
+                           </Button>
+                        </div>
+                        <Separator />
+                         <div className="flex items-center justify-between space-x-4">
+                          <div className="space-y-1">
+                            <h4 className="font-medium">Archived chats</h4>
+                          </div>
+                          <Button variant="outline">
+                            <Archive className="mr-2 h-4 w-4" />
+                            Manage
+                           </Button>
+                        </div>
+                    </CardContent>
+                    <CardFooter className="flex-col items-start gap-4">
+                      <div className="flex items-center justify-between w-full">
+                           <h4 className="font-medium">Archive all chats</h4>
+                           <Button variant="outline">
+                            <Archive className="mr-2 h-4 w-4" />
+                            Archive all
+                           </Button>
+                      </div>
+                      <div className="flex items-center justify-between w-full">
+                           <h4 className="font-medium">Delete all chats</h4>
+                           <Button variant="destructive">
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete all
+                           </Button>
+                      </div>
+                    </CardFooter>
                 </Card>
                  <Card>
                     <CardHeader>
