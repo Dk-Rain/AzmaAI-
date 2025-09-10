@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -279,7 +280,7 @@ export function ControlPanel({
             <Button variant="outline" className="flex-1" onClick={handleNewTask}>
                 <PlusCircle /> New Task
             </Button>
-            <Button variant="outline" className="flex-1" onClick={() => generationForm.handleSubmit(onGenerate)()}>
+            <Button variant="outline" className="flex-1">
                 <FolderPlus /> Add Project
             </Button>
         </div>
