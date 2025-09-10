@@ -184,10 +184,12 @@ export default function SettingsPage() {
                           <div className="space-y-1">
                             <h4 className="font-medium">Archived chats</h4>
                           </div>
-                          <Button variant="outline">
-                            <Archive className="mr-2 h-4 w-4" />
-                            Manage
-                           </Button>
+                          <Link href="/dashboard/settings/archived">
+                            <Button variant="outline">
+                              <Archive className="mr-2 h-4 w-4" />
+                              Manage
+                            </Button>
+                          </Link>
                         </div>
                     </CardContent>
                     <CardFooter className="flex-col items-start gap-4">
