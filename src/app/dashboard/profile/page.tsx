@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, User } from 'lucide-react';
+import { ArrowLeft, User, Upload } from 'lucide-react';
 
 type UserData = {
   fullName: string;
@@ -24,6 +24,7 @@ type UserData = {
   role: string;
   phoneNumber?: string;
   username?: string;
+  photoUrl?: string;
 };
 
 export default function ProfilePage() {
@@ -31,9 +32,13 @@ export default function ProfilePage() {
   const [fullName, setFullName] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [username, setUsername] = useState('');
+  const [photoUrl, setPhotoUrl] = useState<string | undefined>(undefined);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
 
   useEffect(() => {
     try {
@@ -44,6 +49,7 @@ export default function ProfilePage() {
         setFullName(parsedData.fullName);
         setPhoneNumber(parsedData.phoneNumber || '');
         setUsername(parsedData.username || parsedData.fullName);
+        setPhotoUrl(parsedData.photoUrl);
       } else {
         router.push('/login');
       }
@@ -61,9 +67,11 @@ export default function ProfilePage() {
     // Simulate API call
     setTimeout(() => {
       try {
-        const updatedUser = { ...user, fullName, phoneNumber, username };
+        const updatedUser: UserData = { ...user, fullName, phoneNumber, username, photoUrl: photoPreview || photoUrl };
         localStorage.setItem('stipsLiteUser', JSON.stringify(updatedUser));
         setUser(updatedUser);
+        setPhotoUrl(updatedUser.photoUrl);
+        setPhotoPreview(null); // Clear preview after save
         toast({
           title: 'Profile Updated',
           description: 'Your information has been saved.',
@@ -80,6 +88,17 @@ export default function ProfilePage() {
     }, 1000);
   };
   
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPhotoPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   if (!user) {
     return null; // Or a loading spinner
   }
@@ -108,10 +127,29 @@ export default function ProfilePage() {
                         </CardHeader>
                         <CardContent className="space-y-6">
                              <div className="flex items-center gap-4">
-                                <Avatar className="h-16 w-16">
-                                    <AvatarImage src={`https://api.dicebear.com/8.x/lorelei/svg?seed=${username || user.fullName}`} />
-                                    <AvatarFallback>{user.fullName?.[0]}</AvatarFallback>
-                                </Avatar>
+                                <div className="relative">
+                                    <Avatar className="h-20 w-20">
+                                        <AvatarImage src={photoPreview || photoUrl || `https://api.dicebear.com/8.x/lorelei/svg?seed=${username || user.fullName}`} />
+                                        <AvatarFallback>{user.fullName?.[0]}</AvatarFallback>
+                                    </Avatar>
+                                    <Button
+                                        type="button"
+                                        size="icon"
+                                        variant="outline"
+                                        className="absolute bottom-0 right-0 rounded-full h-7 w-7"
+                                        onClick={() => fileInputRef.current?.click()}
+                                    >
+                                        <Upload className="h-4 w-4"/>
+                                        <span className="sr-only">Upload Photo</span>
+                                    </Button>
+                                    <Input 
+                                      type="file"
+                                      ref={fileInputRef}
+                                      className="hidden"
+                                      accept="image/*"
+                                      onChange={handlePhotoUpload}
+                                    />
+                                </div>
                                 <div className="grid gap-1">
                                     <div className="text-lg font-semibold">{user.fullName}</div>
                                     <div className="text-sm text-muted-foreground">{user.email}</div>

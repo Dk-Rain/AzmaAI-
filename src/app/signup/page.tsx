@@ -42,7 +42,7 @@ export default function SignupPage() {
         setIsLoading(false);
         // Simulate saving user data to be accessible by dashboard
         try {
-          localStorage.setItem('stipsLiteUser', JSON.stringify({ fullName, email, role, phoneNumber, username: fullName }));
+          localStorage.setItem('stipsLiteUser', JSON.stringify({ fullName, email, role, phoneNumber, username: fullName, photoUrl: '' }));
         } catch (error) {
            console.error("Could not save user to localStorage", error);
         }
