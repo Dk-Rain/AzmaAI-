@@ -79,9 +79,9 @@ export function DocumentEditor({
     'Literata': 'font-literata',
     'Lato': 'font-lato',
     'Georgia': 'font-georgia',
-    'Times New Roman': 'font-serif',
+    'Times New Roman': 'font-times',
     'Arial': 'font-sans',
-    'Calibri': 'font-sans',
+    'Calibri': 'font-calibri',
   };
 
   const paperStyles = {
