@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -22,9 +23,16 @@ import { useTheme } from 'next-themes';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
+import { useState, useEffect } from 'react';
 
 export default function SettingsPage() {
   const { setTheme, theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
@@ -51,7 +59,7 @@ export default function SettingsPage() {
                         <div className="grid gap-2">
                             <div className="font-medium">Theme</div>
                             <div className="text-sm text-muted-foreground">Select your preferred theme.</div>
-                            <div className="flex items-center gap-2">
+                            {mounted && <div className="flex items-center gap-2">
                                 <Button
                                     variant={theme === 'light' ? 'default' : 'outline'}
                                     onClick={() => setTheme('light')}
@@ -70,7 +78,7 @@ export default function SettingsPage() {
                                 >
                                     System
                                 </Button>
-                            </div>
+                            </div>}
                         </div>
                     </CardContent>
                 </Card>
