@@ -55,15 +55,7 @@ export default function LoginPage() {
               />
             </div>
             <div className="grid gap-2">
-              <div className="flex items-center">
                 <Label htmlFor="password">Password</Label>
-                <Link
-                  href="#"
-                  className="ml-auto inline-block text-sm underline"
-                >
-                  Forgot your password?
-                </Link>
-              </div>
               <Input 
                 id="password" 
                 type="password" 
@@ -75,6 +67,14 @@ export default function LoginPage() {
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? 'Logging in...' : 'Login'}
             </Button>
+            <div className="text-center text-sm">
+                <Link
+                  href="#"
+                  className="underline"
+                >
+                  Forgot your password?
+                </Link>
+            </div>
           </form>
           <div className="mt-4 text-center text-sm">
             Don&apos;t have an account?{' '}
