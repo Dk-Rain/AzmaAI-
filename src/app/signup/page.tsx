@@ -19,6 +19,7 @@ export default function SignupPage() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [role, setRole] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -41,7 +42,7 @@ export default function SignupPage() {
         setIsLoading(false);
         // Simulate saving user data to be accessible by dashboard
         try {
-          localStorage.setItem('stipsLiteUser', JSON.stringify({ fullName, email, role }));
+          localStorage.setItem('stipsLiteUser', JSON.stringify({ fullName, email, role, phoneNumber, username: fullName }));
         } catch (error) {
            console.error("Could not save user to localStorage", error);
         }
@@ -86,6 +87,16 @@ export default function SignupPage() {
                         required
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
+                    />
+                </div>
+                 <div className="grid gap-2">
+                    <Label htmlFor="phone-number">Phone Number</Label>
+                    <Input
+                        id="phone-number"
+                        type="tel"
+                        placeholder="+1 234 567 890"
+                        value={phoneNumber}
+                        onChange={(e) => setPhoneNumber(e.target.value)}
                     />
                 </div>
                 <div className="grid gap-2">

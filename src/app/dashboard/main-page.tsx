@@ -46,6 +46,7 @@ const initialContent: DocumentContent = {
 type UserData = {
   fullName: string;
   role: string;
+  username?: string;
 }
 
 export function MainPage() {
@@ -158,7 +159,7 @@ export function MainPage() {
             <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                     <Avatar className="h-10 w-10">
-                        <AvatarImage src={`https://api.dicebear.com/8.x/lorelei/svg?seed=${user?.fullName}`} alt={user?.fullName || 'User'}/>
+                        <AvatarImage src={`https://api.dicebear.com/8.x/lorelei/svg?seed=${user?.username || user?.fullName}`} alt={user?.fullName || 'User'}/>
                         <AvatarFallback>{user?.fullName?.[0]}</AvatarFallback>
                     </Avatar>
                 </Button>

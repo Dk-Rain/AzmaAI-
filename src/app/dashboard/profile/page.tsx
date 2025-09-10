@@ -22,11 +22,15 @@ type UserData = {
   fullName: string;
   email: string;
   role: string;
+  phoneNumber?: string;
+  username?: string;
 };
 
 export default function ProfilePage() {
   const [user, setUser] = useState<UserData | null>(null);
   const [fullName, setFullName] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [username, setUsername] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
@@ -38,6 +42,8 @@ export default function ProfilePage() {
         const parsedData: UserData = JSON.parse(userData);
         setUser(parsedData);
         setFullName(parsedData.fullName);
+        setPhoneNumber(parsedData.phoneNumber || '');
+        setUsername(parsedData.username || parsedData.fullName);
       } else {
         router.push('/login');
       }
@@ -55,7 +61,7 @@ export default function ProfilePage() {
     // Simulate API call
     setTimeout(() => {
       try {
-        const updatedUser = { ...user, fullName };
+        const updatedUser = { ...user, fullName, phoneNumber, username };
         localStorage.setItem('stipsLiteUser', JSON.stringify(updatedUser));
         setUser(updatedUser);
         toast({
@@ -103,7 +109,7 @@ export default function ProfilePage() {
                         <CardContent className="space-y-6">
                              <div className="flex items-center gap-4">
                                 <Avatar className="h-16 w-16">
-                                    <AvatarImage src={`https://api.dicebear.com/8.x/lorelei/svg?seed=${user.fullName}`} />
+                                    <AvatarImage src={`https://api.dicebear.com/8.x/lorelei/svg?seed=${username || user.fullName}`} />
                                     <AvatarFallback>{user.fullName?.[0]}</AvatarFallback>
                                 </Avatar>
                                 <div className="grid gap-1">
@@ -119,6 +125,27 @@ export default function ProfilePage() {
                                     value={fullName}
                                     onChange={(e) => setFullName(e.target.value)}
                                     required
+                                />
+                            </div>
+                             <div className="grid gap-2">
+                                <Label htmlFor="username">Username (Profile ID)</Label>
+                                <Input 
+                                    id="username" 
+                                    value={username}
+                                    onChange={(e) => setUsername(e.target.value)}
+                                    required
+                                />
+                                <p className="text-xs text-muted-foreground">
+                                    This will customize your profile avatar.
+                                </p>
+                            </div>
+                             <div className="grid gap-2">
+                                <Label htmlFor="phone-number">Phone Number</Label>
+                                <Input 
+                                    id="phone-number"
+                                    type="tel"
+                                    value={phoneNumber}
+                                    onChange={(e) => setPhoneNumber(e.target.value)}
                                 />
                             </div>
                             <div className="grid gap-2">
