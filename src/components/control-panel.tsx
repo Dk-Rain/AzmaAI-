@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -46,6 +47,8 @@ import { Separator } from './ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { AcademicTaskType } from '@/types/academic-task-types';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from './ui/alert-dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from './ui/dialog';
+import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 
 
 interface ControlPanelProps {
@@ -93,6 +96,8 @@ export function ControlPanel({
   const [isManagingRefs, setIsManagingRefs] = useState(false);
   const [workspace, setWorkspace] = useState<Workspace>({ projects: [], standaloneDocuments: [] });
   const [searchQuery, setSearchQuery] = useState('');
+  const [newTaskLocation, setNewTaskLocation] = useState<string>('standalone');
+  const [isNewTaskDialogOpen, setIsNewTaskDialogOpen] = useState(false);
   const { toast } = useToast();
   
   const generationForm = useForm<GenerationFormValues>({
@@ -240,7 +245,7 @@ export function ControlPanel({
     }
   }
 
-  const handleNewTask = () => {
+  const createNewDocument = (location: string) => {
     const defaultTask: AcademicTaskType = 'Research Paper';
     const format = academicTaskFormats[defaultTask];
       const sections = format
@@ -251,19 +256,44 @@ export function ControlPanel({
           title: line.substring(2).trim(),
           content: `Placeholder for ${line.substring(2).trim()}`,
         }));
-
-    setContent({
-        title: `New ${defaultTask} Title`,
+    
+    const newDocContent: DocumentContent = {
+        title: `New ${defaultTask} - ${new Date().toLocaleTimeString()}`,
         abstract: 'This is a placeholder for your abstract. Generate content to begin.',
         sections,
-    });
-    setReferences([]);
-    generationForm.reset({ topic: '', parameters: '', taskType: defaultTask, numPages: 1 });
+    };
+    const newDocItem: DocumentItem = {
+        id: new Date().toISOString(),
+        title: newDocContent.title,
+        content: newDocContent,
+        references: [],
+        timestamp: new Date().toLocaleString()
+    }
+
+    let newWorkspace = {...workspace};
+    if (location === 'standalone') {
+        newWorkspace.standaloneDocuments = [newDocItem, ...newWorkspace.standaloneDocuments];
+    } else {
+        newWorkspace.projects = newWorkspace.projects.map(p => {
+            if (p.id === location) {
+                return {...p, documents: [newDocItem, ...p.documents]};
+            }
+            return p;
+        });
+    }
+    saveWorkspace(newWorkspace);
+    loadDocument(newDocItem);
     toast({
         title: 'New Task Started',
-        description: 'Ready for a new document.',
+        description: `Created new document in ${location === 'standalone' ? 'Standalone Files' : newWorkspace.projects.find(p => p.id === location)?.name}.`,
     });
   }
+
+  const handleConfirmNewTask = () => {
+    createNewDocument(newTaskLocation);
+    setIsNewTaskDialogOpen(false); // Close dialog after confirming
+  }
+
 
   async function onGenerate(values: GenerationFormValues) {
     setIsGenerating(true);
@@ -339,9 +369,44 @@ export function ControlPanel({
 
       <div className="p-4 space-y-2 border-b">
         <div className="flex gap-2">
-            <Button variant="outline" className="flex-1" onClick={handleNewTask}>
-                <PlusCircle /> New Task
-            </Button>
+            <Dialog open={isNewTaskDialogOpen} onOpenChange={setIsNewTaskDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="flex-1">
+                    <PlusCircle /> New Task
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                  <DialogHeader>
+                      <DialogTitle>Create New Task</DialogTitle>
+                      <DialogDescription>
+                          Choose where to create your new document.
+                      </DialogDescription>
+                  </DialogHeader>
+                  <RadioGroup defaultValue="standalone" onValueChange={setNewTaskLocation}>
+                      <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="standalone" id="r-standalone" />
+                          <Label htmlFor="r-standalone">Create as a standalone file</Label>
+                      </div>
+                      <Separator className="my-2" />
+                      <p className="text-sm font-medium text-muted-foreground">Or add to a project:</p>
+                      {workspace.projects.length > 0 ? workspace.projects.map(p => (
+                         <div key={p.id} className="flex items-center space-x-2">
+                            <RadioGroupItem value={p.id} id={`r-${p.id}`} />
+                            <Label htmlFor={`r-${p.id}`}>{p.name}</Label>
+                        </div>
+                      )) : (
+                        <p className="text-sm text-muted-foreground">No projects created yet.</p>
+                      )}
+                  </RadioGroup>
+                  <div className="flex justify-end gap-2 mt-4">
+                      <DialogClose asChild>
+                          <Button variant="ghost">Cancel</Button>
+                      </DialogClose>
+                      <Button onClick={handleConfirmNewTask}>Create Document</Button>
+                  </div>
+              </DialogContent>
+            </Dialog>
+
             <Button variant="outline" className="flex-1" onClick={handleNewProject}>
                 <FolderPlus /> Add Project
             </Button>
@@ -651,3 +716,5 @@ export function ControlPanel({
     </aside>
   );
 }
+
+    
