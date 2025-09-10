@@ -43,7 +43,7 @@ export default function LandingPage() {
           <div className="container px-4 md:px-6 text-center">
             <div className="max-w-3xl mx-auto space-y-4">
               <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl font-headline">
-                From Topic to Thesis — Smarter with AzmaAI
+                From Topic to Thesis Smarter with AzmaAI
               </h1>
               <p className="max-w-2xl mx-auto text-lg text-muted-foreground">
                 Your AI-powered academic assistant that writes, formats, and cites your assignments, manuscripts, and research papers in minutes.
