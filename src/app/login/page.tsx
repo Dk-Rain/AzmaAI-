@@ -23,6 +23,13 @@ export default function LoginPage() {
     // Placeholder for auth
     setTimeout(() => {
         setIsLoading(false);
+        // Simulate saving user data to be accessible by dashboard
+        try {
+          // In a real app, you'd fetch this from your backend
+          localStorage.setItem('stipsLiteUser', JSON.stringify({ fullName: 'Demo User', email: email, role: 'Student' }));
+        } catch (error) {
+           console.error("Could not save user to localStorage", error);
+        }
         toast({ title: "Login successful!"});
         router.push('/dashboard');
     }, 1000)

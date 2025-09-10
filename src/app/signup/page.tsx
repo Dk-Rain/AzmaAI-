@@ -26,11 +26,26 @@ export default function SignupPage() {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!role) {
+      toast({
+        variant: 'destructive',
+        title: "Role is required",
+        description: "Please select your role to continue.",
+      });
+      return;
+    }
     setIsLoading(true);
     
     // Placeholder for auth
     setTimeout(() => {
         setIsLoading(false);
+        // Simulate saving user data to be accessible by dashboard
+        try {
+          localStorage.setItem('stipsLiteUser', JSON.stringify({ fullName, email, role }));
+        } catch (error) {
+           console.error("Could not save user to localStorage", error);
+        }
+
         toast({ title: "Account created successfully!" });
         router.push('/dashboard');
     }, 1000);
@@ -85,7 +100,7 @@ export default function SignupPage() {
                 </div>
                 <div className="grid gap-2">
                   <Label htmlFor="role">I am a...</Label>
-                  <Select onValueChange={setRole} defaultValue={role} required>
+                  <Select onValueChange={setRole} value={role} required>
                     <SelectTrigger id="role">
                       <SelectValue placeholder="Select your role" />
                     </SelectTrigger>

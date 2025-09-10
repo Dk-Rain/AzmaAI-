@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
-import { Download, Loader2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { Download, Loader2, User, CreditCard, LogOut, Settings } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { DocumentContent, References, StyleOptions } from '@/types';
 import { academicTaskFormats } from '@/types/academic-task-formats';
@@ -12,6 +13,16 @@ import { ControlPanel } from '@/components/control-panel';
 import { DocumentEditor } from '@/components/document-editor';
 import { Button } from '@/components/ui/button';
 import { exportDocxAction } from '@/app/actions';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+
 
 const defaultTask: AcademicTaskType = 'Research Paper';
 const format = academicTaskFormats[defaultTask];
@@ -32,6 +43,11 @@ const initialContent: DocumentContent = {
   sections,
 };
 
+type UserData = {
+  fullName: string;
+  role: string;
+}
+
 export function MainPage() {
   const [content, setContent] = useState<DocumentContent>(initialContent);
   const [references, setReferences] = useState<References>([]);
@@ -41,7 +57,26 @@ export function MainPage() {
     margin: 2.54,
   });
   const [isExporting, setIsExporting] = useState(false);
+  const [user, setUser] = useState<UserData | null>(null);
   const { toast } = useToast();
+  const router = useRouter();
+  
+  useEffect(() => {
+    // Simulate fetching user data
+    const userData = localStorage.getItem('stipsLiteUser');
+    if (userData) {
+      setUser(JSON.parse(userData));
+    } else {
+      // Redirect to login if no user data
+      router.push('/login');
+    }
+  }, [router]);
+
+  const handleLogout = () => {
+    localStorage.removeItem('stipsLiteUser');
+    toast({ title: 'Logged out successfully.' });
+    router.push('/login');
+  };
 
   const handleExport = async () => {
     setIsExporting(true);
@@ -101,13 +136,14 @@ export function MainPage() {
 
       <main className="flex-1 flex flex-col overflow-hidden">
         <header className="flex h-16 items-center gap-4 border-b bg-background px-6">
-          <h1 className="text-lg font-semibold md:text-xl truncate">
-            {content.title}
-          </h1>
+          <div className="flex-1">
+            <h1 className="text-lg font-semibold md:text-xl truncate">
+              {content.title}
+            </h1>
+          </div>
           <Button
             onClick={handleExport}
             disabled={isExporting}
-            className="ml-auto"
             size="sm"
           >
             {isExporting ? (
@@ -117,6 +153,46 @@ export function MainPage() {
             )}
             Export to .docx
           </Button>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                    <Avatar className="h-10 w-10">
+                        <AvatarImage src={`https://api.dicebear.com/8.x/lorelei/svg?seed=${user?.fullName}`} alt={user?.fullName || 'User'}/>
+                        <AvatarFallback>{user?.fullName?.[0]}</AvatarFallback>
+                    </Avatar>
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56" align="end" forceMount>
+              <DropdownMenuLabel className="font-normal">
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-medium leading-none">{user?.fullName}</p>
+                  <p className="text-xs leading-none text-muted-foreground">
+                    {user?.role}
+                  </p>
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => router.push('/dashboard/profile')}>
+                <User className="mr-2 h-4 w-4" />
+                <span>Profile</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => router.push('/dashboard/upgrade')}>
+                <CreditCard className="mr-2 h-4 w-4" />
+                <span>Upgrade Plan</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <Settings className="mr-2 h-4 w-4" />
+                <span>Settings</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleLogout}>
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Log out</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
         </header>
         <div className="flex-1 overflow-auto p-4 md:p-8">
           <DocumentEditor

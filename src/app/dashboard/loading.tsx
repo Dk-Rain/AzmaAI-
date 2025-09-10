@@ -27,8 +27,11 @@ export default function DashboardLoading() {
       </aside>
       <main className="flex-1 flex flex-col overflow-hidden">
         <header className="flex h-16 items-center gap-4 border-b bg-background px-6">
-            <Skeleton className="h-8 w-48" />
-            <Skeleton className="h-9 w-36 ml-auto" />
+            <div className="flex-1">
+                <Skeleton className="h-8 w-48" />
+            </div>
+            <Skeleton className="h-9 w-36" />
+            <Skeleton className="h-10 w-10 rounded-full" />
         </header>
         <div className="flex-1 overflow-auto p-4 md:p-8">
              <div className="max-w-4xl mx-auto bg-card p-8 rounded-lg shadow-sm">
