@@ -19,19 +19,63 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { ArrowLeft, Brush, User, Globe, Bell, Mail, Smartphone, Share2, Archive, Trash2, Database } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
+import { useToast } from '@/hooks/use-toast';
+
 
 export default function SettingsPage() {
   const { setTheme, theme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  const handleArchiveAll = () => {
+    // In a real app, you would have logic to archive all chats.
+    // For this demo, we can just show a toast.
+    toast({
+      title: 'Action Not Implemented',
+      description: 'Archiving all chats is not yet available.',
+    });
+  };
+
+  const handleDeleteAll = () => {
+    try {
+      localStorage.removeItem('stipsLite_history');
+      toast({
+        variant: 'destructive',
+        title: 'All Chats Deleted',
+        description: 'Your project history has been cleared.',
+      });
+      // You might want to refresh or redirect the user
+      // For example, reloading the page to clear the history from view
+      window.location.reload();
+    } catch (error) {
+      console.error("Failed to delete all history from localStorage", error);
+      toast({
+        variant: 'destructive',
+        title: 'Deletion Failed',
+        description: 'Could not clear your chat history.',
+      });
+    }
+  };
 
 
   return (
@@ -195,17 +239,34 @@ export default function SettingsPage() {
                     <CardFooter className="flex-col items-start gap-4">
                       <div className="flex items-center justify-between w-full">
                            <h4 className="font-medium">Archive all chats</h4>
-                           <Button variant="outline">
+                           <Button variant="outline" onClick={handleArchiveAll}>
                             <Archive className="mr-2 h-4 w-4" />
                             Archive all
                            </Button>
                       </div>
                       <div className="flex items-center justify-between w-full">
                            <h4 className="font-medium">Delete all chats</h4>
-                           <Button variant="destructive">
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete all
-                           </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="destructive">
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Delete all
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    This action cannot be undone. This will permanently delete all of
+                                    your chat history from our servers.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction onClick={handleDeleteAll}>Continue</AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                       </div>
                     </CardFooter>
                 </Card>
