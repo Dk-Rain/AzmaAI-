@@ -22,3 +22,5 @@ export const academicTaskTypes = [
     "Academic Debate Preparation",
     "Mock/ Exam Questions setup"
 ] as const;
+
+export type AcademicTaskType = (typeof academicTaskTypes)[number];

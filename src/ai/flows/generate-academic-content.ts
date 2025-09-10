@@ -11,6 +11,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 import { academicTaskTypes } from '@/types/academic-task-types';
+import { academicTaskFormats } from '@/types/academic-task-formats';
 
 
 const GenerateAcademicContentInputSchema = z.object({
@@ -54,6 +55,8 @@ according to the standard format for the specified task type.
 Task Type: {{{taskType}}}
 Topic: {{{topic}}}
 Parameters: {{{parameters}}}
+Format:
+{{{format}}}
 
 Ensure that the generated content is well-structured and academically sound.
 
@@ -68,7 +71,8 @@ const generateAcademicContentFlow = ai.defineFlow(
     outputSchema: GenerateAcademicContentOutputSchema,
   },
   async input => {
-    const {output} = await generateAcademicContentPrompt(input);
+    const format = academicTaskFormats[input.taskType];
+    const {output} = await generateAcademicContentPrompt({...input, format});
     return output!;
   }
 );
