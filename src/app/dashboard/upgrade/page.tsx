@@ -24,6 +24,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { ArrowLeft, CheckCircle2, Star, XCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useToast } from '@/hooks/use-toast';
 
 
 type UserData = {
@@ -43,6 +44,7 @@ export default function UpgradePage() {
   const [isYearly, setIsYearly] = useState(false);
   const [user, setUser] = useState<UserData | null>(null);
   const router = useRouter();
+  const { toast } = useToast();
 
   useEffect(() => {
     try {
@@ -57,6 +59,14 @@ export default function UpgradePage() {
         router.push('/login');
     }
   }, [router]);
+
+  const handleUpgrade = () => {
+    toast({
+        title: 'Redirecting to checkout...',
+        description: 'You will be redirected to complete your payment.'
+    })
+    // In a real app, you would redirect to a payment gateway like Stripe or Paystack.
+  }
 
   const currentPlan = user?.role ? pricing[user.role.toLowerCase() as keyof typeof pricing] : null;
 
@@ -130,7 +140,7 @@ export default function UpgradePage() {
                         </div>
                     </CardContent>
                     <CardFooter className="mt-auto">
-                        <Button className="w-full">Upgrade</Button>
+                        <Button className="w-full" onClick={handleUpgrade}>Upgrade</Button>
                     </CardFooter>
                 </Card>
                 <Card className="flex flex-col">
@@ -221,5 +231,3 @@ export default function UpgradePage() {
     </div>
   );
 }
-
-    
