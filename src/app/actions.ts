@@ -1,9 +1,11 @@
+
 'use server';
 
 import { generateAcademicContent } from '@/ai/flows/generate-academic-content';
 import { arrangeContentIntoAcademicFormat } from '@/ai/flows/arrange-content-into-academic-format';
 import { manageReferences } from '@/ai/flows/manage-references';
-import { exportToDocx } from '@/lib/docx-exporter';
+import { exportToDocx as buildDocx } from '@/lib/docx-exporter';
+import { Packer } from 'docx';
 import type { DocumentContent, References, StyleOptions } from '@/types';
 import type { GenerationFormValues } from '@/types';
 
@@ -132,7 +134,8 @@ export async function exportDocxAction(
   styles: StyleOptions
 ) {
   try {
-    const base64 = await exportToDocx(content, references, styles);
+    const doc = await buildDocx(content, references, styles);
+    const base64 = await Packer.toBase64(doc);
     return { data: base64, error: null };
   } catch (error) {
     console.error(error);

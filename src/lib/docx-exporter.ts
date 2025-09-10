@@ -1,3 +1,4 @@
+
 'use server';
 
 import {
@@ -151,6 +152,5 @@ export async function exportToDocx(
     ],
   });
 
-  const base64 = await Packer.toBase64(doc);
-  return base64;
+  return doc;
 }

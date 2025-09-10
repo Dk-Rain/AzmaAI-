@@ -164,32 +164,45 @@ export function MainPage() {
     }
 
     if (format === 'docx') {
-        const { data, error } = await exportDocxAction(
-          content,
-          references,
-          styles
-        );
+      try {
+        const response = await fetch('/api/generate-docx', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ content, references, styles }),
+        });
 
         setIsExporting(false);
 
-        if (error || !data) {
-          return toast({
-            variant: 'destructive',
-            title: 'Export Failed',
-            description: error || 'An unknown error occurred.',
-          });
+        if (!response.ok) {
+          throw new Error('Failed to fetch document');
         }
         
-        const link = document.createElement('a');
-        link.href = `data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,${data}`;
-        link.download = `${safeTitle}.docx`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${safeTitle}.docx`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+
         return toast({
-            title: 'Export Successful',
-            description: 'Your document has been downloaded.',
+          title: 'Export Successful',
+          description: 'Your document has been downloaded.',
         });
+
+      } catch (error) {
+        setIsExporting(false);
+        console.error('Download error:', error);
+        return toast({
+          variant: 'destructive',
+          title: 'Export Failed',
+          description: 'An unknown error occurred while generating the docx file.',
+        });
+      }
     }
   };
 
