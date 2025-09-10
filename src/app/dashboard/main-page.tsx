@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -142,6 +143,9 @@ export function MainPage() {
   };
 
   const isPremium = user?.isPremium || false;
+  
+  const displayTitle = content.title.split(' ').slice(0, 10).join(' ') + (content.title.split(' ').length > 10 ? '...' : '');
+
 
   return (
     <div className="flex h-screen w-full bg-muted/30">
@@ -157,8 +161,8 @@ export function MainPage() {
       <main className="flex-1 flex flex-col overflow-hidden">
         <header className="flex h-16 items-center gap-4 border-b bg-background px-6">
           <div className="flex-1">
-            <h1 className="text-lg font-semibold md:text-xl truncate">
-              {content.title}
+            <h1 className="text-lg font-semibold md:text-xl truncate" title={content.title}>
+              {displayTitle}
             </h1>
           </div>
           
