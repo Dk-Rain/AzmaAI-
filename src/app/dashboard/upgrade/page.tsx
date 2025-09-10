@@ -67,6 +67,10 @@ export default function UpgradePage() {
     })
     // In a real app, you would redirect to a payment gateway like Stripe or Paystack.
   }
+  
+  const handleContactSales = () => {
+    window.location.href = "mailto:sales@stipslite.com?subject=Enterprise%20Plan%20Inquiry";
+  };
 
   const currentPlan = user?.role ? pricing[user.role.toLowerCase() as keyof typeof pricing] : null;
 
@@ -160,7 +164,7 @@ export default function UpgradePage() {
                         </div>
                     </CardContent>
                      <CardFooter className="mt-auto">
-                        <Button variant="outline" className="w-full">Contact Sales</Button>
+                        <Button variant="outline" className="w-full" onClick={handleContactSales}>Contact Sales</Button>
                     </CardFooter>
                 </Card>
             </div>
