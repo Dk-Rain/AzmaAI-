@@ -29,7 +29,7 @@ export type GenerateAcademicContentInput = z.infer<
 >;
 
 const GenerateAcademicContentOutputSchema = z.object({
-  title: z.string().describe('The title of the generated academic content.'),
+  title: z.string().describe('The title of the generated academic content. It must not be more than 5 words.'),
   abstract: z.string().describe('A brief summary of the generated content.'),
   sections: z
     .array(z.object({ title: z.string(), content: z.string() }))
@@ -62,6 +62,7 @@ Parameters: {{{parameters}}}
 Format:
 {{{format}}}
 
+IMPORTANT: The title of the generated content must not be more than 5 words.
 Ensure that the generated content is well-structured, academically sound, and adheres to the specified page count.
 
 Output the title, abstract and the sections. Each section consists of a title and content.

@@ -17,15 +17,15 @@ const ArrangeContentInputSchema = z.object({
 export type ArrangeContentInput = z.infer<typeof ArrangeContentInputSchema>;
 
 const ArrangeContentOutputSchema = z.object({
-  title: z.string().describe('The title of the academic document.'),
+  title: z.string().describe('The title of the academic document, no more than 5 words.'),
   abstract: z.string().describe('A concise summary of the academic document.'),
   sections: z.array(
     z.object({
-      title: z.string().describe('The title of the section.'),
+      title: z.string().describe('The title of the section, no more than 5 words.'),
       content: z.string().describe('The content of the section.'),
       subSections: z.array(
         z.object({
-          title: z.string().describe('The title of the sub-section.'),
+          title: z.string().describe('The title of the sub-section, no more than 5 words.'),
           content: z.string().describe('The content of the sub-section.'),
         })
       ).optional().describe('The sub-sections within the section.'),
@@ -51,7 +51,8 @@ Ensure the output is a valid JSON object that conforms to the ArrangeContentOutp
 
 Considerations for structuring the content:
 
-*   The title should be concise and accurately reflect the document's topic.
+*   The title should be concise and accurately reflect the document's topic. It must not be more than 5 words.
+*   All section and sub-section titles must not be more than 5 words.
 *   The abstract should provide a brief overview of the entire document.
 *   Sections should be organized logically and cover distinct aspects of the topic.
 *   Sub-sections should provide more detailed information within each section, where relevant.
