@@ -1,6 +1,7 @@
 
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import {
@@ -23,7 +24,6 @@ import { useTheme } from 'next-themes';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { useState, useEffect } from 'react';
 
 export default function SettingsPage() {
   const { setTheme, theme } = useTheme();
@@ -123,7 +123,9 @@ export default function SettingsPage() {
                         </div>
                     </CardContent>
                     <CardFooter>
+                      <Link href="/dashboard">
                         <Button variant="outline">Manage tasks</Button>
+                      </Link>
                     </CardFooter>
                 </Card>
                 <Card>
