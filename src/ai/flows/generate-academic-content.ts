@@ -17,6 +17,7 @@ import { academicTaskFormats } from '@/types/academic-task-formats';
 const GenerateAcademicContentInputSchema = z.object({
   taskType: z.enum(academicTaskTypes).describe('The type of academic task.'),
   topic: z.string().describe('The topic of the academic content to generate.'),
+  numPages: z.coerce.number().optional().describe('The desired number of pages for the content.'),
   parameters: z
     .string().optional()
     .describe(
@@ -54,11 +55,14 @@ according to the standard format for the specified task type.
 
 Task Type: {{{taskType}}}
 Topic: {{{topic}}}
+{{#if numPages}}
+Number of Pages: {{{numPages}}}
+{{/if}}
 Parameters: {{{parameters}}}
 Format:
 {{{format}}}
 
-Ensure that the generated content is well-structured and academically sound.
+Ensure that the generated content is well-structured, academically sound, and adheres to the specified page count.
 
 Output the title, abstract and the sections. Each section consists of a title and content.
 `,

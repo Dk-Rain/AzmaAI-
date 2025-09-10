@@ -83,7 +83,7 @@ export function ControlPanel({
   
   const generationForm = useForm<GenerationFormValues>({
     resolver: zodResolver(GenerationSchema),
-    defaultValues: { topic: '', parameters: '', taskType: 'Research Paper' },
+    defaultValues: { topic: '', parameters: '', taskType: 'Research Paper', numPages: 1 },
   });
 
   const referenceForm = useForm<z.infer<typeof referenceSchema>>({
@@ -371,6 +371,19 @@ export function ControlPanel({
                                     placeholder="e.g., The Impact of AI on Climate Change"
                                     {...field}
                                 />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                         <FormField
+                            control={generationForm.control}
+                            name="numPages"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Number of Pages (Optional)</FormLabel>
+                                <FormControl>
+                                  <Input type="number" min="1" {...field} />
                                 </FormControl>
                                 <FormMessage />
                             </FormItem>

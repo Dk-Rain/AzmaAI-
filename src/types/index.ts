@@ -34,6 +34,7 @@ export type Reference = References[0];
 export const GenerationSchema = z.object({
   taskType: z.enum(academicTaskTypes),
   topic: z.string().min(1, 'Topic is required.'),
+  numPages: z.coerce.number().optional(),
   parameters: z.string().optional(),
 });
 
