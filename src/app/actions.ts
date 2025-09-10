@@ -11,7 +11,6 @@ import type { GenerationFormValues } from '@/types';
 
 function formatAsText(content: DocumentContent, references: References): string {
     let text = `Title: ${content.title}\n\n`;
-    text += `Abstract:\n${content.abstract}\n\n`;
     text += '-----------------\n\n';
 
     content.sections.forEach(section => {
@@ -42,7 +41,6 @@ function formatAsCsv(content: DocumentContent, references: References): string {
     
     let csv = 'Type,Title,Content\n';
     csv += `Title,${escapeCsv(content.title)},""\n`;
-    csv += `Abstract,${escapeCsv(content.abstract)},""\n`;
 
     content.sections.forEach(section => {
         csv += `Section,${escapeCsv(section.title)},${escapeCsv(section.content)}\n`;
@@ -91,8 +89,7 @@ export async function regenerateSectionAction(
       .map((s) => `${s.title}: ${s.content.substring(0, 200)}...`)
       .join('\n');
 
-    const parameters = `Regenerate the section titled "${sectionTitle}" for a paper on "${topic}". 
-      The abstract is: "${document.abstract}".
+    const parameters = `Regenerate the section titled "${sectionTitle}" for a paper on "${topic}".
       Other sections for context are:
       ${context}
       

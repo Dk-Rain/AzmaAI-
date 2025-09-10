@@ -64,18 +64,6 @@ export async function exportToDocx(
             spacing: { before: 200, after: 100 },
           }
         },
-         {
-          id: 'abstract',
-          name: 'Abstract',
-          basedOn: 'Default',
-          next: 'Default',
-          run: {
-            italics: true,
-          },
-           paragraph: {
-            indent: { left: 720, right: 720 }
-          }
-        },
       ],
     },
     sections: [
@@ -96,16 +84,6 @@ export async function exportToDocx(
             heading: HeadingLevel.TITLE,
             alignment: AlignmentType.CENTER,
             style: 'default',
-          }),
-          new Paragraph({ text: '' }), // Spacer
-          new Paragraph({
-            text: 'Abstract',
-            heading: HeadingLevel.HEADING_1,
-            style: 'h1',
-          }),
-          new Paragraph({
-            text: content.abstract || '',
-            style: 'abstract',
           }),
           new Paragraph({ text: '' }), // Spacer
           ...(content.sections || []).flatMap((section) => [

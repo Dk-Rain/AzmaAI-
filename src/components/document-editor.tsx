@@ -111,13 +111,6 @@ export function DocumentEditor({
     }
   }
 
-  const handleAbstractBlur = (e: React.FocusEvent<HTMLDivElement>) => {
-    const newAbstract = e.currentTarget.innerText;
-    if (newAbstract !== content.abstract) {
-        setContent(prev => ({...prev, abstract: newAbstract}));
-    }
-  }
-
   return (
     <div
       className={cn(

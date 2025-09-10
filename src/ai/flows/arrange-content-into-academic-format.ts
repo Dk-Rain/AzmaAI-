@@ -18,7 +18,6 @@ export type ArrangeContentInput = z.infer<typeof ArrangeContentInputSchema>;
 
 const ArrangeContentOutputSchema = z.object({
   title: z.string().describe('The title of the academic document, no more than 5 words.'),
-  abstract: z.string().describe('A concise summary of the academic document.'),
   sections: z.array(
     z.object({
       title: z.string().describe('The title of the section, no more than 5 words.'),
@@ -42,7 +41,7 @@ const prompt = ai.definePrompt({
   name: 'arrangeContentPrompt',
   input: {schema: ArrangeContentInputSchema},
   output: {schema: ArrangeContentOutputSchema},
-  prompt: `You are an expert in structuring academic content. Given the topic and content below, arrange the content into a well-structured academic format, including a title, abstract, sections, and sub-sections where appropriate.
+  prompt: `You are an expert in structuring academic content. Given the topic and content below, arrange the content into a well-structured academic format, including a title, sections, and sub-sections where appropriate.
 
 Topic: {{{topic}}}
 Content: {{{content}}}
@@ -53,14 +52,12 @@ Considerations for structuring the content:
 
 *   The title should be concise and accurately reflect the document's topic. It must not be more than 5 words.
 *   All section and sub-section titles must not be more than 5 words.
-*   The abstract should provide a brief overview of the entire document.
 *   Sections should be organized logically and cover distinct aspects of the topic.
 *   Sub-sections should provide more detailed information within each section, where relevant.
 
 Follow this format strictly, the section and subsection titles should be informative:
 
 Title: [Title]
-Abstract: [Abstract]
 Sections:
 [
     {
