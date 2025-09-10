@@ -1,1 +1,6 @@
-// Flows will be imported for their side effects in this file.
+import { config } from 'dotenv';
+config();
+
+import '@/ai/flows/manage-references.ts';
+import '@/ai/flows/arrange-content-into-academic-format.ts';
+import '@/ai/flows/generate-academic-content.ts';
