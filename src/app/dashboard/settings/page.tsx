@@ -58,21 +58,20 @@ export default function SettingsPage() {
 
   const handleDeleteAll = () => {
     try {
-      localStorage.removeItem('azma_history');
+      localStorage.removeItem('azma_workspace');
       toast({
         variant: 'destructive',
-        title: 'All Chats Deleted',
-        description: 'Your project history has been cleared.',
+        title: 'All Projects Deleted',
+        description: 'Your entire workspace has been cleared.',
       });
-      // You might want to refresh or redirect the user
-      // For example, reloading the page to clear the history from view
+      // Reload to reflect the cleared state
       window.location.reload();
     } catch (error) {
-      console.error("Failed to delete all history from localStorage", error);
+      console.error("Failed to delete workspace from localStorage", error);
       toast({
         variant: 'destructive',
         title: 'Deletion Failed',
-        description: 'Could not clear your chat history.',
+        description: 'Could not clear your workspace.',
       });
     }
   };
@@ -258,7 +257,7 @@ export default function SettingsPage() {
                                   <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                                   <AlertDialogDescription>
                                     This action cannot be undone. This will permanently delete all of
-                                    your chat history from our servers.
+                                    your projects and documents from your browser's storage.
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
