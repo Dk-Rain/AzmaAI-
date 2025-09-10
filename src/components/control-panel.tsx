@@ -8,7 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { 
     PenSquare, Loader2, Check, AlertCircle, Sparkles, 
-    Trash2, Search, Library, PlusCircle, FolderPlus, MountainIcon, Folder, File, GripVertical, ChevronDown, MoreHorizontal, Edit
+    Trash2, Search, Library, PlusCircle, FolderPlus, MountainIcon, Folder, File, GripVertical, ChevronDown, MoreHorizontal, Edit, FolderMove
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { DocumentContent, References, StyleOptions, FontType } from '@/types';
@@ -51,7 +51,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from './ui/dialog';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './ui/collapsible';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger, DropdownMenuPortal } from './ui/dropdown-menu';
 
 
 interface ControlPanelProps {
@@ -344,6 +344,27 @@ export function ControlPanel({
     setIsRenameDialogOpen(true);
   }
 
+  const moveDocument = (docId: string, targetProjectId: string) => {
+    let newWorkspace = { ...workspace };
+    const docToMove = newWorkspace.standaloneDocuments.find(d => d.id === docId);
+
+    if (!docToMove) return;
+
+    // Remove from standalone
+    newWorkspace.standaloneDocuments = newWorkspace.standaloneDocuments.filter(d => d.id !== docId);
+
+    // Add to target project
+    newWorkspace.projects = newWorkspace.projects.map(p => {
+        if (p.id === targetProjectId) {
+            return { ...p, documents: [docToMove, ...p.documents] };
+        }
+        return p;
+    });
+
+    saveWorkspace(newWorkspace);
+    toast({ title: 'Document Moved', description: `Moved "${docToMove.title}" to project.` });
+  };
+
 
   async function onGenerate(values: GenerationFormValues) {
     setIsGenerating(true);
@@ -591,6 +612,26 @@ export function ControlPanel({
                                         <DropdownMenuItem onClick={() => openRenameDialog({id: doc.id, name: doc.title, type: 'document'})}>
                                             <Edit className="mr-2 h-4 w-4"/> Rename
                                         </DropdownMenuItem>
+                                        
+                                        <DropdownMenuSub>
+                                            <DropdownMenuSubTrigger>
+                                                <FolderMove className="mr-2 h-4 w-4"/>
+                                                <span>Move to Project</span>
+                                            </DropdownMenuSubTrigger>
+                                            <DropdownMenuPortal>
+                                                <DropdownMenuSubContent>
+                                                    {workspace.projects.length > 0 ? workspace.projects.map(p => (
+                                                        <DropdownMenuItem key={p.id} onClick={() => moveDocument(doc.id, p.id)}>
+                                                            <Folder className="mr-2 h-4 w-4"/>
+                                                            <span>{p.name}</span>
+                                                        </DropdownMenuItem>
+                                                    )) : (
+                                                        <DropdownMenuItem disabled>No projects</DropdownMenuItem>
+                                                    )}
+                                                </DropdownMenuSubContent>
+                                            </DropdownMenuPortal>
+                                        </DropdownMenuSub>
+
                                         <AlertDialog>
                                             <AlertDialogTrigger asChild>
                                               <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
@@ -865,3 +906,5 @@ export function ControlPanel({
     </aside>
   );
 }
+
+    
