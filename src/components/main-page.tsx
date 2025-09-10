@@ -95,9 +95,9 @@ export function MainPage() {
       />
 
       <main className="flex-1 flex flex-col overflow-hidden">
-        <header className="flex h-14 items-center gap-4 border-b bg-background px-6">
-          <h1 className="text-lg font-semibold md:text-xl">
-            Document Editor
+        <header className="flex h-16 items-center gap-4 border-b bg-background px-6">
+          <h1 className="text-lg font-semibold md:text-xl truncate">
+            {content.title}
           </h1>
           <Button
             onClick={handleExport}
