@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -8,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { 
     PenSquare, Loader2, Check, AlertCircle, Sparkles, 
-    Trash2, Search, Library, PlusCircle, FolderPlus, MountainIcon, Folder, File, GripVertical, ChevronDown, MoreHorizontal, Edit, FolderInput
+    Trash2, Search, Library, PlusCircle, FolderPlus, MountainIcon, Folder, File, GripVertical, ChevronDown, MoreHorizontal, Edit, FolderInput, PenLine
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { DocumentContent, References, StyleOptions, FontType } from '@/types';
@@ -157,7 +156,6 @@ export function ControlPanel({
       
       const newContent: DocumentContent = {
         title: content.title.includes("Your Academic Paper Title") || content.title.includes("New Research Paper Title") || content.title.includes("New Assignment Title") ? `New ${taskType} Title` : content.title,
-        abstract: '',
         sections,
       };
 
@@ -270,7 +268,6 @@ export function ControlPanel({
     
     const newDocContent: DocumentContent = {
         title: `New ${defaultTask} - ${new Date().toLocaleTimeString()}`,
-        abstract: '',
         sections,
     };
     const newDocItem: DocumentItem = {

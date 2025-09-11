@@ -4,6 +4,7 @@
 import { generateAcademicContent } from '@/ai/flows/generate-academic-content';
 import { arrangeContentIntoAcademicFormat } from '@/ai/flows/arrange-content-into-academic-format';
 import { manageReferences } from '@/ai/flows/manage-references';
+import { paraphraseText } from '@/ai/flows/paraphrase-text';
 import { exportToDocx as buildDocx } from '@/lib/docx-exporter';
 import { Packer } from 'docx';
 import type { DocumentContent, References, StyleOptions } from '@/types';
@@ -109,6 +110,16 @@ export async function regenerateSectionAction(
   } catch (error) {
     console.error(error);
     return { data: null, error: 'Failed to regenerate section.' };
+  }
+}
+
+export async function paraphraseTextAction(text: string) {
+  try {
+    const result = await paraphraseText({ text });
+    return { data: result.paraphrasedText, error: null };
+  } catch (error) {
+    console.error(error);
+    return { data: null, error: 'Failed to paraphrase text.' };
   }
 }
 

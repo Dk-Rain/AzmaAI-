@@ -1,12 +1,14 @@
+
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { DocumentContent, Section, StyleOptions } from '@/types';
 import { Button } from './ui/button';
-import { Loader2, RefreshCw } from 'lucide-react';
+import { Loader2, RefreshCw, PenLine } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { regenerateSectionAction } from '@/app/actions';
+import { regenerateSectionAction, paraphraseTextAction } from '@/app/actions';
 import { cn } from '@/lib/utils';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 interface DocumentEditorProps {
   content: DocumentContent;
@@ -23,7 +25,86 @@ export function DocumentEditor({
   const [regeneratingSection, setRegeneratingSection] = useState<string | null>(
     null
   );
+  const [isParaphrasing, setIsParaphrasing] = useState(false);
+  const [selection, setSelection] = useState<Selection | null>(null);
+  const editorRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    const handleMouseUp = () => {
+      const currentSelection = window.getSelection();
+      if (currentSelection && currentSelection.toString().trim().length > 0) {
+        setSelection(currentSelection);
+      } else {
+        setSelection(null);
+      }
+    };
+
+    const editorNode = editorRef.current;
+    if(editorNode) {
+      editorNode.addEventListener('mouseup', handleMouseUp);
+      
+      // Also listen for focusout to clear selection
+      const handleFocusOut = (event: FocusEvent) => {
+        if (!editorNode.contains(event.relatedTarget as Node)) {
+          setSelection(null);
+        }
+      };
+      editorNode.addEventListener('focusout', handleFocusOut);
+
+      return () => {
+        editorNode.removeEventListener('mouseup', handleMouseUp);
+        editorNode.removeEventListener('focusout', handleFocusOut);
+      };
+    }
+  }, [editorRef]);
+
+  const handleParaphrase = async () => {
+    if (!selection) return;
+
+    const selectedText = selection.toString();
+    setIsParaphrasing(true);
+    toast({
+      title: 'Paraphrasing...',
+      description: 'The AI is rephrasing your selected text.',
+    });
+
+    const { data, error } = await paraphraseTextAction(selectedText);
+    setIsParaphrasing(false);
+
+    if (error || !data) {
+      toast({
+        variant: 'destructive',
+        title: 'Paraphrasing Failed',
+        description: error,
+      });
+    } else {
+      const range = selection.getRangeAt(0);
+      range.deleteContents();
+      range.insertNode(document.createTextNode(data));
+
+      // After replacing, we need to manually update the main content state
+      if (editorRef.current) {
+        const titleElement = editorRef.current.querySelector(
+          `[data-title="${range.startContainer.parentElement?.closest('[data-title]')?.getAttribute('data-title')}"]`
+        );
+        if (titleElement) {
+          const newContent = titleElement.textContent || '';
+          const sectionTitle = titleElement.getAttribute('data-title')!;
+          const isSub = titleElement.getAttribute('data-is-sub') === 'true';
+          const parentTitle = titleElement.getAttribute('data-parent-title');
+          updateSectionContent(sectionTitle, newContent, isSub, parentTitle || undefined);
+        }
+      }
+
+      toast({
+        title: 'Text Paraphrased',
+        description: 'Your selection has been rewritten.',
+      });
+      setSelection(null); // Clear selection after paraphrasing
+    }
+  };
+
 
   const updateSectionContent = (
     sectionTitle: string,
@@ -111,14 +192,51 @@ export function DocumentEditor({
     }
   }
 
+  const ParaphraseButton = () => {
+    if (!selection) return null;
+    
+    const range = selection.getRangeAt(0);
+    const rect = range.getBoundingClientRect();
+    const editorRect = editorRef.current?.getBoundingClientRect();
+
+    if(!editorRect) return null;
+
+    return (
+        <div 
+          className="absolute z-10"
+          style={{
+            top: rect.top - editorRect.top - 40, // Position above selection
+            left: rect.left - editorRect.left + (rect.width / 2) - 50, // Center on selection
+          }}
+        >
+            <Button
+              size="sm"
+              onClick={handleParaphrase}
+              disabled={isParaphrasing}
+              className="shadow-lg"
+            >
+              {isParaphrasing ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <PenLine className="mr-2 h-4 w-4" />
+              )}
+              Paraphrase
+            </Button>
+        </div>
+    );
+  };
+
+
   return (
     <div
+      ref={editorRef}
       className={cn(
-        "max-w-4xl mx-auto bg-card p-[var(--margin-cm)] shadow-lg rounded-lg printable-area",
+        "max-w-4xl mx-auto bg-card p-[var(--margin-cm)] shadow-lg rounded-lg printable-area relative",
         fontClassMap[styles.fontFamily]
         )}
       style={paperStyles}
     >
+      {<ParaphraseButton />}
       <h1
         className="text-3xl font-bold text-center mb-6"
         contentEditable
@@ -127,8 +245,6 @@ export function DocumentEditor({
       >
         {content.title}
       </h1>
-
-      
 
       {content.sections.map((section, index) => (
         <div key={index} className="mb-6 group relative print:break-inside-avoid">
@@ -154,6 +270,8 @@ export function DocumentEditor({
             contentEditable
             suppressContentEditableWarning
             onBlur={(e) => handleBlur(e, section)}
+            data-title={section.title}
+            data-is-sub="false"
             className="prose prose-sm dark:prose-invert max-w-none focus:outline-none focus:ring-2 focus:ring-primary rounded-md p-2 -m-2"
           >
             {section.content}
@@ -170,6 +288,9 @@ export function DocumentEditor({
                     contentEditable
                     suppressContentEditableWarning
                     onBlur={(e) => handleBlur(e, sub, true, section)}
+                    data-title={sub.title}
+                    data-is-sub="true"
+                    data-parent-title={section.title}
                     className="prose prose-sm dark:prose-invert max-w-none focus:outline-none focus:ring-2 focus:ring-primary rounded-md p-2 -m-2"
                   >
                     {sub.content}
@@ -183,3 +304,4 @@ export function DocumentEditor({
     </div>
   );
 }
+
