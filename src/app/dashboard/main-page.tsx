@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Download, Loader2, User, CreditCard, LogOut, Settings, ChevronDown, FileText, FileSpreadsheet, FileType, Menu, ScanLine } from 'lucide-react';
+import { Download, Loader2, User, CreditCard, LogOut, Settings, ChevronDown, FileText, FileSpreadsheet, FileType, Menu, ScanLine, ShieldCheck } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { DocumentContent, References, StyleOptions } from '@/types';
 import { academicTaskFormats } from '@/types/academic-task-formats';
@@ -13,7 +13,7 @@ import type { AcademicTaskType } from '@/types/academic-task-types';
 import { ControlPanel } from '@/components/control-panel';
 import { DocumentEditor } from '@/components/document-editor';
 import { Button } from '@/components/ui/button';
-import { exportDocxAction, exportTxtAction, exportCsvAction, scanAndCleanAction } from '@/app/actions';
+import { exportDocxAction, exportTxtAction, exportCsvAction, scanAndCleanAction, checkPlagiarismAction } from '@/app/actions';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,6 +26,8 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { ScanningAnimation } from '@/components/scanning-animation';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import type { CheckPlagiarismOutput } from '@/ai/flows/check-plagiarism';
 
 
 const defaultTask: AcademicTaskType = 'Research Paper';
@@ -64,6 +66,8 @@ export function MainPage() {
   });
   const [isExporting, setIsExporting] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
+  const [isCheckingPlagiarism, setIsCheckingPlagiarism] = useState(false);
+  const [plagiarismResult, setPlagiarismResult] = useState<CheckPlagiarismOutput | null>(null);
   const [user, setUser] = useState<UserData | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { toast } = useToast();
@@ -73,7 +77,7 @@ export function MainPage() {
     const userData = localStorage.getItem('azmaUser');
     if (userData) {
       const parsedUser = JSON.parse(userData);
-      // For demo purposes, let's assume 'Student' and 'Researcher' are premium for now
+      // For demo purposes, let's assume this field exists
       parsedUser.isPremium = ['Student', 'Researcher', 'Professor', 'Professional', 'Teacher'].includes(parsedUser.role);
       setUser(parsedUser);
     } else {
@@ -237,6 +241,32 @@ export function MainPage() {
     }, 2000); // Duration of the scanning animation
   };
 
+  const handlePlagiarismCheck = async () => {
+    setIsCheckingPlagiarism(true);
+    toast({
+      title: 'Checking for Plagiarism',
+      description: 'The AI is analyzing your document for originality.',
+    });
+
+    const { data, error } = await checkPlagiarismAction(content);
+    setIsCheckingPlagiarism(false);
+
+    if (error || !data) {
+      return toast({
+        variant: 'destructive',
+        title: 'Plagiarism Check Failed',
+        description: error || 'Could not analyze the document.',
+      });
+    }
+
+    setPlagiarismResult(data);
+    // The dialog trigger is now controlled by the presence of plagiarismResult
+    toast({
+      title: 'Check Complete',
+      description: data.summary,
+    });
+  };
+
   const isPremium = user?.isPremium || false;
 
   const showEditor = true;
@@ -287,6 +317,46 @@ export function MainPage() {
             </h1>
           </div>
           
+          <Dialog>
+            <DialogTrigger asChild>
+                <Button 
+                    onClick={handlePlagiarismCheck}
+                    disabled={isCheckingPlagiarism || !isPremium}
+                    size="sm"
+                    variant="outline"
+                    title={!isPremium ? "Upgrade to a premium plan to use this feature" : "Check for plagiarism"}
+                >
+                    {isCheckingPlagiarism ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                        <ShieldCheck className="mr-2 h-4 w-4" />
+                    )}
+                    Plagiarism Check
+                </Button>
+            </DialogTrigger>
+            {plagiarismResult && (
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Plagiarism Check Results</DialogTitle>
+                        <DialogDescription>{plagiarismResult.summary}</DialogDescription>
+                    </DialogHeader>
+                    <div className="mt-4 max-h-80 overflow-y-auto">
+                        {plagiarismResult.flaggedSections.length > 0 ? (
+                            plagiarismResult.flaggedSections.map((item, index) => (
+                                <div key={index} className="p-4 mb-2 border rounded-lg">
+                                    <p className="font-semibold text-sm">"{item.text}"</p>
+                                    <p className="text-xs text-muted-foreground mt-1">In section: <span className="font-medium">{item.sectionTitle}</span></p>
+                                    <p className="text-xs text-destructive mt-1">{item.explanation}</p>
+                                </div>
+                            ))
+                        ) : (
+                            <p className="text-sm text-green-600">No potential plagiarism issues were found.</p>
+                        )}
+                    </div>
+                </DialogContent>
+            )}
+           </Dialog>
+
           <Button 
             onClick={handleScan} 
             disabled={isScanning || !isPremium} 

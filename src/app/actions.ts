@@ -7,6 +7,7 @@ import { manageReferences } from '@/ai/flows/manage-references';
 import { paraphraseText } from '@/ai/flows/paraphrase-text';
 import { scanAndCleanDocument } from '@/ai/flows/scan-and-clean-document';
 import { scanTextSnippet } from '@/ai/flows/scan-text-snippet';
+import { checkPlagiarism } from '@/ai/flows/check-plagiarism';
 import { exportToDocx as buildDocx } from '@/lib/docx-exporter';
 import { Packer } from 'docx';
 import type { DocumentContent, References, StyleOptions } from '@/types';
@@ -155,6 +156,16 @@ export async function scanAndCleanAction(document: DocumentContent) {
     } catch (error) {
         console.error(error);
         return { data: null, error: 'Failed to scan and clean document.' };
+    }
+}
+
+export async function checkPlagiarismAction(document: DocumentContent) {
+    try {
+        const result = await checkPlagiarism({ document });
+        return { data: result, error: null };
+    } catch (error) {
+        console.error(error);
+        return { data: null, error: 'Failed to check for plagiarism.' };
     }
 }
 
