@@ -21,6 +21,10 @@ export async function exportToDocx(
   if (!content) {
     throw new Error('Content is not defined');
   }
+  
+  const hasReferencesSection = content.sections.some(
+    (section) => section.title.toLowerCase().includes('references')
+  );
 
   const doc = new Document({
     styles: {
@@ -109,22 +113,27 @@ export async function exportToDocx(
                   }),
                 ])
           ]),
-          new Paragraph({ text: '' }), // Spacer
-          new Paragraph({
-            text: 'References',
-            heading: HeadingLevel.HEADING_1,
-            style: 'h1',
-          }),
-          ...(references || []).map(
-            (ref) =>
-              new Paragraph({
-                text: ref.referenceText,
-                style: 'default',
-                bullet: {
-                  level: 0,
-                },
-              })
-          ),
+          // Conditionally add the references section
+          ...(!hasReferencesSection && (references || []).length > 0
+            ? [
+                new Paragraph({ text: '' }), // Spacer
+                new Paragraph({
+                  text: 'References',
+                  heading: HeadingLevel.HEADING_1,
+                  style: 'h1',
+                }),
+                ...references.map(
+                  (ref) =>
+                    new Paragraph({
+                      text: ref.referenceText,
+                      style: 'default',
+                      bullet: {
+                        level: 0,
+                      },
+                    })
+                ),
+              ]
+            : []),
         ],
       },
     ],

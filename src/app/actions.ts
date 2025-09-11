@@ -14,6 +14,10 @@ function formatAsText(content: DocumentContent, references: References): string 
     let text = `Title: ${content.title}\n\n`;
     text += '-----------------\n\n';
 
+    const hasReferencesSection = content.sections.some(
+        (section) => section.title.toLowerCase().includes('references')
+    );
+
     content.sections.forEach(section => {
         text += `## ${section.title} ##\n\n`;
         text += `${section.content}\n\n`;
@@ -26,7 +30,7 @@ function formatAsText(content: DocumentContent, references: References): string 
         }
     });
 
-    if (references.length > 0) {
+    if (!hasReferencesSection && references.length > 0) {
         text += '-----------------\n\n';
         text += '## References ##\n\n';
         references.forEach(ref => {
@@ -43,6 +47,10 @@ function formatAsCsv(content: DocumentContent, references: References): string {
     let csv = 'Type,Title,Content\n';
     csv += `Title,${escapeCsv(content.title)},""\n`;
 
+    const hasReferencesSection = content.sections.some(
+        (section) => section.title.toLowerCase().includes('references')
+    );
+
     content.sections.forEach(section => {
         csv += `Section,${escapeCsv(section.title)},${escapeCsv(section.content)}\n`;
         if (section.subSections) {
@@ -52,7 +60,7 @@ function formatAsCsv(content: DocumentContent, references: References): string {
         }
     });
 
-    if (references.length > 0) {
+    if (!hasReferencesSection && references.length > 0) {
         csv += 'Reference,"",\n'; // Add a header for references
         references.forEach(ref => {
             csv += `Reference Item,${escapeCsv(ref.referenceText)},${escapeCsv(ref.doi || '')}\n`;
