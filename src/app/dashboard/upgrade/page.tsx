@@ -180,50 +180,50 @@ export default function UpgradePage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-[250px]">Feature</TableHead>
-                      <TableHead>Free Plan (Trial)</TableHead>
-                      <TableHead>AZMA Premium</TableHead>
+                      <TableHead className="text-center">Free Plan (Trial)</TableHead>
+                      <TableHead className="text-center">AZMA Premium</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     <TableRow>
                       <TableCell className="font-medium">AI Words</TableCell>
-                      <TableCell>1,000 / day</TableCell>
-                      <TableCell>Unlimited</TableCell>
+                      <TableCell className="text-center">1,000 / day</TableCell>
+                      <TableCell className="text-center">Unlimited</TableCell>
                     </TableRow>
                     <TableRow>
                       <TableCell className="font-medium">Documents</TableCell>
-                      <TableCell>3 / day</TableCell>
-                      <TableCell>Unlimited</TableCell>
+                      <TableCell className="text-center">3 / day</TableCell>
+                      <TableCell className="text-center">Unlimited</TableCell>
                     </TableRow>
                     <TableRow>
                       <TableCell className="font-medium">Data Analysis Tools</TableCell>
-                      <TableCell className="flex items-center gap-2"><XCircle className="h-5 w-5 text-muted-foreground" /> Limited</TableCell>
-                      <TableCell className="flex items-center gap-2"><CheckCircle2 className="h-5 w-5 text-primary" /> Full Suite</TableCell>
+                      <TableCell className="flex items-center justify-center gap-2"><XCircle className="h-5 w-5 text-muted-foreground" /> Limited</TableCell>
+                      <TableCell className="flex items-center justify-center gap-2"><CheckCircle2 className="h-5 w-5 text-primary" /> Full Suite</TableCell>
                     </TableRow>
                      <TableRow>
                       <TableCell className="font-medium">Diagram/Image Support</TableCell>
-                      <TableCell className="flex items-center gap-2"><XCircle className="h-5 w-5 text-muted-foreground" /> None</TableCell>
-                      <TableCell className="flex items-center gap-2"><CheckCircle2 className="h-5 w-5 text-primary" /> Advanced AI Diagrams</TableCell>
+                      <TableCell className="flex items-center justify-center gap-2"><XCircle className="h-5 w-5 text-muted-foreground" /> None</TableCell>
+                      <TableCell className="flex items-center justify-center gap-2"><CheckCircle2 className="h-5 w-5 text-primary" /> Advanced AI Diagrams</TableCell>
                     </TableRow>
                      <TableRow>
                       <TableCell className="font-medium">Research Structures</TableCell>
-                      <TableCell className="flex items-center gap-2"><XCircle className="h-5 w-5 text-muted-foreground" /> Not Included</TableCell>
-                      <TableCell className="flex items-center gap-2"><CheckCircle2 className="h-5 w-5 text-primary" /> Pre-built Structures</TableCell>
+                      <TableCell className="flex items-center justify-center gap-2"><XCircle className="h-5 w-5 text-muted-foreground" /> Not Included</TableCell>
+                      <TableCell className="flex items-center justify-center gap-2"><CheckCircle2 className="h-5 w-5 text-primary" /> Pre-built Structures</TableCell>
                     </TableRow>
                     <TableRow>
                       <TableCell className="font-medium">Export Formats</TableCell>
-                      <TableCell>PDF, DOCX (basic only)</TableCell>
-                      <TableCell>All formats (PDF, DOCX, PPT, XLS, etc.)</TableCell>
+                      <TableCell className="text-center">PDF, DOCX (basic only)</TableCell>
+                      <TableCell className="text-center">All formats (PDF, DOCX, PPT, XLS, etc.)</TableCell>
                     </TableRow>
                      <TableRow>
                       <TableCell className="font-medium">Collaboration</TableCell>
-                      <TableCell className="flex items-center gap-2"><XCircle className="h-5 w-5 text-muted-foreground" /> Single User</TableCell>
-                      <TableCell className="flex items-center gap-2"><CheckCircle2 className="h-5 w-5 text-primary" /> Multi-user Access</TableCell>
+                      <TableCell className="flex items-center justify-center gap-2"><XCircle className="h-5 w-5 text-muted-foreground" /> Single User</TableCell>
+                      <TableCell className="flex items-center justify-center gap-2"><CheckCircle2 className="h-5 w-5 text-primary" /> Multi-user Access</TableCell>
                     </TableRow>
                      <TableRow>
                       <TableCell className="font-medium">Customer Support</TableCell>
-                      <TableCell>Community only</TableCell>
-                      <TableCell>Priority Email + Live Chat</TableCell>
+                      <TableCell className="text-center">Community only</TableCell>
+                      <TableCell className="text-center">Priority Email + Live Chat</TableCell>
                     </TableRow>
                   </TableBody>
                 </Table>
