@@ -44,14 +44,14 @@ const prompt = ai.definePrompt({
   name: 'scanAndCleanDocumentPrompt',
   input: {schema: z.object({ document: z.string() })},
   output: {schema: DocumentContentSchema},
-  prompt: `You are an expert document editor. Your task is to scan the provided document content for formatting errors, artifacts, and grammatical mistakes, and then return a cleaned version of the document.
+  prompt: `You are an expert document editor. Your task is to scan the provided document content for specific formatting artifacts and return a cleaned version of the document.
 
 You must remove any of the following characters or patterns if they appear inappropriately in the text:
 - Unwanted asterisks (*)
 - Unwanted hyphens or em-dashes (—) used as list markers instead of proper formatting.
 - Any other stray formatting markers that are not part of the academic text.
 
-Additionally, please correct any obvious grammatical errors, spelling mistakes, or typos you find.
+Do not correct grammar or spelling. Only remove the specified formatting artifacts.
 
 Return only the cleaned document content in the same JSON structure as the input. Do not add or remove any sections or change the overall structure.
 
