@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Download, Loader2, User, CreditCard, LogOut, Settings, ChevronDown, FileText, FileSpreadsheet, FileType } from 'lucide-react';
+import { Download, Loader2, User, CreditCard, LogOut, Settings, ChevronDown, FileText, FileSpreadsheet, FileType, Menu } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { DocumentContent, References, StyleOptions } from '@/types';
 import { academicTaskFormats } from '@/types/academic-task-formats';
@@ -24,6 +24,7 @@ import {
   DropdownMenuGroup,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 
 
 const defaultTask: AcademicTaskType = 'Research Paper';
@@ -62,6 +63,7 @@ export function MainPage() {
   });
   const [isExporting, setIsExporting] = useState(false);
   const [user, setUser] = useState<UserData | null>(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
   
@@ -208,17 +210,44 @@ export function MainPage() {
   
   return (
     <div className="flex h-screen w-full bg-muted/30 print:block">
-      <ControlPanel
-        setContent={setContent}
-        setReferences={setReferences}
-        styles={styles}
-        setStyles={setStyles}
-        references={references}
-        content={content}
-      />
+      <aside className="hidden md:flex w-[450px] border-r bg-background flex-col print:hidden">
+         <ControlPanel
+          setContent={setContent}
+          setReferences={setReferences}
+          styles={styles}
+          setStyles={setStyles}
+          references={references}
+          content={content}
+        />
+      </aside>
 
       <main className="flex-1 flex flex-col overflow-hidden print:overflow-visible">
         <header className="flex h-16 items-center gap-4 border-b bg-background px-6 print:hidden">
+          <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+            <SheetTrigger asChild>
+                <Button variant="outline" size="icon" className="md:hidden">
+                    <Menu className="h-5 w-5" />
+                    <span className="sr-only">Toggle Menu</span>
+                </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="p-0 w-full max-w-sm">
+                <ControlPanel
+                    setContent={(newContent) => {
+                        setContent(newContent);
+                        setIsMobileMenuOpen(false);
+                    }}
+                    setReferences={(newRefs) => {
+                        setReferences(newRefs);
+                        setIsMobileMenuOpen(false);
+                    }}
+                    styles={styles}
+                    setStyles={setStyles}
+                    references={references}
+                    content={content}
+                />
+            </SheetContent>
+          </Sheet>
+
           <div className="flex-1">
             <h1 className="text-lg font-semibold md:text-xl truncate" title={content.title}>
               {content.title}
