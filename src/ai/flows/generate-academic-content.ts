@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -63,6 +64,16 @@ Format:
 
 IMPORTANT: The title of the generated content must not be more than 5 words.
 Ensure that the generated content is well-structured, academically sound, and adheres to the specified page count.
+Any references included in the document or in a reference list must strictly follow the APA 7th edition style guide. The reference list must be alphabetized.
+
+APA 7th Edition Style Guide:
+- In-Text Citations: Use parenthetical citations like (Author, Year) or (Author & Author, Year). For three or more authors, use (Author et al., Year). For direct quotes, include a page number: (Author, Year, p. 25).
+- Reference List: Start on a new page with the bold, centered heading "References". Apply a hanging indent to each entry.
+- Capitalization: Use sentence case for the titles of articles, chapters, and books. Use title case for the titles of journals, magazines, and newspapers.
+- Italics: Italicize the titles of books and journals.
+- Book Example: Author, A. A., & Author, B. B. (Year). *Title of work*. Publisher.
+- Journal Article Example: Author, A. A., & Author, B. B. (Year). Title of article. *Title of Journal, volume*(issue), page-numbers. DOI.
+- Webpage Example: Author, A. A., & Author, B. B. (Year). *Title of specific page*. Source Name. URL.
 
 Output the title and the sections. Each section consists of a title and content.
 `,

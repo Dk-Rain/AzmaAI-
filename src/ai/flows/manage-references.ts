@@ -20,7 +20,7 @@ export type ManageReferencesInput = z.infer<typeof ManageReferencesInputSchema>;
 const ManageReferencesOutputSchema = z.object({
   references: z.array(
     z.object({
-      referenceText: z.string().describe('The generated reference text.'),
+      referenceText: z.string().describe('The generated reference text, formatted in APA 7th edition style.'),
       doi: z.string().optional().describe('The DOI of the reference, if available.'),
       isVerified: z.boolean().describe('Whether the reference was successfully verified via the CrossRef API.'),
     })
@@ -44,7 +44,6 @@ const manageReferencesFlow = ai.defineFlow(
     const references = referencesToVerify.split('\n').filter(ref => ref.trim() !== '');
 
     const verifiedReferences: ManageReferencesOutput['references'] = [];
-    const unverifiedReferences: string[] = [];
 
     for (const referenceText of references) {
       // Extract DOI from the reference text
@@ -75,7 +74,7 @@ const manageReferencesFlow = ai.defineFlow(
       });
     }
 
-    // Sort references alphabetically
+    // Sort references alphabetically by the full reference text
     verifiedReferences.sort((a, b) => a.referenceText.localeCompare(b.referenceText));
 
     return {
