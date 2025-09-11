@@ -16,8 +16,8 @@ import { academicTaskTypes } from '@/types/academic-task-types';
 import { academicTaskFormats } from '@/types/academic-task-formats';
 
 import {
-  generateContentAction,
   manageReferencesAction,
+  generateContentAction,
 } from '@/app/actions';
 
 import { Button } from '@/components/ui/button';
@@ -63,7 +63,7 @@ interface ControlPanelProps {
 }
 
 const referenceSchema = z.object({
-  numReferences: z.coerce.number().min(1).max(20),
+  referencesToVerify: z.string().min(1, 'Please paste references to verify.'),
 });
 
 type DocumentItem = {
@@ -114,7 +114,7 @@ export function ControlPanel({
 
   const referenceForm = useForm<z.infer<typeof referenceSchema>>({
     resolver: zodResolver(referenceSchema),
-    defaultValues: { numReferences: 5 },
+    defaultValues: { referencesToVerify: '' },
   });
 
   const taskType = generationForm.watch('taskType');
@@ -391,39 +391,28 @@ export function ControlPanel({
     }
   }
 
-  async function onManageReferences() {
-    const topic = generationForm.getValues('topic') || content.title;
-    if (!topic || topic.includes('Title')) {
-      toast({
-        variant: 'destructive',
-        title: 'Topic Required',
-        description: 'Please enter a topic or generate content before generating references.',
-      });
-      return;
-    }
-    const { numReferences } = referenceForm.getValues();
-
+  async function onVerifyReferences(values: z.infer<typeof referenceSchema>) {
     setIsManagingRefs(true);
     toast({
-      title: 'Generating References...',
-      description: `The AI is finding ${numReferences} references.`,
+      title: 'Verifying References...',
+      description: `The AI is checking your references against the CrossRef database.`,
     });
 
-    const { data, error } = await manageReferencesAction(topic, numReferences);
+    const { data, error } = await manageReferencesAction(values.referencesToVerify);
     setIsManagingRefs(false);
 
     if (error || !data) {
       toast({
         variant: 'destructive',
-        title: 'Reference Generation Failed',
+        title: 'Reference Verification Failed',
         description: error,
       });
     } else {
       setReferences(data);
       saveDocument(content, data);
       toast({
-        title: 'References Updated',
-        description: 'The reference list has been populated and saved.',
+        title: 'References Verified',
+        description: 'The reference list has been updated with verification status.',
       });
     }
   }
@@ -814,18 +803,21 @@ export function ControlPanel({
                     <div>
                         <Form {...referenceForm}>
                         <form
-                            onSubmit={(e) => { e.preventDefault(); onManageReferences(); }}
+                            onSubmit={referenceForm.handleSubmit(onVerifyReferences)}
                             className="space-y-4"
                         >
-                            <h3 className="text-base font-semibold">Manage References</h3>
+                            <h3 className="text-base font-semibold">Verify References</h3>
                             <FormField
                             control={referenceForm.control}
-                            name="numReferences"
+                            name="referencesToVerify"
                             render={({ field }) => (
                                 <FormItem>
-                                <FormLabel>Number to Generate</FormLabel>
+                                <FormLabel>Paste References Here</FormLabel>
                                 <FormControl>
-                                    <Input type="number" {...field} />
+                                    <Textarea 
+                                        placeholder="Paste the reference list from your document here to verify their authenticity..."
+                                        className="h-32"
+                                        {...field} />
                                 </FormControl>
                                 <FormMessage />
                                 </FormItem>
@@ -835,14 +827,14 @@ export function ControlPanel({
                             {isManagingRefs ? (
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                             ) : (
-                                <Sparkles className="mr-2 h-4 w-4" />
+                                <Check className="mr-2 h-4 w-4" />
                             )}
-                            Generate References
+                            Verify References
                             </Button>
                         </form>
                         </Form>
                         <div className="mt-4 space-y-2">
-                        <h4 className="font-semibold text-sm">Generated References</h4>
+                        <h4 className="font-semibold text-sm">Verified References</h4>
                         <ScrollArea className="h-40 w-full rounded-md border p-2">
                             {references.length > 0 ? (
                             references.map((ref, index) => (
@@ -861,7 +853,7 @@ export function ControlPanel({
                             ))
                             ) : (
                             <p className="text-muted-foreground text-sm p-2">
-                                No references generated yet.
+                                No references verified yet.
                             </p>
                             )}
                         </ScrollArea>
@@ -903,5 +895,3 @@ export function ControlPanel({
     </aside>
   );
 }
-
-    

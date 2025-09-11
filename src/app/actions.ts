@@ -124,11 +124,10 @@ export async function paraphraseTextAction(text: string) {
 }
 
 export async function manageReferencesAction(
-  topic: string,
-  numReferences: number
+  referencesToVerify: string,
 ) {
   try {
-    const result = await manageReferences({ topic, numReferences });
+    const result = await manageReferences({ referencesToVerify });
     return { data: result.references, error: null };
   } catch (error) {
     console.error(error);
