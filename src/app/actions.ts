@@ -5,6 +5,7 @@ import { generateAcademicContent } from '@/ai/flows/generate-academic-content';
 import { arrangeContentIntoAcademicFormat } from '@/ai/flows/arrange-content-into-academic-format';
 import { manageReferences } from '@/ai/flows/manage-references';
 import { paraphraseText } from '@/ai/flows/paraphrase-text';
+import { scanAndCleanDocument } from '@/ai/flows/scan-and-clean-document';
 import { exportToDocx as buildDocx } from '@/lib/docx-exporter';
 import { Packer } from 'docx';
 import type { DocumentContent, References, StyleOptions } from '@/types';
@@ -134,6 +135,16 @@ export async function paraphraseTextAction(text: string) {
     console.error(error);
     return { data: null, error: 'Failed to paraphrase text.' };
   }
+}
+
+export async function scanAndCleanAction(document: DocumentContent) {
+    try {
+        const result = await scanAndCleanDocument({ document });
+        return { data: result, error: null };
+    } catch (error) {
+        console.error(error);
+        return { data: null, error: 'Failed to scan and clean document.' };
+    }
 }
 
 export async function manageReferencesAction(

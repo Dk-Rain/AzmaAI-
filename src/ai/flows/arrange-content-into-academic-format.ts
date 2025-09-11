@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A flow to arrange generated content into a structured academic format.
@@ -41,7 +42,7 @@ const prompt = ai.definePrompt({
   name: 'arrangeContentPrompt',
   input: {schema: ArrangeContentInputSchema},
   output: {schema: ArrangeContentOutputSchema},
-  prompt: `You are an expert in structuring academic content. Given the topic and content below, arrange the content into a well-structured academic format, including a title, sections, and sub-sections where appropriate.
+  prompt: `You are an expert in structuring academic content. Given the topic and content below, arrange the content into a well-structured academic format, including a title, sections, and sub-sections where appropriate. Do NOT include an abstract.
 
 Topic: {{{topic}}}
 Content: {{{content}}}

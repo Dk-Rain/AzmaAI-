@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Download, Loader2, User, CreditCard, LogOut, Settings, ChevronDown, FileText, FileSpreadsheet, FileType, Menu } from 'lucide-react';
+import { Download, Loader2, User, CreditCard, LogOut, Settings, ChevronDown, FileText, FileSpreadsheet, FileType, Menu, ScanLine } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { DocumentContent, References, StyleOptions } from '@/types';
 import { academicTaskFormats } from '@/types/academic-task-formats';
@@ -13,7 +13,7 @@ import type { AcademicTaskType } from '@/types/academic-task-types';
 import { ControlPanel } from '@/components/control-panel';
 import { DocumentEditor } from '@/components/document-editor';
 import { Button } from '@/components/ui/button';
-import { exportDocxAction, exportTxtAction, exportCsvAction } from '@/app/actions';
+import { exportDocxAction, exportTxtAction, exportCsvAction, scanAndCleanAction } from '@/app/actions';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { ScanningAnimation } from '@/components/scanning-animation';
 
 
 const defaultTask: AcademicTaskType = 'Research Paper';
@@ -63,11 +63,11 @@ export function MainPage() {
     fontFamily: 'Literata',
   });
   const [isExporting, setIsExporting] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
   const [user, setUser] = useState<UserData | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
-  const isMobile = useIsMobile();
   
   useEffect(() => {
     const userData = localStorage.getItem('azmaUser');
@@ -207,10 +207,39 @@ export function MainPage() {
       }
     }
   };
+  
+  const handleScan = async () => {
+    setIsScanning(true);
+    toast({
+        title: 'Scanning Document',
+        description: 'Cleaning up formatting and checking for errors.',
+    });
+
+    const { data, error } = await scanAndCleanAction(content);
+
+    if (error || !data) {
+        setIsScanning(false);
+        return toast({
+            variant: 'destructive',
+            title: 'Scan Failed',
+            description: error || 'Could not clean the document.',
+        });
+    }
+
+    // Give the animation a moment to run
+    setTimeout(() => {
+        setContent(data);
+        setIsScanning(false);
+        toast({
+            title: 'Scan Complete',
+            description: 'Your document has been cleaned.',
+        });
+    }, 2000); // Duration of the scanning animation
+  };
 
   const isPremium = user?.isPremium || false;
 
-  const showEditor = isMobile ? !isMobileMenuOpen : true;
+  const showEditor = true;
   
   return (
     <div className="flex h-screen w-full bg-muted/30 print:block">
@@ -226,6 +255,7 @@ export function MainPage() {
       </aside>
 
       <main className="flex-1 flex flex-col overflow-hidden print:overflow-visible">
+        {isScanning && <ScanningAnimation />}
         <header className="flex h-16 items-center gap-4 border-b bg-background px-6 print:hidden">
           <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
             <SheetTrigger asChild>
@@ -258,6 +288,16 @@ export function MainPage() {
             </h1>
           </div>
           
+          <Button 
+            onClick={handleScan} 
+            disabled={isScanning || !isPremium} 
+            size="sm"
+            title={!isPremium ? "Upgrade to a premium plan to use this feature" : "Scan for errors"}
+          >
+            <ScanLine className="mr-2 h-4 w-4" />
+            Scan
+          </Button>
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button disabled={isExporting} size="sm">
@@ -353,5 +393,3 @@ export function MainPage() {
     </div>
   );
 }
-
-    

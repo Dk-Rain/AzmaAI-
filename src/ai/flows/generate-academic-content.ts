@@ -51,7 +51,7 @@ const generateAcademicContentPrompt = ai.definePrompt({
   output: {schema: GenerateAcademicContentOutputSchema},
   prompt: `You are an expert academic content generator. Please generate
 content for the following task type, topic, and parameters. Structure the output
-according to the standard format for the specified task type.
+according to the standard format for the specified task type. Do NOT include an abstract.
 
 Task Type: {{{taskType}}}
 Topic: {{{topic}}}
