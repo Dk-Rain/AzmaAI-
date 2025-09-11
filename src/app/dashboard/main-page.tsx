@@ -28,6 +28,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { ScanningAnimation } from '@/components/scanning-animation';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import type { CheckPlagiarismOutput } from '@/ai/flows/check-plagiarism';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 
 const defaultTask: AcademicTaskType = 'Research Paper';
@@ -316,46 +317,6 @@ export function MainPage() {
               {content.title}
             </h1>
           </div>
-          
-          <Dialog>
-            <DialogTrigger asChild>
-                <Button 
-                    onClick={handlePlagiarismCheck}
-                    disabled={isCheckingPlagiarism || !isPremium}
-                    size="sm"
-                    variant="outline"
-                    title={!isPremium ? "Upgrade to a premium plan to use this feature" : "Check for plagiarism"}
-                >
-                    {isCheckingPlagiarism ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                        <ShieldCheck className="mr-2 h-4 w-4" />
-                    )}
-                    Plagiarism Check
-                </Button>
-            </DialogTrigger>
-            {plagiarismResult && (
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Plagiarism Check Results</DialogTitle>
-                        <DialogDescription>{plagiarismResult.summary}</DialogDescription>
-                    </DialogHeader>
-                    <div className="mt-4 max-h-80 overflow-y-auto">
-                        {plagiarismResult.flaggedSections.length > 0 ? (
-                            plagiarismResult.flaggedSections.map((item, index) => (
-                                <div key={index} className="p-4 mb-2 border rounded-lg">
-                                    <p className="font-semibold text-sm">"{item.text}"</p>
-                                    <p className="text-xs text-muted-foreground mt-1">In section: <span className="font-medium">{item.sectionTitle}</span></p>
-                                    <p className="text-xs text-destructive mt-1">{item.explanation}</p>
-                                </div>
-                            ))
-                        ) : (
-                            <p className="text-sm text-green-600">No potential plagiarism issues were found.</p>
-                        )}
-                    </div>
-                </DialogContent>
-            )}
-           </Dialog>
 
           <Button 
             onClick={handleScan} 
@@ -458,6 +419,52 @@ export function MainPage() {
             setContent={setContent}
             styles={styles}
           />
+           <Dialog>
+            <TooltipProvider>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                         <DialogTrigger asChild>
+                            <Button 
+                                onClick={handlePlagiarismCheck}
+                                disabled={isCheckingPlagiarism || !isPremium}
+                                size="icon"
+                                className="rounded-full h-12 w-12 absolute bottom-8 right-8 z-10 shadow-lg"
+                            >
+                                {isCheckingPlagiarism ? (
+                                    <Loader2 className="h-6 w-6 animate-spin" />
+                                ) : (
+                                    <ShieldCheck className="h-6 w-6" />
+                                )}
+                            </Button>
+                        </DialogTrigger>
+                    </TooltipTrigger>
+                    <TooltipContent side="left">
+                        <p>{!isPremium ? "Upgrade to check for plagiarism" : "Check for plagiarism"}</p>
+                    </TooltipContent>
+                </Tooltip>
+            </TooltipProvider>
+            {plagiarismResult && (
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Plagiarism Check Results</DialogTitle>
+                        <DialogDescription>{plagiarismResult.summary}</DialogDescription>
+                    </DialogHeader>
+                    <div className="mt-4 max-h-80 overflow-y-auto">
+                        {plagiarismResult.flaggedSections.length > 0 ? (
+                            plagiarismResult.flaggedSections.map((item, index) => (
+                                <div key={index} className="p-4 mb-2 border rounded-lg">
+                                    <p className="font-semibold text-sm">"{item.text}"</p>
+                                    <p className="text-xs text-muted-foreground mt-1">In section: <span className="font-medium">{item.sectionTitle}</span></p>
+                                    <p className="text-xs text-destructive mt-1">{item.explanation}</p>
+                                </div>
+                            ))
+                        ) : (
+                            <p className="text-sm text-green-600">No potential plagiarism issues were found.</p>
+                        )}
+                    </div>
+                </DialogContent>
+            )}
+           </Dialog>
         </div>}
       </main>
     </div>
