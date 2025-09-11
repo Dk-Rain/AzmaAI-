@@ -20,7 +20,7 @@ export function ScanningAnimation() {
   }, []);
 
   return (
-    <div className="fixed inset-0 z-50 pointer-events-none overflow-hidden">
+    <div className="absolute inset-0 z-50 pointer-events-none overflow-hidden rounded-lg">
       <div
         className="absolute w-full h-1 bg-green-400/50 shadow-[0_0_20px_5px_rgba(0,255,150,0.7)]"
         style={{

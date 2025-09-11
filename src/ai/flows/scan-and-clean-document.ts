@@ -42,7 +42,7 @@ export async function scanAndCleanDocument(input: ScanAndCleanDocumentInput): Pr
 
 const prompt = ai.definePrompt({
   name: 'scanAndCleanDocumentPrompt',
-  input: {schema: ScanAndCleanDocumentInputSchema},
+  input: {schema: z.object({ document: z.string() })},
   output: {schema: DocumentContentSchema},
   prompt: `You are an expert document editor. Your task is to scan the provided document content for formatting errors, artifacts, and grammatical mistakes, and then return a cleaned version of the document.
 
@@ -57,7 +57,7 @@ Return only the cleaned document content in the same JSON structure as the input
 
 Original Document:
 \`\`\`json
-{{{jsonStringify document}}}
+{{{document}}}
 \`\`\`
 `,
 });
@@ -68,8 +68,8 @@ const scanAndCleanFlow = ai.defineFlow(
     inputSchema: ScanAndCleanDocumentInputSchema,
     outputSchema: DocumentContentSchema,
   },
-  async input => {
-    const {output} = await prompt(input);
+  async ({document}) => {
+    const {output} = await prompt({document: JSON.stringify(document)});
     return output!;
   }
 );

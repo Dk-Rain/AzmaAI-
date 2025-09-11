@@ -255,7 +255,6 @@ export function MainPage() {
       </aside>
 
       <main className="flex-1 flex flex-col overflow-hidden print:overflow-visible">
-        {isScanning && <ScanningAnimation />}
         <header className="flex h-16 items-center gap-4 border-b bg-background px-6 print:hidden">
           <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
             <SheetTrigger asChild>
@@ -382,7 +381,8 @@ export function MainPage() {
           </DropdownMenu>
 
         </header>
-        {showEditor && <div className="flex-1 overflow-auto p-4 md:p-8 print:p-0 print:overflow-visible">
+        {showEditor && <div className="flex-1 overflow-auto p-4 md:p-8 print:p-0 print:overflow-visible relative">
+          {isScanning && <ScanningAnimation />}
           <DocumentEditor
             content={content}
             setContent={setContent}
