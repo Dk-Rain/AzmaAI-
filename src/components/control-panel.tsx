@@ -483,7 +483,7 @@ export function ControlPanel({
       <Tabs defaultValue="projects" className="flex-1 flex flex-col overflow-hidden">
         <TabsList className="mx-4 mt-4">
             <TabsTrigger value="projects" className="flex-1"><Library className="mr-2"/>Projects</TabsTrigger>
-            <TabsTrigger value="edit" className="flex-1"><Sparkles className="mr-2"/>Generate & Edit</TabsTrigger>
+            <TabsTrigger value="edit" className="flex-1"><Sparkles className="mr-2"/>Generate &amp; Edit</TabsTrigger>
         </TabsList>
         <TabsContent value="projects" className="flex-1 overflow-auto">
             <ScrollArea className="h-full">
