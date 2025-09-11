@@ -9,6 +9,8 @@ import { useToast } from '@/hooks/use-toast';
 import { regenerateSectionAction, paraphraseTextAction } from '@/app/actions';
 import { cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Textarea } from './ui/textarea';
+import { Label } from './ui/label';
 
 interface DocumentEditorProps {
   content: DocumentContent;
@@ -25,6 +27,7 @@ export function DocumentEditor({
   const [regeneratingSection, setRegeneratingSection] = useState<string | null>(
     null
   );
+  const [regenerationInstructions, setRegenerationInstructions] = useState('');
   const [isParaphrasing, setIsParaphrasing] = useState(false);
   const [selection, setSelection] = useState<Selection | null>(null);
   const editorRef = useRef<HTMLDivElement>(null);
@@ -132,13 +135,21 @@ export function DocumentEditor({
   };
 
   const handleRegenerate = async (sectionTitle: string) => {
+    if (!regenerationInstructions) {
+      toast({
+        variant: 'destructive',
+        title: 'Instructions Required',
+        description: 'Please tell the AI how to change the section.',
+      });
+      return;
+    }
     setRegeneratingSection(sectionTitle);
     toast({
       title: 'Regenerating Section...',
       description: `The AI is rewriting "${sectionTitle}".`,
     });
 
-    const { data, error } = await regenerateSectionAction(content, sectionTitle);
+    const { data, error } = await regenerateSectionAction(content, sectionTitle, regenerationInstructions);
     setRegeneratingSection(null);
 
     if (error || !data) {
@@ -154,6 +165,9 @@ export function DocumentEditor({
         description: `"${sectionTitle}" has been updated.`,
       });
     }
+     // Close popover after action
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    setRegenerationInstructions('');
   };
 
   const fontClassMap = {
@@ -252,19 +266,50 @@ export function DocumentEditor({
             <h2 className="text-xl font-bold mb-2">
               {section.title}
             </h2>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="opacity-0 group-hover:opacity-100 transition-opacity print:hidden"
-              onClick={() => handleRegenerate(section.title)}
-              disabled={!!regeneratingSection}
-            >
-              {regeneratingSection === section.title ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <RefreshCw className="h-4 w-4" />
-              )}
-            </Button>
+
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    className="opacity-0 group-hover:opacity-100 transition-opacity print:hidden"
+                    disabled={!!regeneratingSection}
+                    >
+                    {regeneratingSection === section.title ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                        <PenLine className="h-4 w-4" />
+                    )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80">
+                  <div className="grid gap-4">
+                      <div className="space-y-2">
+                          <h4 className="font-medium leading-none">Edit Section</h4>
+                          <p className="text-sm text-muted-foreground">
+                              Describe the changes you want to make to this section.
+                          </p>
+                      </div>
+                       <div className="grid gap-2">
+                          <Label htmlFor="instructions">Instructions</Label>
+                          <Textarea 
+                            id="instructions"
+                            placeholder="e.g., 'Make this more concise' or 'Add three bullet points summarizing the key ideas.'"
+                            value={regenerationInstructions}
+                            onChange={(e) => setRegenerationInstructions(e.target.value)}
+                          />
+                       </div>
+                       <Button
+                         onClick={() => handleRegenerate(section.title)}
+                         disabled={regeneratingSection === section.title}
+                       >
+                         {regeneratingSection === section.title ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
+                         Regenerate
+                       </Button>
+                  </div>
+              </PopoverContent>
+            </Popover>
+
           </div>
           <div
             contentEditable
@@ -304,4 +349,3 @@ export function DocumentEditor({
     </div>
   );
 }
-

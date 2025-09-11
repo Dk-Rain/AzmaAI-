@@ -89,7 +89,8 @@ export async function generateContentAction(values: GenerationFormValues) {
 
 export async function regenerateSectionAction(
   document: DocumentContent,
-  sectionTitle: string
+  sectionTitle: string,
+  instructions: string
 ) {
   try {
     const topic = document.title;
@@ -98,11 +99,15 @@ export async function regenerateSectionAction(
       .map((s) => `${s.title}: ${s.content.substring(0, 200)}...`)
       .join('\n');
 
-    const parameters = `Regenerate the section titled "${sectionTitle}" for a paper on "${topic}".
-      Other sections for context are:
+    const parameters = `You are editing a section titled "${sectionTitle}" within a larger document on "${topic}".
+      
+      The user has provided the following instructions for this section:
+      "${instructions}"
+
+      For context, here are the other sections in the document:
       ${context}
       
-      Please provide only the new content for the "${sectionTitle}" section. Output just the text content.`;
+      Please provide only the new content for the "${sectionTitle}" section based on the user's instructions. Output just the text content.`;
 
     // Note: taskType is not directly used here as we are regenerating a small part
     const result = await generateAcademicContent({ topic, parameters, taskType: 'Assignment' });
