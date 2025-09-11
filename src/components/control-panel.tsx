@@ -688,10 +688,10 @@ export function ControlPanel({
                             name="topic"
                             render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Topic</FormLabel>
+                                <FormLabel>Topic / Questions</FormLabel>
                                 <FormControl>
-                                <Input
-                                    placeholder="e.g., The Impact of AI on Climate Change"
+                                <Textarea
+                                    placeholder="e.g., The Impact of AI on Climate Change, or paste your assignment questions here."
                                     {...field}
                                 />
                                 </FormControl>
@@ -895,3 +895,5 @@ export function ControlPanel({
     </div>
   );
 }
+
+    
