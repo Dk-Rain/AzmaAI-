@@ -197,18 +197,48 @@ export default function UpgradePage() {
                     </TableRow>
                     <TableRow>
                       <TableCell className="font-medium">Data Analysis Tools</TableCell>
-                      <TableCell className="flex items-center justify-center gap-2"><XCircle className="h-5 w-5 text-muted-foreground" /> Limited</TableCell>
-                      <TableCell className="flex items-center justify-center gap-2"><CheckCircle2 className="h-5 w-5 text-primary" /> Full Suite</TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          <XCircle className="h-5 w-5 text-muted-foreground" />
+                          <span>Limited</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          <CheckCircle2 className="h-5 w-5 text-primary" />
+                          <span>Full Suite</span>
+                        </div>
+                      </TableCell>
                     </TableRow>
                      <TableRow>
                       <TableCell className="font-medium">Diagram/Image Support</TableCell>
-                      <TableCell className="flex items-center justify-center gap-2"><XCircle className="h-5 w-5 text-muted-foreground" /> None</TableCell>
-                      <TableCell className="flex items-center justify-center gap-2"><CheckCircle2 className="h-5 w-5 text-primary" /> Advanced AI Diagrams</TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex items-center justify-center gap-2">
+                            <XCircle className="h-5 w-5 text-muted-foreground" />
+                            <span>None</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex items-center justify-center gap-2">
+                            <CheckCircle2 className="h-5 w-5 text-primary" />
+                            <span>Advanced AI Diagrams</span>
+                        </div>
+                      </TableCell>
                     </TableRow>
                      <TableRow>
                       <TableCell className="font-medium">Research Structures</TableCell>
-                      <TableCell className="flex items-center justify-center gap-2"><XCircle className="h-5 w-5 text-muted-foreground" /> Not Included</TableCell>
-                      <TableCell className="flex items-center justify-center gap-2"><CheckCircle2 className="h-5 w-5 text-primary" /> Pre-built Structures</TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex items-center justify-center gap-2">
+                            <XCircle className="h-5 w-5 text-muted-foreground" />
+                            <span>Not Included</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex items-center justify-center gap-2">
+                            <CheckCircle2 className="h-5 w-5 text-primary" />
+                            <span>Pre-built Structures</span>
+                        </div>
+                      </TableCell>
                     </TableRow>
                     <TableRow>
                       <TableCell className="font-medium">Export Formats</TableCell>
@@ -217,8 +247,18 @@ export default function UpgradePage() {
                     </TableRow>
                      <TableRow>
                       <TableCell className="font-medium">Collaboration</TableCell>
-                      <TableCell className="flex items-center justify-center gap-2"><XCircle className="h-5 w-5 text-muted-foreground" /> Single User</TableCell>
-                      <TableCell className="flex items-center justify-center gap-2"><CheckCircle2 className="h-5 w-5 text-primary" /> Multi-user Access</TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex items-center justify-center gap-2">
+                            <XCircle className="h-5 w-5 text-muted-foreground" />
+                            <span>Single User</span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex items-center justify-center gap-2">
+                            <CheckCircle2 className="h-5 w-5 text-primary" />
+                            <span>Multi-user Access</span>
+                        </div>
+                      </TableCell>
                     </TableRow>
                      <TableRow>
                       <TableCell className="font-medium">Customer Support</TableCell>
