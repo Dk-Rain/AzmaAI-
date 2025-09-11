@@ -169,7 +169,7 @@ export default function UpgradePage() {
                 </Card>
             </div>
              <Card className="mt-8">
-              <CardHeader>
+              <CardHeader className="text-center">
                 <CardTitle>Feature Comparison</CardTitle>
                 <CardDescription>
                   See what you get with each plan at a glance.
