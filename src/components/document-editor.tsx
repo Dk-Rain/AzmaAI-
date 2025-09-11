@@ -4,9 +4,9 @@
 import { useState, useEffect, useRef } from 'react';
 import type { DocumentContent, Section, StyleOptions } from '@/types';
 import { Button } from './ui/button';
-import { Loader2, RefreshCw, PenLine } from 'lucide-react';
+import { Loader2, RefreshCw, PenLine, ScanSearch } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { regenerateSectionAction, paraphraseTextAction } from '@/app/actions';
+import { regenerateSectionAction, paraphraseTextAction, scanTextSnippetAction } from '@/app/actions';
 import { cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Textarea } from './ui/textarea';
@@ -29,6 +29,7 @@ export function DocumentEditor({
   );
   const [regenerationInstructions, setRegenerationInstructions] = useState('');
   const [isParaphrasing, setIsParaphrasing] = useState(false);
+  const [isScanningSnippet, setIsScanningSnippet] = useState(false);
   const [selection, setSelection] = useState<Selection | null>(null);
   const editorRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
@@ -82,31 +83,63 @@ export function DocumentEditor({
         description: error,
       });
     } else {
-      const range = selection.getRangeAt(0);
-      range.deleteContents();
-      range.insertNode(document.createTextNode(data));
-
-      // After replacing, we need to manually update the main content state
-      if (editorRef.current) {
-        const titleElement = editorRef.current.querySelector(
-          `[data-title="${range.startContainer.parentElement?.closest('[data-title]')?.getAttribute('data-title')}"]`
-        );
-        if (titleElement) {
-          const newContent = titleElement.textContent || '';
-          const sectionTitle = titleElement.getAttribute('data-title')!;
-          const isSub = titleElement.getAttribute('data-is-sub') === 'true';
-          const parentTitle = titleElement.getAttribute('data-parent-title');
-          updateSectionContent(sectionTitle, newContent, isSub, parentTitle || undefined);
-        }
-      }
-
+      replaceSelection(data);
       toast({
         title: 'Text Paraphrased',
         description: 'Your selection has been rewritten.',
       });
-      setSelection(null); // Clear selection after paraphrasing
     }
   };
+  
+  const handleScanSnippet = async () => {
+    if (!selection) return;
+
+    const selectedText = selection.toString();
+    setIsScanningSnippet(true);
+    toast({
+      title: 'Scanning Snippet...',
+      description: 'The AI is cleaning your selected text.',
+    });
+
+    const { data, error } = await scanTextSnippetAction(selectedText);
+    setIsScanningSnippet(false);
+
+    if (error || !data) {
+        toast({
+            variant: 'destructive',
+            title: 'Scanning Failed',
+            description: error,
+        });
+    } else {
+        replaceSelection(data);
+        toast({
+            title: 'Snippet Cleaned',
+            description: 'Your selection has been fixed.',
+        });
+    }
+  };
+
+  const replaceSelection = (newText: string) => {
+    if (!selection) return;
+    const range = selection.getRangeAt(0);
+    range.deleteContents();
+    range.insertNode(document.createTextNode(newText));
+
+    // After replacing, we need to manually update the main content state
+    if (editorRef.current) {
+        const titleElement = editorRef.current.querySelector(
+        `[data-title="${range.startContainer.parentElement?.closest('[data-title]')?.getAttribute('data-title')}"]`
+        );
+        if (titleElement) {
+        const newContent = titleElement.textContent || '';
+        const sectionTitle = titleElement.getAttribute('data-title')!;
+        const isSub = titleElement.getAttribute('data-is-sub') === 'true';
+        const parentTitle = titleElement.getAttribute('data-parent-title');
+        updateSectionContent(sectionTitle, newContent, isSub, parentTitle || undefined);
+        }
+    }
+    setSelection(null); // Clear selection after action
+  }
 
 
   const updateSectionContent = (
@@ -206,7 +239,7 @@ export function DocumentEditor({
     }
   }
 
-  const ParaphraseButton = () => {
+  const SelectionToolbar = () => {
     if (!selection) return null;
     
     const range = selection.getRangeAt(0);
@@ -217,16 +250,16 @@ export function DocumentEditor({
 
     return (
         <div 
-          className="absolute z-10"
+          className="absolute z-10 flex gap-1"
           style={{
             top: rect.top - editorRect.top - 40, // Position above selection
-            left: rect.left - editorRect.left + (rect.width / 2) - 50, // Center on selection
+            left: rect.left - editorRect.left + (rect.width / 2) - 100, // Center on selection
           }}
         >
             <Button
               size="sm"
               onClick={handleParaphrase}
-              disabled={isParaphrasing}
+              disabled={isParaphrasing || isScanningSnippet}
               className="shadow-lg"
             >
               {isParaphrasing ? (
@@ -235,6 +268,20 @@ export function DocumentEditor({
                 <PenLine className="mr-2 h-4 w-4" />
               )}
               Paraphrase
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleScanSnippet}
+              disabled={isParaphrasing || isScanningSnippet}
+              className="shadow-lg bg-background"
+            >
+              {isScanningSnippet ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <ScanSearch className="mr-2 h-4 w-4" />
+              )}
+              Scan & Fix
             </Button>
         </div>
     );
@@ -250,7 +297,7 @@ export function DocumentEditor({
         )}
       style={paperStyles}
     >
-      {<ParaphraseButton />}
+      {<SelectionToolbar />}
       <h1
         className="text-3xl font-bold text-center mb-6"
         contentEditable
