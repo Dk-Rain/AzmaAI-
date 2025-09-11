@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 
 const defaultTask: AcademicTaskType = 'Research Paper';
@@ -66,6 +67,7 @@ export function MainPage() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
+  const isMobile = useIsMobile();
   
   useEffect(() => {
     const userData = localStorage.getItem('azmaUser');
@@ -207,6 +209,8 @@ export function MainPage() {
   };
 
   const isPremium = user?.isPremium || false;
+
+  const showEditor = isMobile ? !isMobileMenuOpen : true;
   
   return (
     <div className="flex h-screen w-full bg-muted/30 print:block">
@@ -338,14 +342,16 @@ export function MainPage() {
           </DropdownMenu>
 
         </header>
-        <div className="flex-1 overflow-auto p-4 md:p-8 print:p-0 print:overflow-visible">
+        {showEditor && <div className="flex-1 overflow-auto p-4 md:p-8 print:p-0 print:overflow-visible">
           <DocumentEditor
             content={content}
             setContent={setContent}
             styles={styles}
           />
-        </div>
+        </div>}
       </main>
     </div>
   );
 }
+
+    
