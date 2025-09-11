@@ -49,7 +49,6 @@ const prompt = ai.definePrompt({
 You must remove any of the following characters or patterns if they appear inappropriately in the text:
 - Unwanted asterisks (*)
 - Unwanted hyphens or em-dashes (—) used as list markers instead of proper formatting.
-- Any other stray formatting markers that are not part of the academic text.
 
 Do not correct grammar or spelling. Only remove the specified formatting artifacts.
 
