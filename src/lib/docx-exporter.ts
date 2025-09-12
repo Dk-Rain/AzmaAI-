@@ -9,6 +9,7 @@ import {
   HeadingLevel,
   AlignmentType,
   convertInchesToTwip,
+  PageBreak,
 } from 'docx';
 import type { DocumentContent, References, StyleOptions } from '@/types';
 
@@ -25,6 +26,8 @@ export async function exportToDocx(
   const hasReferencesSection = content.sections.some(
     (section) => section.title.toLowerCase().includes('references')
   );
+
+  const uniqueId = `AZMA-DOC-${Date.now()}-${content.title.slice(0,10).replace(/\s/g, '')}`;
 
   const doc = new Document({
     styles: {
@@ -83,6 +86,55 @@ export async function exportToDocx(
           },
         },
         children: [
+            // Verification Page
+            new Paragraph({
+                alignment: AlignmentType.CENTER,
+                children: [
+                    new TextRun({
+                        text: "Document Verification",
+                        bold: true,
+                        size: 28,
+                    }),
+                ],
+                spacing: { after: 400 },
+            }),
+            new Paragraph({
+                alignment: AlignmentType.CENTER,
+                children: [
+                    new TextRun({
+                        text: "Generated and Verified by AzmaAI",
+                        size: 24,
+                        italics: true,
+                    }),
+                ],
+                spacing: { after: 800 },
+            }),
+             new Paragraph({
+                alignment: AlignmentType.LEFT,
+                children: [
+                    new TextRun({
+                        text: "Document ID:",
+                        bold: true,
+                        size: 24,
+                    }),
+                ],
+                spacing: { after: 200 },
+            }),
+             new Paragraph({
+                alignment: AlignmentType.LEFT,
+                children: [
+                    new TextRun({
+                        text: uniqueId,
+                        size: 22,
+                    }),
+                ],
+                style: 'default',
+            }),
+            new Paragraph({
+                children: [new PageBreak()]
+            }),
+
+          // Original Content
           new Paragraph({
             text: content.title || '',
             heading: HeadingLevel.TITLE,
@@ -96,10 +148,10 @@ export async function exportToDocx(
               heading: HeadingLevel.HEADING_1,
               style: 'h1',
             }),
-            new Paragraph({
-              text: section.content || '',
-              style: 'default',
-            }),
+            ...Array.isArray(section.content) ? section.content.map(block => new Paragraph({
+                text: block.type === 'text' ? block.text : `[Unsupported Block: ${block.type}]`,
+                style: 'default',
+            })) : [new Paragraph({ text: '', style: 'default'})],
             ...(section.subSections || []).flatMap((subSection) => [
                   new Paragraph({ text: '' }), // Spacer
                   new Paragraph({
@@ -107,10 +159,10 @@ export async function exportToDocx(
                     heading: HeadingLevel.HEADING_2,
                     style: 'h2',
                   }),
-                  new Paragraph({
-                    text: subSection.content || '',
-                    style: 'default',
-                  }),
+                  ...Array.isArray(subSection.content) ? subSection.content.map(block => new Paragraph({
+                      text: block.type === 'text' ? block.text : `[Unsupported Block: ${block.type}]`,
+                      style: 'default',
+                  })) : [new Paragraph({ text: '', style: 'default'})],
                 ])
           ]),
           // Conditionally add the references section
