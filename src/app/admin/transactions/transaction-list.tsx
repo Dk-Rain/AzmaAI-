@@ -1,6 +1,6 @@
 
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import type { Transaction } from '@/types/admin';
 import {
   Table,
@@ -17,16 +17,18 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { MoreHorizontal, FileText, CheckCircle, XCircle, Clock, Download } from 'lucide-react';
+import { MoreHorizontal, FileText, CheckCircle, XCircle, Clock, Download, Search, FileDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
 
 export function TransactionList() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -35,7 +37,6 @@ export function TransactionList() {
       if (storedTransactions) {
         setTransactions(JSON.parse(storedTransactions));
       } else {
-        // Create some default transactions if none exist for demo purposes
         const defaultTransactions: Transaction[] = [
           { id: 'txn_1', invoiceId: 'INV001', userFullName: 'John Doe', userEmail: 'john@azma.com', amount: 2000, status: 'Success', date: new Date(2024, 5, 1).toISOString(), plan: 'Student Plan' },
           { id: 'txn_2', invoiceId: 'INV002', userFullName: 'Jane Smith', userEmail: 'jane@azma.com', amount: 8000, status: 'Success', date: new Date(2024, 5, 3).toISOString(), plan: 'Researcher Plan' },
@@ -49,6 +50,20 @@ export function TransactionList() {
       console.error("Failed to load transactions from localStorage", error);
     }
   }, []);
+
+  const filteredTransactions = useMemo(() => {
+    if (!searchQuery) {
+      return transactions;
+    }
+    const lowercasedQuery = searchQuery.toLowerCase();
+    return transactions.filter(
+      (t) =>
+        t.userFullName.toLowerCase().includes(lowercasedQuery) ||
+        t.userEmail.toLowerCase().includes(lowercasedQuery) ||
+        t.invoiceId.toLowerCase().includes(lowercasedQuery) ||
+        t.plan.toLowerCase().includes(lowercasedQuery)
+    );
+  }, [searchQuery, transactions]);
   
   const handleViewDetails = (transaction: Transaction) => {
     setSelectedTransaction(transaction);
@@ -82,6 +97,36 @@ export function TransactionList() {
     URL.revokeObjectURL(url);
     toast({ title: 'Receipt Downloaded' });
   };
+  
+  const handleExportCsv = () => {
+    const headers = ['Invoice ID', 'User Name', 'User Email', 'Plan', 'Amount', 'Status', 'Date'];
+    const rows = filteredTransactions.map(t => [
+      t.invoiceId,
+      t.userFullName,
+      t.userEmail,
+      t.plan,
+      t.amount,
+      t.status,
+      new Date(t.date).toISOString()
+    ]);
+
+    let csvContent = "data:text/csv;charset=utf-8," 
+      + headers.join(",") + "\n" 
+      + rows.map(e => e.join(",")).join("\n");
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `transactions_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    toast({
+      title: "Export Successful",
+      description: `${filteredTransactions.length} transactions have been exported to CSV.`
+    })
+  }
 
   const getStatusBadge = (status: Transaction['status']) => {
     switch(status) {
@@ -98,53 +143,71 @@ export function TransactionList() {
 
   return (
     <>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Invoice ID</TableHead>
-            <TableHead>User</TableHead>
-            <TableHead>Plan</TableHead>
-            <TableHead>Amount</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Date</TableHead>
-            <TableHead>
-              <span className="sr-only">Actions</span>
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {transactions.map((transaction) => (
-            <TableRow key={transaction.id}>
-              <TableCell className="font-medium">{transaction.invoiceId}</TableCell>
-              <TableCell>
-                  <div className="font-medium">{transaction.userFullName}</div>
-                  <div className="text-sm text-muted-foreground">{transaction.userEmail}</div>
-              </TableCell>
-              <TableCell>{transaction.plan}</TableCell>
-              <TableCell>₦{transaction.amount.toLocaleString()}</TableCell>
-              <TableCell>{getStatusBadge(transaction.status)}</TableCell>
-              <TableCell>{new Date(transaction.date).toLocaleDateString()}</TableCell>
-              <TableCell>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button aria-haspopup="true" size="icon" variant="ghost">
-                      <MoreHorizontal className="h-4 w-4" />
-                      <span className="sr-only">Toggle menu</span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                    <DropdownMenuItem onSelect={() => handleViewDetails(transaction)}>
-                      <FileText className="mr-2 h-4 w-4" />
-                      View Details
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </TableCell>
+      <div className="flex items-center gap-4 mb-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            type="search"
+            placeholder="Search by user, email, plan..."
+            className="w-full pl-8"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+        <Button onClick={handleExportCsv} variant="outline">
+          <FileDown className="mr-2 h-4 w-4" />
+          Export CSV
+        </Button>
+      </div>
+      <div className="border rounded-lg">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Invoice ID</TableHead>
+              <TableHead>User</TableHead>
+              <TableHead>Plan</TableHead>
+              <TableHead>Amount</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Date</TableHead>
+              <TableHead>
+                <span className="sr-only">Actions</span>
+              </TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {filteredTransactions.map((transaction) => (
+              <TableRow key={transaction.id}>
+                <TableCell className="font-medium">{transaction.invoiceId}</TableCell>
+                <TableCell>
+                    <div className="font-medium">{transaction.userFullName}</div>
+                    <div className="text-sm text-muted-foreground">{transaction.userEmail}</div>
+                </TableCell>
+                <TableCell>{transaction.plan}</TableCell>
+                <TableCell>₦{transaction.amount.toLocaleString()}</TableCell>
+                <TableCell>{getStatusBadge(transaction.status)}</TableCell>
+                <TableCell>{new Date(transaction.date).toLocaleDateString()}</TableCell>
+                <TableCell>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button aria-haspopup="true" size="icon" variant="ghost">
+                        <MoreHorizontal className="h-4 w-4" />
+                        <span className="sr-only">Toggle menu</span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                      <DropdownMenuItem onSelect={() => handleViewDetails(transaction)}>
+                        <FileText className="mr-2 h-4 w-4" />
+                        View Details
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
       
       <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
           <DialogContent>
