@@ -7,132 +7,147 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { School, Search, CheckCircle, XCircle, FileClock, BadgeCheck } from 'lucide-react';
+import { School, Search, CheckCircle, XCircle, FileClock, BadgeCheck, Ticket, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { DocumentHistoryEntry, PromoCode, User } from '@/types/admin';
+import { AnimatePresence, motion } from 'framer-motion';
 
-type VerificationResult = {
-    doc: DocumentHistoryEntry;
-    promo: PromoCode | null;
-    message: string;
-}
 
 export default function SealVerifyPage() {
+    const [step, setStep] = useState(1); // 1: Doc ID, 2: Promo, 3: Result
     const [docId, setDocId] = useState('');
     const [promoCode, setPromoCode] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [result, setResult] = useState<VerificationResult | 'not_found' | 'error' | null>(null);
-    const [errorMessage, setErrorMessage] = useState('');
+    
+    const [verifiedDoc, setVerifiedDoc] = useState<DocumentHistoryEntry | null>(null);
+    const [appliedPromo, setAppliedPromo] = useState<PromoCode | null>(null);
+
+    const [error, setError] = useState<string | null>(null);
+
     const { toast } = useToast();
 
-    const handleVerify = (e: React.FormEvent) => {
-        e.preventDefault();
+    // Use fake data for demonstration if localStorage is empty
+    useEffect(() => {
+        try {
+            const docHistory = localStorage.getItem('azma_document_history');
+            const allPromoCodes = localStorage.getItem('azma_promo_codes');
+            
+            if (!docHistory) {
+                localStorage.setItem('azma_document_history', JSON.stringify([{
+                    docId: 'AZMA-DOC-DEMO-12345',
+                    title: 'Sample Document for Demo',
+                    generatedAt: new Date().toISOString(),
+                    generatedBy: 'Demo System',
+                }]));
+            }
+            if (!allPromoCodes) {
+                 localStorage.setItem('azma_promo_codes', JSON.stringify([{
+                    id: 'promo-demo-1',
+                    code: 'DEMO2024',
+                    type: 'percentage',
+                    value: 25,
+                    usageLimit: 10,
+                    usedCount: 0,
+                    usagePerUser: 1,
+                    redeemedBy: [],
+                    expiresAt: null,
+                    createdAt: new Date().toISOString(),
+                    isActive: true,
+                }]));
+            }
+        } catch (e) {
+            console.error('Could not set up demo data in localStorage', e);
+        }
+    }, []);
+
+    const handleVerifyDoc = () => {
         if (!docId) {
-            toast({ variant: 'destructive', title: 'Document ID is required.' });
+            setError('Document ID is required.');
             return;
         }
-
         setIsLoading(true);
-        setResult(null);
-        setErrorMessage('');
+        setError(null);
 
         setTimeout(() => {
             try {
-                let docHistory: DocumentHistoryEntry[] = JSON.parse(localStorage.getItem('azma_document_history') || '[]');
-                let allPromoCodes: PromoCode[] = JSON.parse(localStorage.getItem('azma_promo_codes') || '[]');
-                let currentUser: User | null = JSON.parse(localStorage.getItem('azmaUser') || 'null');
-
-                // If localStorage is empty, create fake data for demonstration
-                if (docHistory.length === 0) {
-                    docHistory.push({
-                        docId: 'AZMA-DOC-DEMO-12345',
-                        title: 'Sample Document for Demo',
-                        generatedAt: new Date().toISOString(),
-                        generatedBy: 'Demo System',
-                    });
-                }
-                if (allPromoCodes.length === 0) {
-                    allPromoCodes.push({
-                        id: 'promo-demo-1',
-                        code: 'DEMO2024',
-                        type: 'percentage',
-                        value: 25,
-                        usageLimit: 10,
-                        usedCount: 0,
-                        usagePerUser: 1,
-                        redeemedBy: [],
-                        expiresAt: null,
-                        createdAt: new Date().toISOString(),
-                        isActive: true,
-                    });
-                }
-                if (!currentUser) {
-                    currentUser = {
-                        id: 'user-demo-1',
-                        fullName: 'Demo User',
-                        email: 'demo@user.com',
-                        role: 'Student',
-                        createdAt: new Date().toISOString()
-                    };
-                }
-                
+                const docHistory: DocumentHistoryEntry[] = JSON.parse(localStorage.getItem('azma_document_history') || '[]');
                 const foundDoc = docHistory.find(d => d.docId === docId);
-                if (!foundDoc) {
-                    setResult('not_found');
-                    setIsLoading(false);
-                    return;
+
+                if (foundDoc) {
+                    setVerifiedDoc(foundDoc);
+                    setStep(2);
+                    toast({ title: 'Document Verified!', description: 'The document is authentic.' });
+                } else {
+                    setError(`No document with the ID "${docId}" was found.`);
                 }
-
-                if (!promoCode) {
-                    setResult({ doc: foundDoc, promo: null, message: 'Document is authentic.' });
-                    setIsLoading(false);
-                    return;
-                }
-                
-                if (!currentUser) {
-                    setErrorMessage('You must be logged in to use a promo code.');
-                    setResult('error');
-                    setIsLoading(false);
-                    return;
-                }
-
-                const foundPromoIndex = allPromoCodes.findIndex(p => p.code.toLowerCase() === promoCode.toLowerCase());
-                if (foundPromoIndex === -1) {
-                    setErrorMessage('This promo code is invalid.');
-                    setResult('error');
-                    setIsLoading(false);
-                    return;
-                }
-
-                const promo = allPromoCodes[foundPromoIndex];
-
-                if (!promo.isActive) { setErrorMessage('This promo code is not active.'); setResult('error'); setIsLoading(false); return; }
-                if (promo.expiresAt && new Date(promo.expiresAt) < new Date()) { setErrorMessage('This promo code has expired.'); setResult('error'); setIsLoading(false); return; }
-                if (promo.usedCount >= promo.usageLimit) { setErrorMessage('This promo code has reached its usage limit.'); setResult('error'); setIsLoading(false); return; }
-
-                const userUses = promo.redeemedBy.filter(id => id === currentUser?.email).length;
-                if (userUses >= promo.usagePerUser) { setErrorMessage('You have already used this promo code the maximum number of times.'); setResult('error'); setIsLoading(false); return; }
-
-                // All checks passed, update promo code usage
-                promo.usedCount += 1;
-                promo.redeemedBy.push(currentUser.email);
-                allPromoCodes[foundPromoIndex] = promo;
-                localStorage.setItem('azma_promo_codes', JSON.stringify(allPromoCodes));
-                
-                const discountMessage = promo.type === 'percentage'
-                    ? `A ${promo.value}% discount has been applied.`
-                    : `A discount of ₦${promo.value} has been applied.`;
-
-                setResult({ doc: foundDoc, promo, message: `Promo code successfully applied! ${discountMessage}` });
-
-            } catch (err) {
-                console.error(err);
-                setResult('error');
-                setErrorMessage('An unexpected error occurred during verification.');
+            } catch (e) {
+                setError('An error occurred during verification.');
             } finally {
                 setIsLoading(false);
             }
         }, 500);
+    };
+
+    const handleApplyPromo = () => {
+        if (!promoCode) {
+            // User can skip this step
+            setStep(3);
+            return;
+        }
+
+        setIsLoading(true);
+        setError(null);
+        
+        setTimeout(() => {
+            try {
+                let allPromoCodes: PromoCode[] = JSON.parse(localStorage.getItem('azma_promo_codes') || '[]');
+                const currentUser: User | null = JSON.parse(localStorage.getItem('azmaUser') || 'null');
+
+                if (!currentUser) {
+                    setError('You must be logged in to use a promo code.');
+                    setIsLoading(false);
+                    return;
+                }
+
+                const promoIndex = allPromoCodes.findIndex(p => p.code.toLowerCase() === promoCode.toLowerCase());
+                if (promoIndex === -1) {
+                    setError('This promo code is invalid.');
+                    setIsLoading(false);
+                    return;
+                }
+
+                const promo = allPromoCodes[promoIndex];
+                if (!promo.isActive) { setError('This promo code is not active.'); setIsLoading(false); return; }
+                if (promo.expiresAt && new Date(promo.expiresAt) < new Date()) { setError('This promo code has expired.'); setIsLoading(false); return; }
+                if (promo.usedCount >= promo.usageLimit) { setError('This promo code has reached its usage limit.'); setIsLoading(false); return; }
+
+                const userUses = promo.redeemedBy.filter(email => email === currentUser.email).length;
+                if (userUses >= promo.usagePerUser) { setError('You have already used this promo code the maximum number of times.'); setIsLoading(false); return; }
+
+                // All checks passed
+                promo.usedCount += 1;
+                promo.redeemedBy.push(currentUser.email);
+                allPromoCodes[promoIndex] = promo;
+                localStorage.setItem('azma_promo_codes', JSON.stringify(allPromoCodes));
+                
+                setAppliedPromo(promo);
+                setStep(3);
+                toast({ title: 'Promo Code Applied!', description: 'Your discount has been successfully recorded.' });
+            } catch (e) {
+                setError('An unexpected error occurred while applying the code.');
+            } finally {
+                setIsLoading(false);
+            }
+        }, 500);
+    };
+    
+    const startOver = () => {
+        setStep(1);
+        setDocId('');
+        setPromoCode('');
+        setVerifiedDoc(null);
+        setAppliedPromo(null);
+        setError(null);
     }
 
     return (
@@ -159,56 +174,82 @@ export default function SealVerifyPage() {
                 <Card className="w-full max-w-lg">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2"><BadgeCheck /> SEAL Verify</CardTitle>
-                        <CardDescription>Verify the authenticity of a document generated by AzmaAI and apply a promo code.</CardDescription>
+                        <CardDescription>A multi-step process to verify your document and apply promotions.</CardDescription>
                     </CardHeader>
-                    <CardContent>
-                        <form onSubmit={handleVerify} className="space-y-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="docId">Document ID</Label>
-                                <Input id="docId" placeholder="Enter the ID from the document's first page" value={docId} onChange={e => setDocId(e.target.value)} required />
-                            </div>
-                             <div className="space-y-2">
-                                <Label htmlFor="promoCode">Promo Code (Optional)</Label>
-                                <Input id="promoCode" placeholder="Enter promo code for a discount" value={promoCode} onChange={e => setPromoCode(e.target.value)} />
-                            </div>
-                            <Button type="submit" className="w-full" disabled={isLoading}>
-                                {isLoading ? 'Verifying...' : <><Search className="mr-2 h-4 w-4" />Verify & Apply</>}
-                            </Button>
-                        </form>
+                    <CardContent className="overflow-hidden">
+                        <AnimatePresence mode="wait">
+                            {/* Step 1: Document ID */}
+                            {step === 1 && (
+                                <motion.div key="step1" initial={{ opacity: 0, x: -50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 50 }} className="space-y-4">
+                                    <h3 className="font-semibold">Step 1: Verify Document Authenticity</h3>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="docId">Document ID</Label>
+                                        <Input id="docId" placeholder="Enter the ID from the document" value={docId} onChange={e => setDocId(e.target.value)} required />
+                                    </div>
+                                    <Button onClick={handleVerifyDoc} className="w-full" disabled={isLoading}>
+                                        {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Search className="mr-2 h-4 w-4" />}
+                                        Verify Document
+                                    </Button>
+                                </motion.div>
+                            )}
 
-                        <div className="mt-6">
-                            {result === 'not_found' && (
-                                <div className="p-4 border rounded-lg bg-destructive/10 text-destructive flex items-center gap-2">
-                                    <XCircle className="h-5 w-5" />
-                                    <p>No document with the ID "{docId}" was found.</p>
-                                </div>
-                            )}
-                             {result === 'error' && (
-                                <div className="p-4 border rounded-lg bg-destructive/10 text-destructive flex items-center gap-2">
-                                    <XCircle className="h-5 w-5" />
-                                    <p>{errorMessage}</p>
-                                </div>
-                            )}
-                            {result && typeof result === 'object' && (
-                                <div className="p-4 border rounded-lg bg-green-500/10 text-green-700 dark:text-green-400 space-y-3">
-                                    <div className="flex items-center gap-2">
-                                        <CheckCircle className="h-5 w-5"/>
-                                        <h3 className="font-bold">{result.message}</h3>
+                            {/* Step 2: Promo Code */}
+                            {step === 2 && verifiedDoc && (
+                                <motion.div key="step2" initial={{ opacity: 0, x: -50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 50 }} className="space-y-4">
+                                    <div className="p-3 border rounded-lg bg-green-500/10 text-green-700 dark:text-green-400 text-sm flex items-center gap-2">
+                                        <CheckCircle className="h-5 w-5 flex-shrink-0" />
+                                        <span>Document "{verifiedDoc.title}" is authentic.</span>
                                     </div>
-                                    <div className="text-sm text-foreground pl-7 space-y-1">
-                                        <p><strong>Document Title:</strong> {result.doc.title}</p>
-                                        <p><strong>Generated At:</strong> {new Date(result.doc.generatedAt).toLocaleString()}</p>
-                                        <p><strong>Generated By:</strong> {result.doc.generatedBy}</p>
-                                        {result.promo && (
-                                            <p><strong>Promo Applied:</strong> {result.promo.code}</p>
-                                        )}
+                                    <h3 className="font-semibold">Step 2: Apply a Promotion</h3>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="promoCode">Promo Code (Optional)</Label>
+                                        <Input id="promoCode" placeholder="Enter promo code for a discount" value={promoCode} onChange={e => setPromoCode(e.target.value)} />
                                     </div>
-                                </div>
+                                    <Button onClick={handleApplyPromo} className="w-full" disabled={isLoading}>
+                                        {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Ticket className="mr-2 h-4 w-4" />}
+                                        {promoCode ? 'Apply Code' : 'Skip & Continue'}
+                                    </Button>
+                                    <Button variant="link" size="sm" onClick={() => setStep(1)}>Go Back</Button>
+                                </motion.div>
                             )}
-                        </div>
+                            
+                            {/* Step 3: Result */}
+                            {step === 3 && verifiedDoc && (
+                                <motion.div key="step3" initial={{ opacity: 0, x: -50 }} animate={{ opacity: 1, x: 0 }} className="space-y-4 text-center">
+                                    <CheckCircle className="h-16 w-16 text-green-500 mx-auto" />
+                                    <h3 className="text-xl font-bold">Verification Complete!</h3>
+                                    <div className="p-4 border rounded-lg text-left text-sm space-y-2 bg-muted/50">
+                                       <p><strong>Document ID:</strong> {verifiedDoc.docId}</p>
+                                       <p><strong>Title:</strong> {verifiedDoc.title}</p>
+                                       <p><strong>Generated At:</strong> {new Date(verifiedDoc.generatedAt).toLocaleString()}</p>
+                                    </div>
+                                    {appliedPromo && (
+                                        <div className="p-4 border rounded-lg text-left text-sm space-y-2 bg-blue-500/10 text-blue-700 dark:text-blue-400">
+                                            <p className="font-bold">Promotion Applied: {appliedPromo.code}</p>
+                                            <p>
+                                                You have received a discount of {appliedPromo.type === 'percentage' ? `${appliedPromo.value}%` : `₦${appliedPromo.value}`}.
+                                            </p>
+                                        </div>
+                                    )}
+                                    <Button onClick={startOver} className="w-full">
+                                        Verify Another Document
+                                    </Button>
+                                </motion.div>
+                            )}
+
+                        </AnimatePresence>
+                        
+                        {error && (
+                            <div className="mt-4 p-3 border rounded-lg bg-destructive/10 text-destructive text-sm flex items-center gap-2">
+                                <XCircle className="h-5 w-5" />
+                                <span>{error}</span>
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
             </main>
         </div>
     );
 }
+
+    
