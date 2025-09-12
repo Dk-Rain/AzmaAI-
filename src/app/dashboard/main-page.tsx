@@ -222,8 +222,8 @@ export function MainPage() {
 
     const { data, error } = await scanAndCleanAction(content);
 
+    setIsScanning(false);
     if (error || !data) {
-        setIsScanning(false);
         return toast({
             variant: 'destructive',
             title: 'Scan Failed',
@@ -231,15 +231,11 @@ export function MainPage() {
         });
     }
 
-    // Give the animation a moment to run
-    setTimeout(() => {
-        setContent(data);
-        setIsScanning(false);
-        toast({
-            title: 'Scan Complete',
-            description: 'Your document has been cleaned.',
-        });
-    }, 2000); // Duration of the scanning animation
+    setContent(data);
+    toast({
+        title: 'Scan Complete',
+        description: 'Your document has been cleaned.',
+    });
   };
 
   const handlePlagiarismCheck = async () => {
@@ -470,3 +466,5 @@ export function MainPage() {
     </div>
   );
 }
+
+    
