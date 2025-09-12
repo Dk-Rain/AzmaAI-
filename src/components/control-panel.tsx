@@ -133,10 +133,11 @@ export function ControlPanel({
         console.error("Failed to save workspace to localStorage", error);
     }
   }
-  
-  useEffect(() => {
-    if (taskType) {
-      const format = academicTaskFormats[taskType as AcademicTaskType];
+
+  const handleTaskTypeChange = (newTaskType: AcademicTaskType) => {
+      generationForm.setValue('taskType', newTaskType);
+      
+      const format = academicTaskFormats[newTaskType];
       const sections = format
         .split('\n')
         .map(line => line.trim())
@@ -147,13 +148,12 @@ export function ControlPanel({
         }));
       
       const newContent: DocumentContent = {
-        title: content.title.includes("Your Academic Paper Title") || content.title.includes("New Research Paper Title") || content.title.includes("New Assignment Title") ? `New ${taskType} Title` : content.title,
+        title: content.title.includes("Your Academic Paper Title") || content.title.includes("New Research Paper Title") || content.title.includes("New Assignment Title") || content.title.includes('New') ? `New ${newTaskType} Title` : content.title,
         sections,
       };
 
       setContent(newContent);
-    }
-  }, [taskType, setContent, content]);
+  }
   
 
   const filteredWorkspace = useMemo(() => {
@@ -634,7 +634,7 @@ export function ControlPanel({
                             render={({ field }) => (
                             <FormItem>
                                 <FormLabel>Task Type</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <Select onValueChange={(value) => handleTaskTypeChange(value as AcademicTaskType)} defaultValue={field.value}>
                                 <FormControl>
                                     <SelectTrigger>
                                     <SelectValue placeholder="Select a task type" />
@@ -801,5 +801,7 @@ export function ControlPanel({
     </div>
   );
 }
+
+    
 
     
