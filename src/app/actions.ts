@@ -4,13 +4,12 @@
 import { generateAcademicContent } from '@/ai/flows/generate-academic-content';
 
 import { paraphraseText } from '@/ai/flows/paraphrase-text';
-import { scanAndCleanDocument } from '@/ai/flows/scan-and-clean-document';
 import { scanTextSnippet } from '@/ai/flows/scan-text-snippet';
 import { checkPlagiarism } from '@/ai/flows/check-plagiarism';
 import { verifyReferences } from '@/ai/flows/verify-references';
 import { exportToDocx as buildDocx } from '@/lib/docx-exporter';
 import { Packer } from 'docx';
-import type { DocumentContent, References, StyleOptions } from '@/types';
+import type { DocumentContent, References, StyleOptions, Section, ContentBlock } from '@/types';
 import type { GenerationFormValues } from '@/types';
 
 function formatAsText(content: DocumentContent, references: References): string {
@@ -91,10 +90,10 @@ export async function generateContentAction(values: GenerationFormValues) {
     const referencesSection = generatedContent.sections.find(s => s.title.toLowerCase() === 'references');
     const references: References = referencesSection ? referencesSection.content.map(c => {
         if (c.type === 'text') {
-            return { referenceText: c.text, isVerified: false }; // We can't verify here, but we can format
+            return { referenceText: c.text, isVerified: false, verificationNotes: '' }; // We can't verify here, but we can format
         }
         return null;
-    }).filter((r): r is { referenceText: string; isVerified: boolean; } => r !== null) : [];
+    }).filter((r): r is { referenceText: string; isVerified: boolean; verificationNotes: string } => r !== null) : [];
 
     return { data: { content: generatedContent, references }, error: null };
   } catch (error) {
@@ -163,10 +162,34 @@ export async function scanTextSnippetAction(text: string) {
     }
 }
 
+async function cleanContentBlock(block: ContentBlock): Promise<ContentBlock> {
+    if (block.type === 'text' && block.text.trim()) {
+        const result = await scanTextSnippet({ text: block.text });
+        return { ...block, text: result.cleanedText };
+    }
+    return block;
+}
+
 export async function scanAndCleanAction(document: DocumentContent) {
     try {
-        const result = await scanAndCleanDocument({ document });
-        return { data: result, error: null };
+        const newSections: Section[] = await Promise.all(
+            document.sections.map(async (section) => {
+                const cleanedContent = await Promise.all(section.content.map(cleanContentBlock));
+                
+                const cleanedSubSections = section.subSections ? await Promise.all(
+                    section.subSections.map(async (subSection) => {
+                        const cleanedSubContent = await Promise.all(subSection.content.map(cleanContentBlock));
+                        return { ...subSection, content: cleanedSubContent };
+                    })
+                ) : undefined;
+
+                return { ...section, content: cleanedContent, subSections: cleanedSubSections };
+            })
+        );
+        
+        const newDocument: DocumentContent = { ...document, sections: newSections };
+        return { data: newDocument, error: null };
+
     } catch (error) {
         console.error(error);
         return { data: null, error: 'Failed to scan and clean document.' };
