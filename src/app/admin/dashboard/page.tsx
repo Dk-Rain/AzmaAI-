@@ -34,10 +34,6 @@ export default function AdminDashboard() {
       label: "Revenue",
       color: "hsl(var(--chart-1))",
     },
-    expenses: {
-      label: "Expenses",
-      color: "hsl(var(--chart-2))",
-    },
   } satisfies ChartConfig
 
   const portfolioChartConfig = {
@@ -72,10 +68,10 @@ export default function AdminDashboard() {
         </CardContent>
       </Card>
 
-      {/* Revenue vs Expenses Chart */}
+      {/* Revenue Chart */}
       <Card>
         <CardContent className="p-4">
-          <h3 className="font-semibold mb-2">Revenue vs Expenses</h3>
+          <h3 className="font-semibold mb-2">Revenue</h3>
            <ChartContainer config={revenueChartConfig} className="min-h-[250px] w-full">
             <BarChart data={revenueData} accessibilityLayer>
               <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} />
@@ -83,7 +79,6 @@ export default function AdminDashboard() {
               <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
               <Legend />
               <Bar dataKey="revenue" fill="var(--color-revenue)" radius={4} />
-              <Bar dataKey="expenses" fill="var(--color-expenses)" radius={4} />
             </BarChart>
           </ChartContainer>
         </CardContent>
