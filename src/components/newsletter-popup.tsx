@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Megaphone, X, Gift, Info, AlertTriangle, Wrench } from 'lucide-react';
 import { Badge } from './ui/badge';
 import { cn } from '@/lib/utils';
+import Image from 'next/image';
 
 const fallbackAnnouncement: Announcement = {
   id: 'fallback-1',
@@ -95,13 +96,18 @@ export function NewsletterPopup() {
             <Button 
                 variant="ghost" 
                 size="icon" 
-                className="absolute top-2 right-2 h-7 w-7"
+                className="absolute top-2 right-2 h-7 w-7 z-10"
                 onClick={() => setStatus('minimized')}
             >
                 <X />
             </Button>
-            <CardHeader className="flex flex-col items-center text-center">
-                {getIcon(announcement.type)}
+            {announcement.imageUrl && (
+              <div className="relative w-full h-48">
+                <Image src={announcement.imageUrl} alt={announcement.title} layout="fill" objectFit="cover" className="rounded-t-lg" />
+              </div>
+            )}
+            <CardHeader className="flex flex-col items-center text-center pt-6">
+                {!announcement.imageUrl && getIcon(announcement.type)}
                 <CardTitle>{announcement.title}</CardTitle>
                 <div className="flex gap-2">
                     <Badge variant="secondary">{announcement.audience}</Badge>

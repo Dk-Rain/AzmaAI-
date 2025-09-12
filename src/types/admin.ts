@@ -52,4 +52,5 @@ export type Announcement = {
     audience: 'All Users' | 'Students' | 'Professors' | 'Teachers' | 'Researchers' | 'Professionals';
     createdAt: string;
     status: 'Sent' | 'Draft';
+    imageUrl?: string;
 };

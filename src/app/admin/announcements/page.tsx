@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { Announcement } from '@/types/admin';
 import { Button } from "@/components/ui/button";
 import {
@@ -34,20 +34,25 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Megaphone, PlusCircle, Send, Info, Gift, AlertTriangle, Wrench } from 'lucide-react';
+import { Megaphone, PlusCircle, Send, Info, Gift, AlertTriangle, Wrench, Upload, X } from 'lucide-react';
+import Image from 'next/image';
 
 const audienceOptions = ['All Users', 'Students', 'Professors', 'Teachers', 'Researchers', 'Professionals'];
 const typeOptions = ['Info', 'Promotion', 'Warning', 'Update'];
 
+const initialNewAnnouncementState = {
+  title: '',
+  message: '',
+  type: 'Info' as Announcement['type'],
+  audience: 'All Users' as Announcement['audience'],
+  imageUrl: '',
+};
+
 export default function AnnouncementsPage() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [newAnnouncement, setNewAnnouncement] = useState({
-    title: '',
-    message: '',
-    type: 'Info' as Announcement['type'],
-    audience: 'All Users' as Announcement['audience'],
-  });
+  const [newAnnouncement, setNewAnnouncement] = useState(initialNewAnnouncementState);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -85,7 +90,18 @@ export default function AnnouncementsPage() {
     saveAnnouncements(updatedAnnouncements);
     toast({ title: 'Announcement Sent!', description: `"${announcement.title}" has been published.` });
     setIsDialogOpen(false);
-    setNewAnnouncement({ title: '', message: '', type: 'Info', audience: 'All Users' });
+    setNewAnnouncement(initialNewAnnouncementState);
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setNewAnnouncement(prev => ({ ...prev, imageUrl: reader.result as string }));
+      };
+      reader.readAsDataURL(file);
+    }
   };
   
   const getBadgeVariant = (type: Announcement['type']) => {
@@ -116,11 +132,14 @@ export default function AnnouncementsPage() {
             Create and manage announcements for your users.
           </CardDescription>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <Dialog open={isDialogOpen} onOpenChange={(isOpen) => {
+            setIsDialogOpen(isOpen);
+            if (!isOpen) setNewAnnouncement(initialNewAnnouncementState);
+        }}>
           <DialogTrigger asChild>
             <Button><PlusCircle className="mr-2 h-4 w-4" /> Create Announcement</Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
               <DialogTitle>New Announcement</DialogTitle>
               <DialogDescription>
@@ -128,6 +147,33 @@ export default function AnnouncementsPage() {
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleCreateAnnouncement} className="space-y-4">
+              {newAnnouncement.imageUrl ? (
+                <div className="relative">
+                  <Image src={newAnnouncement.imageUrl} alt="Image preview" width={400} height={200} className="w-full h-auto object-cover rounded-md" />
+                  <Button
+                    variant="destructive"
+                    size="icon"
+                    className="absolute top-2 right-2 h-6 w-6"
+                    onClick={() => setNewAnnouncement(prev => ({ ...prev, imageUrl: '' }))}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Label>Poster/Flyer (Optional)</Label>
+                  <Button type="button" variant="outline" className="w-full" onClick={() => fileInputRef.current?.click()}>
+                    <Upload className="mr-2 h-4 w-4" /> Upload Image
+                  </Button>
+                  <Input
+                    type="file"
+                    ref={fileInputRef}
+                    className="hidden"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                  />
+                </div>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="title">Title</Label>
                 <Input
@@ -186,20 +232,25 @@ export default function AnnouncementsPage() {
         {announcements.length > 0 ? (
           <div className="space-y-4">
             {announcements.map(announcement => (
-              <div key={announcement.id} className="p-4 border rounded-lg">
-                <div className="flex justify-between items-start">
-                    <div>
-                        <div className="flex items-center gap-2 mb-1">
-                             <Badge variant={getBadgeVariant(announcement.type)}>
-                                {getIcon(announcement.type)}
-                                {announcement.type}
-                            </Badge>
-                            <Badge variant="secondary">{announcement.audience}</Badge>
+              <div key={announcement.id} className="p-4 border rounded-lg flex gap-4">
+                {announcement.imageUrl && (
+                  <Image src={announcement.imageUrl} alt={announcement.title} width={100} height={100} className="rounded-md object-cover hidden sm:block" />
+                )}
+                <div className="flex-1">
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <div className="flex items-center gap-2 mb-1 flex-wrap">
+                                <Badge variant={getBadgeVariant(announcement.type)}>
+                                    {getIcon(announcement.type)}
+                                    {announcement.type}
+                                </Badge>
+                                <Badge variant="secondary">{announcement.audience}</Badge>
+                            </div>
+                            <h3 className="font-semibold">{announcement.title}</h3>
+                            <p className="text-sm text-muted-foreground">{announcement.message}</p>
                         </div>
-                        <h3 className="font-semibold">{announcement.title}</h3>
-                        <p className="text-sm text-muted-foreground">{announcement.message}</p>
+                        <p className="text-xs text-muted-foreground whitespace-nowrap">{new Date(announcement.createdAt).toLocaleDateString()}</p>
                     </div>
-                    <p className="text-xs text-muted-foreground whitespace-nowrap">{new Date(announcement.createdAt).toLocaleDateString()}</p>
                 </div>
               </div>
             ))}
