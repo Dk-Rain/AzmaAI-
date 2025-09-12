@@ -11,6 +11,7 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel"
+import { NewsletterPopup } from '@/components/newsletter-popup';
 
 export default function LandingPage() {
   return (
@@ -333,9 +334,8 @@ export default function LandingPage() {
             </Link>
           </nav>
         </footer>
+        <NewsletterPopup />
       </div>
     </div>
   );
 }
-
-    
