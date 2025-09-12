@@ -9,7 +9,8 @@ import {
   Users,
   LogOut,
   Settings,
-  PieChart
+  PieChart,
+  CreditCard
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -79,6 +80,7 @@ export default function DashboardLayout({
   const navLinks = [
     { href: '/admin/dashboard', label: 'Dashboard', icon: Home },
     { href: '/admin/users', label: 'Users', icon: Users },
+    { href: '/admin/transactions', label: 'Transactions', icon: CreditCard },
   ];
 
   return (

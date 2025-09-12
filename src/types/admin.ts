@@ -1,4 +1,5 @@
 
+
 export type User = {
     id: string;
     fullName: string;
@@ -8,4 +9,15 @@ export type User = {
     username?: string;
     photoUrl?: string;
     createdAt: string;
+};
+
+export type Transaction = {
+    id: string;
+    invoiceId: string;
+    userFullName: string;
+    userEmail: string;
+    amount: number;
+    status: 'Success' | 'Failed' | 'Pending';
+    date: string;
+    plan: string;
 };
