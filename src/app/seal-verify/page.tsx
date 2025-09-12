@@ -12,6 +12,41 @@ import { useToast } from '@/hooks/use-toast';
 import type { DocumentHistoryEntry, PromoCode, User } from '@/types/admin';
 import { AnimatePresence, motion } from 'framer-motion';
 
+const FAKE_DOC_HISTORY: DocumentHistoryEntry[] = [{
+    docId: 'AZMA-DOC-DEMO-12345',
+    title: 'Sample Document for Demo',
+    generatedAt: new Date().toISOString(),
+    generatedBy: 'Demo System',
+}];
+
+const FAKE_PROMO_CODES: PromoCode[] = [
+    {
+        id: 'promo-demo-1',
+        code: 'DEMO2024',
+        type: 'percentage',
+        value: 25,
+        usageLimit: 10,
+        usedCount: 0,
+        usagePerUser: 1,
+        redeemedBy: [],
+        expiresAt: null,
+        createdAt: new Date().toISOString(),
+        isActive: true,
+    },
+    {
+        id: 'promo-demo-2',
+        code: 'SAVE500',
+        type: 'fixed',
+        value: 500,
+        usageLimit: 20,
+        usedCount: 0,
+        usagePerUser: 1,
+        redeemedBy: [],
+        expiresAt: null,
+        createdAt: new Date().toISOString(),
+        isActive: true,
+    }
+];
 
 export default function SealVerifyPage() {
     const [step, setStep] = useState(1); // 1: Doc ID, 2: Promo, 3: Result
@@ -26,54 +61,7 @@ export default function SealVerifyPage() {
 
     const { toast } = useToast();
 
-    // Use fake data for demonstration if localStorage is empty
-    useEffect(() => {
-        try {
-            const docHistory = localStorage.getItem('azma_document_history');
-            const allPromoCodes = localStorage.getItem('azma_promo_codes');
-            
-            if (!docHistory) {
-                localStorage.setItem('azma_document_history', JSON.stringify([{
-                    docId: 'AZMA-DOC-DEMO-12345',
-                    title: 'Sample Document for Demo',
-                    generatedAt: new Date().toISOString(),
-                    generatedBy: 'Demo System',
-                }]));
-            }
-            if (!allPromoCodes) {
-                 localStorage.setItem('azma_promo_codes', JSON.stringify([
-                    {
-                        id: 'promo-demo-1',
-                        code: 'DEMO2024',
-                        type: 'percentage',
-                        value: 25,
-                        usageLimit: 10,
-                        usedCount: 0,
-                        usagePerUser: 1,
-                        redeemedBy: [],
-                        expiresAt: null,
-                        createdAt: new Date().toISOString(),
-                        isActive: true,
-                    },
-                    {
-                        id: 'promo-demo-2',
-                        code: 'SAVE500',
-                        type: 'fixed',
-                        value: 500,
-                        usageLimit: 20,
-                        usedCount: 0,
-                        usagePerUser: 1,
-                        redeemedBy: [],
-                        expiresAt: null,
-                        createdAt: new Date().toISOString(),
-                        isActive: true,
-                    }
-                ]));
-            }
-        } catch (e) {
-            console.error('Could not set up demo data in localStorage', e);
-        }
-    }, []);
+    // The useEffect for setting up localStorage data is removed as we are now using hardcoded defaults.
 
     const handleVerifyDoc = () => {
         if (!docId) {
@@ -86,7 +74,8 @@ export default function SealVerifyPage() {
         setTimeout(() => {
             try {
                 const docHistory: DocumentHistoryEntry[] = JSON.parse(localStorage.getItem('azma_document_history') || '[]');
-                const foundDoc = docHistory.find(d => d.docId === docId);
+                const allDocs = [...docHistory, ...FAKE_DOC_HISTORY];
+                const foundDoc = allDocs.find(d => d.docId === docId);
 
                 if (foundDoc) {
                     setVerifiedDoc(foundDoc);
@@ -116,6 +105,7 @@ export default function SealVerifyPage() {
         setTimeout(() => {
             try {
                 let allPromoCodes: PromoCode[] = JSON.parse(localStorage.getItem('azma_promo_codes') || '[]');
+                allPromoCodes = [...allPromoCodes, ...FAKE_PROMO_CODES];
                 const currentUser: User | null = JSON.parse(localStorage.getItem('azmaUser') || 'null');
 
                 if (!currentUser) {
@@ -139,11 +129,16 @@ export default function SealVerifyPage() {
                 const userUses = promo.redeemedBy.filter(email => email === currentUser.email).length;
                 if (userUses >= promo.usagePerUser) { setError('You have already used this promo code the maximum number of times.'); setIsLoading(false); return; }
 
-                // All checks passed
-                promo.usedCount += 1;
-                promo.redeemedBy.push(currentUser.email);
-                allPromoCodes[promoIndex] = promo;
-                localStorage.setItem('azma_promo_codes', JSON.stringify(allPromoCodes));
+                // All checks passed. Update the real storage if it's not a fake code.
+                if (!FAKE_PROMO_CODES.some(p => p.id === promo.id)) {
+                    let realPromoCodes: PromoCode[] = JSON.parse(localStorage.getItem('azma_promo_codes') || '[]');
+                    const realPromoIndex = realPromoCodes.findIndex(p => p.id === promo.id);
+                    if (realPromoIndex > -1) {
+                        realPromoCodes[realPromoIndex].usedCount += 1;
+                        realPromoCodes[realPromoIndex].redeemedBy.push(currentUser.email);
+                        localStorage.setItem('azma_promo_codes', JSON.stringify(realPromoCodes));
+                    }
+                }
                 
                 setAppliedPromo(promo);
                 setStep(3);
@@ -266,7 +261,3 @@ export default function SealVerifyPage() {
         </div>
     );
 }
-
-    
-
-    
