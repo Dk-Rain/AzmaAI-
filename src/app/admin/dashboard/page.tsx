@@ -27,7 +27,7 @@ export default function AdminDashboard() {
     { name: "Professionals", value: 10 },
   ];
 
-  const COLORS = ["hsl(var(--chart-1))", "hsl(var(--chart-2))", "hsl(var(--chart-3))", "hsl(var(--chart-5))"];
+  const COLORS = ["hsl(var(--chart-1))", "hsl(var(--chart-2))", "hsl(var(--chart-3))", "hsl(var(--chart-5))", "hsl(var(--chart-4))"];
 
   const revenueChartConfig = {
     revenue: {
@@ -54,20 +54,20 @@ export default function AdminDashboard() {
       <Card className="col-span-1 lg:col-span-3">
         <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4 p-6 text-center">
           <div>
-            <p className="text-sm text-muted-foreground">Total Revenue</p>
-            <h2 className="text-2xl font-bold">₦8,700,000</h2>
+            <p className="text-sm text-muted-foreground">Revenue</p>
+            <h2 className="text-2xl font-bold">₦45,231.89</h2>
           </div>
           <div>
-            <p className="text-sm text-muted-foreground">Total Expenses</p>
-            <h2 className="text-2xl font-bold">₦5,550,000</h2>
+            <p className="text-sm text-muted-foreground">Subscriptions</p>
+            <h2 className="text-2xl font-bold">+2,350</h2>
           </div>
           <div>
-            <p className="text-sm text-muted-foreground">Net Profit</p>
-            <h2 className="text-2xl font-bold text-primary">₦3,150,000</h2>
+            <p className="text-sm text-muted-foreground">Sales</p>
+            <h2 className="text-2xl font-bold">+12,234</h2>
           </div>
           <div>
-            <p className="text-sm text-muted-foreground">Growth</p>
-            <h2 className="text-2xl font-bold">18.7%</h2>
+            <p className="text-sm text-muted-foreground">Active Users</p>
+            <h2 className="text-2xl font-bold">+573</h2>
           </div>
         </CardContent>
       </Card>
