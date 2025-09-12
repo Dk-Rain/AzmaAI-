@@ -40,7 +40,7 @@ export function DocumentEditor({
   useEffect(() => {
     const handleMouseUp = () => {
       const currentSelection = window.getSelection();
-      if (currentSelection && currentSelection.toString().trim().length > 0) {
+      if (currentSelection && currentSelection.rangeCount > 0 && currentSelection.toString().trim().length > 0) {
         setSelection(currentSelection);
       } else {
         setSelection(null);
@@ -335,7 +335,7 @@ export function DocumentEditor({
 
 
   const SelectionToolbar = () => {
-    if (!selection) return null;
+    if (!selection || selection.rangeCount === 0) return null;
     
     const range = selection.getRangeAt(0);
     const rect = range.getBoundingClientRect();
@@ -348,7 +348,7 @@ export function DocumentEditor({
           className="absolute z-10 flex gap-1"
           style={{
             top: rect.top - editorRect.top - 40, // Position above selection
-            left: rect.left - editorRect.left + (rect.width / 2) - 100, // Center on selection
+            left: rect.left - editorRect.top + (rect.width / 2) - 100, // Center on selection
           }}
         >
             <Button
@@ -473,3 +473,5 @@ export function DocumentEditor({
     </div>
   );
 }
+
+    
