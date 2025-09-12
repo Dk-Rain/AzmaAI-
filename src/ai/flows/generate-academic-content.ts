@@ -60,13 +60,13 @@ const SubSectionSchema = z.object({
   content: z.array(ContentBlockSchema).describe('The content of the sub-section, which can be text, images, tables, or lists.'),
 });
 
-const SectionSchema = z.object({
+export const SectionSchema = z.object({
   title: z.string().describe('The title of the section, no more than 10 words.'),
   content: z.array(ContentBlockSchema).describe('The content of the section, which can be text, images, tables, or lists.'),
   subSections: z.array(SubSectionSchema).optional().describe('The sub-sections within the section.'),
 });
 
-const GenerateAcademicContentOutputSchema = z.object({
+export const GenerateAcademicContentOutputSchema = z.object({
   title: z.string().describe('The title of the generated academic content. It must not be more than 10 words.'),
   sections: z.array(SectionSchema).describe('The sections of the generated academic content.'),
 });
@@ -79,6 +79,31 @@ export async function generateAcademicContent(
 ): Promise<GenerateAcademicContentOutput> {
   return generateAcademicContentFlow(input);
 }
+
+const generateImageTool = ai.defineTool(
+    {
+        name: 'generateImage',
+        description: 'Generates an image from a text prompt. Use this to create diagrams, charts, or illustrations that visually explain a concept.',
+        inputSchema: z.object({
+            prompt: z.string().describe('A detailed, descriptive prompt for the image to be generated.'),
+        }),
+        outputSchema: z.object({
+            url: z.string().url().describe('The data URI of the generated image.'),
+        }),
+    },
+    async ({ prompt }) => {
+        console.log(`Generating image with prompt: ${prompt}`);
+        const { media } = await ai.generate({
+            model: 'googleai/imagen-4.0-fast-generate-001',
+            prompt: `academic illustration, clean vector style, infographic, ${prompt}`,
+            config: {
+                responseMimeType: 'image/png',
+            },
+        });
+        console.log(`Image generated: ${media.url.substring(0, 50)}...`);
+        return { url: media.url };
+    }
+);
 
 
 const generateAcademicContentPrompt = ai.definePrompt({
@@ -117,32 +142,6 @@ Adhere to all instructions and generate a complete, high-quality academic docume
 `,
 });
 
-const generateImageTool = ai.defineTool(
-    {
-        name: 'generateImage',
-        description: 'Generates an image from a text prompt. Use this to create diagrams, charts, or illustrations that visually explain a concept.',
-        inputSchema: z.object({
-            prompt: z.string().describe('A detailed, descriptive prompt for the image to be generated.'),
-        }),
-        outputSchema: z.object({
-            url: z.string().url().describe('The data URI of the generated image.'),
-        }),
-    },
-    async ({ prompt }) => {
-        console.log(`Generating image with prompt: ${prompt}`);
-        const { media } = await ai.generate({
-            model: 'googleai/imagen-4.0-fast-generate-001',
-            prompt: `academic illustration, clean vector style, infographic, ${prompt}`,
-            config: {
-                responseMimeType: 'image/png',
-            },
-        });
-        console.log(`Image generated: ${media.url.substring(0, 50)}...`);
-        return { url: media.url };
-    }
-);
-
-
 const generateAcademicContentFlow = ai.defineFlow(
   {
     name: 'generateAcademicContentFlow',
@@ -156,5 +155,3 @@ const generateAcademicContentFlow = ai.defineFlow(
     return output!;
   }
 );
-
-    

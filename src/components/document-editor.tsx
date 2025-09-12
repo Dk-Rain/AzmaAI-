@@ -6,7 +6,7 @@ import type { DocumentContent, Section, StyleOptions, ContentBlock } from '@/typ
 import { Button } from './ui/button';
 import { Loader2, PenLine, ScanSearch } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { regenerateSectionAction, paraphraseTextAction, scanTextSnippetAction } from '@/app/actions';
+import { editSectionAction, paraphraseTextAction, scanTextSnippetAction } from '@/app/actions';
 import { cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Textarea } from './ui/textarea';
@@ -199,34 +199,28 @@ export function DocumentEditor({
     }
     setRegeneratingSection(sectionTitle);
     toast({
-      title: 'Regenerating Section...',
-      description: `The AI is rewriting "${sectionTitle}".`,
+      title: 'Editing Section...',
+      description: `The AI is editing "${sectionTitle}".`,
     });
-
-    const { data, error } = await regenerateSectionAction(content, sectionTitle, regenerationInstructions);
+  
+    const { data, error } = await editSectionAction(content, sectionTitle, regenerationInstructions);
     setRegeneratingSection(null);
-
+  
     if (error || !data) {
       toast({
         variant: 'destructive',
-        title: 'Regeneration Failed',
+        title: 'Edit Failed',
         description: error,
       });
     } else {
-      // Find the section to update and replace its content
-      setContent(prevContent => ({
-        ...prevContent,
-        sections: prevContent.sections.map(sec => 
-          sec.title === sectionTitle ? { ...sec, content: data } : sec
-        ),
-      }));
-
+      setContent(data);
+  
       toast({
-        title: 'Section Regenerated',
+        title: 'Section Edited',
         description: `"${sectionTitle}" has been updated.`,
       });
     }
-     // Close popover after action
+    // Close popover after action
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
     setRegenerationInstructions('');
   };
@@ -254,11 +248,14 @@ export function DocumentEditor({
     parent?: Section
   ) => {
     const newText = e.currentTarget.innerText;
-    const newBlock: ContentBlock = { type: 'text', text: newText };
-    if (isSub && parent) {
-      updateBlockContent(section.title, blockIndex, newBlock, true, parent.title);
-    } else {
-      updateBlockContent(section.title, blockIndex, newBlock);
+    const currentBlock = isSub ? parent?.subSections?.find(s => s.title === section.title)?.content[blockIndex] : section.content[blockIndex];
+    if (currentBlock?.type === 'text' && currentBlock.text !== newText) {
+        const newBlock: ContentBlock = { type: 'text', text: newText };
+        if (isSub && parent) {
+          updateBlockContent(section.title, blockIndex, newBlock, true, parent.title);
+        } else {
+          updateBlockContent(section.title, blockIndex, newBlock);
+        }
     }
   };
   
@@ -283,9 +280,8 @@ export function DocumentEditor({
                     data-is-sub={isSub}
                     data-parent-title={parentSection?.title}
                     className="prose prose-sm dark:prose-invert max-w-none focus:outline-none focus:ring-2 focus:ring-primary rounded-md p-2 -m-2"
-                >
-                    {block.text}
-                </div>
+                    dangerouslySetInnerHTML={{ __html: block.text }}
+                />
             );
         case 'image':
             return (
@@ -440,7 +436,7 @@ export function DocumentEditor({
                           <Label htmlFor="instructions">Instructions</Label>
                           <Textarea 
                             id="instructions"
-                            placeholder="e.g., 'Make this more concise' or 'Add three bullet points summarizing the key ideas.'"
+                            placeholder="e.g., 'Add a bar chart comparing sales figures' or 'Make this more concise'"
                             value={regenerationInstructions}
                             onChange={(e) => setRegenerationInstructions(e.target.value)}
                           />
@@ -450,7 +446,7 @@ export function DocumentEditor({
                          disabled={regeneratingSection === section.title}
                        >
                          {regeneratingSection === section.title ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
-                         Regenerate
+                         Apply Edits
                        </Button>
                   </div>
               </PopoverContent>
@@ -477,5 +473,3 @@ export function DocumentEditor({
     </div>
   );
 }
-
-    

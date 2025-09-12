@@ -2,7 +2,6 @@
 'use server';
 
 import { generateAcademicContent } from '@/ai/flows/generate-academic-content';
-import { arrangeContentIntoAcademicFormat } from '@/ai/flows/arrange-content-into-academic-format';
 import { manageReferences } from '@/ai/flows/manage-references';
 import { paraphraseText } from '@/ai/flows/paraphrase-text';
 import { scanAndCleanDocument } from '@/ai/flows/scan-and-clean-document';
@@ -23,12 +22,20 @@ function formatAsText(content: DocumentContent, references: References): string 
 
     content.sections.forEach(section => {
         text += `## ${section.title} ##\n\n`;
-        text += `${section.content}\n\n`;
+        section.content.forEach(block => {
+            if (block.type === 'text') {
+                text += `${block.text}\n\n`;
+            }
+        });
 
         if(section.subSections && section.subSections.length > 0) {
             section.subSections.forEach(sub => {
                 text += `### ${sub.title} ###\n\n`;
-                text += `${sub.content}\n\n`;
+                sub.content.forEach(block => {
+                    if (block.type === 'text') {
+                        text += `${block.text}\n\n`;
+                    }
+                });
             });
         }
     });
@@ -55,10 +62,12 @@ function formatAsCsv(content: DocumentContent, references: References): string {
     );
 
     content.sections.forEach(section => {
-        csv += `Section,${escapeCsv(section.title)},${escapeCsv(section.content)}\n`;
+        const sectionContent = section.content.map(b => b.type === 'text' ? b.text : `[${b.type}]`).join(' ');
+        csv += `Section,${escapeCsv(section.title)},${escapeCsv(sectionContent)}\n`;
         if (section.subSections) {
             section.subSections.forEach(sub => {
-                csv += `Sub-Section,${escapeCsv(sub.title)},${escapeCsv(sub.content)}\n`;
+                const subContent = sub.content.map(b => b.type === 'text' ? b.text : `[${b.type}]`).join(' ');
+                csv += `Sub-Section,${escapeCsv(sub.title)},${escapeCsv(subContent)}\n`;
             });
         }
     });
@@ -77,13 +86,7 @@ function formatAsCsv(content: DocumentContent, references: References): string {
 export async function generateContentAction(values: GenerationFormValues) {
   try {
     const generatedContent = await generateAcademicContent(values);
-
-    const arrangedContent = await arrangeContentIntoAcademicFormat({
-      topic: values.topic,
-      content: JSON.stringify(generatedContent),
-    });
-
-    return { data: arrangedContent, error: null };
+    return { data: generatedContent, error: null };
   } catch (error) {
     console.error(error);
     return { data: null, error: 'Failed to generate content.' };
@@ -99,7 +102,7 @@ export async function regenerateSectionAction(
     const topic = document.title;
     const context = document.sections
       .filter((s) => s.title !== sectionTitle)
-      .map((s) => `${s.title}: ${s.content.substring(0, 200)}...`)
+      .map((s) => `${s.title}: ${s.content.map(b => b.type === 'text' ? b.text.substring(0, 100) : `[${b.type}]`).join(' ')}...`)
       .join('\n');
 
     const parameters = `You are editing a section titled "${sectionTitle}" within a larger document on "${topic}".
@@ -128,6 +131,7 @@ export async function regenerateSectionAction(
     return { data: null, error: 'Failed to regenerate section.' };
   }
 }
+
 
 export async function paraphraseTextAction(text: string) {
   try {
@@ -220,4 +224,23 @@ export async function exportCsvAction(
         console.error(error);
         return { data: null, error: 'Failed to export document as .csv' };
     }
+}
+
+export async function editSectionAction(
+  document: DocumentContent,
+  sectionTitle: string,
+  instructions: string
+) {
+  try {
+    const { editSection } = await import('@/ai/flows/edit-section');
+    const result = await editSection({
+      document,
+      sectionTitle,
+      instructions,
+    });
+    return { data: result, error: null };
+  } catch (error) {
+    console.error(error);
+    return { data: null, error: 'Failed to edit section.' };
+  }
 }
