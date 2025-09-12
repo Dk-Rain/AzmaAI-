@@ -13,6 +13,9 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 import { academicTaskTypes } from '@/types/academic-task-types';
 import { academicTaskFormats } from '@/types/academic-task-formats';
+import { GenerateAcademicContentOutputSchema } from '@/types';
+import type { GenerateAcademicContentOutput } from '@/types';
+
 
 const GenerateAcademicContentInputSchema = z.object({
   taskType: z.enum(academicTaskTypes).describe('The type of academic task.'),
@@ -28,82 +31,11 @@ export type GenerateAcademicContentInput = z.infer<
   typeof GenerateAcademicContentInputSchema
 >;
 
-const TextBlockSchema = z.object({
-    type: z.literal('text'),
-    text: z.string().describe('The text content.'),
-});
-
-const ImageBlockSchema = z.object({
-    type: z.literal('image'),
-    url: z.string().url().describe('The URL of the generated image.'),
-    caption: z.string().optional().describe('A caption for the image.'),
-});
-
-const TableBlockSchema = z.object({
-    type: z.literal('table'),
-    caption: z.string().optional().describe('A caption for the table.'),
-    headers: z.array(z.string()).describe('The table headers.'),
-    rows: z.array(z.array(z.string())).describe('The table rows, where each inner array is a row.'),
-});
-
-const ListBlockSchema = z.object({
-    type: z.literal('list'),
-    style: z.enum(['ordered', 'unordered']).describe('The style of the list.'),
-    items: z.array(z.string()).describe('The items in the list.'),
-});
-
-const ContentBlockSchema = z.union([TextBlockSchema, ImageBlockSchema, TableBlockSchema, ListBlockSchema]);
-
-
-const SubSectionSchema = z.object({
-  title: z.string().describe('The title of the sub-section, no more than 10 words.'),
-  content: z.array(ContentBlockSchema).describe('The content of the sub-section, which can be text, images, tables, or lists.'),
-});
-
-export const SectionSchema = z.object({
-  title: z.string().describe('The title of the section, no more than 10 words.'),
-  content: z.array(ContentBlockSchema).describe('The content of the section, which can be text, images, tables, or lists.'),
-  subSections: z.array(SubSectionSchema).optional().describe('The sub-sections within the section.'),
-});
-
-export const GenerateAcademicContentOutputSchema = z.object({
-  title: z.string().describe('The title of the generated academic content. It must not be more than 10 words.'),
-  sections: z.array(SectionSchema).describe('The sections of the generated academic content.'),
-});
-export type GenerateAcademicContentOutput = z.infer<
-  typeof GenerateAcademicContentOutputSchema
->;
-
 export async function generateAcademicContent(
   input: GenerateAcademicContentInput
 ): Promise<GenerateAcademicContentOutput> {
   return generateAcademicContentFlow(input);
 }
-
-const generateImageTool = ai.defineTool(
-    {
-        name: 'generateImage',
-        description: 'Generates an image from a text prompt. Use this to create diagrams, charts, or illustrations that visually explain a concept.',
-        inputSchema: z.object({
-            prompt: z.string().describe('A detailed, descriptive prompt for the image to be generated.'),
-        }),
-        outputSchema: z.object({
-            url: z.string().url().describe('The data URI of the generated image.'),
-        }),
-    },
-    async ({ prompt }) => {
-        console.log(`Generating image with prompt: ${prompt}`);
-        const { media } = await ai.generate({
-            model: 'googleai/imagen-4.0-fast-generate-001',
-            prompt: `academic illustration, clean vector style, infographic, ${prompt}`,
-            config: {
-                responseMimeType: 'image/png',
-            },
-        });
-        console.log(`Image generated: ${media.url.substring(0, 50)}...`);
-        return { url: media.url };
-    }
-);
 
 
 const generateAcademicContentPrompt = ai.definePrompt({
@@ -147,7 +79,6 @@ const generateAcademicContentFlow = ai.defineFlow(
     name: 'generateAcademicContentFlow',
     inputSchema: GenerateAcademicContentInputSchema,
     outputSchema: GenerateAcademicContentOutputSchema,
-    tools: [generateImageTool]
   },
   async input => {
     const format = academicTaskFormats[input.taskType];
