@@ -10,7 +10,8 @@ import {
   LogOut,
   Settings,
   PieChart,
-  CreditCard
+  CreditCard,
+  Shield
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -81,6 +82,7 @@ export default function DashboardLayout({
     { href: '/admin/dashboard', label: 'Dashboard', icon: Home },
     { href: '/admin/users', label: 'Users', icon: Users },
     { href: '/admin/transactions', label: 'Transactions', icon: CreditCard },
+    { href: '/admin/management', label: 'Admin Management', icon: Shield },
   ];
 
   return (

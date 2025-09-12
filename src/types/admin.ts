@@ -1,5 +1,11 @@
 
 
+export type UserPermissions = {
+    canManageUsers: boolean;
+    canManageTransactions: boolean;
+    canManageSettings: boolean;
+}
+
 export type User = {
     id: string;
     fullName: string;
@@ -9,6 +15,7 @@ export type User = {
     username?: string;
     photoUrl?: string;
     createdAt: string;
+    permissions?: UserPermissions;
 };
 
 export type Transaction = {
