@@ -38,9 +38,43 @@ export default function SealVerifyPage() {
 
         setTimeout(() => {
             try {
-                const docHistory: DocumentHistoryEntry[] = JSON.parse(localStorage.getItem('azma_document_history') || '[]');
-                const allPromoCodes: PromoCode[] = JSON.parse(localStorage.getItem('azma_promo_codes') || '[]');
-                const currentUser: User | null = JSON.parse(localStorage.getItem('azmaUser') || 'null');
+                let docHistory: DocumentHistoryEntry[] = JSON.parse(localStorage.getItem('azma_document_history') || '[]');
+                let allPromoCodes: PromoCode[] = JSON.parse(localStorage.getItem('azma_promo_codes') || '[]');
+                let currentUser: User | null = JSON.parse(localStorage.getItem('azmaUser') || 'null');
+
+                // If localStorage is empty, create fake data for demonstration
+                if (docHistory.length === 0) {
+                    docHistory.push({
+                        docId: 'AZMA-DOC-DEMO-12345',
+                        title: 'Sample Document for Demo',
+                        generatedAt: new Date().toISOString(),
+                        generatedBy: 'Demo System',
+                    });
+                }
+                if (allPromoCodes.length === 0) {
+                    allPromoCodes.push({
+                        id: 'promo-demo-1',
+                        code: 'DEMO2024',
+                        type: 'percentage',
+                        value: 25,
+                        usageLimit: 10,
+                        usedCount: 0,
+                        usagePerUser: 1,
+                        redeemedBy: [],
+                        expiresAt: null,
+                        createdAt: new Date().toISOString(),
+                        isActive: true,
+                    });
+                }
+                if (!currentUser) {
+                    currentUser = {
+                        id: 'user-demo-1',
+                        fullName: 'Demo User',
+                        email: 'demo@user.com',
+                        role: 'Student',
+                        createdAt: new Date().toISOString()
+                    };
+                }
                 
                 const foundDoc = docHistory.find(d => d.docId === docId);
                 if (!foundDoc) {
@@ -76,7 +110,7 @@ export default function SealVerifyPage() {
                 if (promo.expiresAt && new Date(promo.expiresAt) < new Date()) { setErrorMessage('This promo code has expired.'); setResult('error'); setIsLoading(false); return; }
                 if (promo.usedCount >= promo.usageLimit) { setErrorMessage('This promo code has reached its usage limit.'); setResult('error'); setIsLoading(false); return; }
 
-                const userUses = promo.redeemedBy.filter(id => id === currentUser.email).length;
+                const userUses = promo.redeemedBy.filter(id => id === currentUser?.email).length;
                 if (userUses >= promo.usagePerUser) { setErrorMessage('You have already used this promo code the maximum number of times.'); setResult('error'); setIsLoading(false); return; }
 
                 // All checks passed, update promo code usage
