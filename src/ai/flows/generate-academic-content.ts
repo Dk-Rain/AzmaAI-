@@ -155,18 +155,19 @@ Your output must be a single, valid JSON object that strictly adheres to the Gen
 
 **Content Generation Rules:**
 
-1.  **Text**: For all narrative, explanatory, or argumentative content, use a text block: \`{ "type": "text", "text": "..." }\`.
-2.  **Images/Diagrams**:
+1.  **Page Count**: If the user specifies a number of pages, you must generate content that would realistically fill that many standard pages (approximately 500 words per page).
+2.  **Text**: For all narrative, explanatory, or argumentative content, use a text block: \`{ "type": "text", "text": "..." }\`.
+3.  **Images/Diagrams**:
     *   When a visual diagram, chart, or illustration would enhance a section, do not describe it in text.
     *   Instead, call the \`generateImage\` tool with a clear, descriptive prompt for that image (e.g., "A flowchart showing the steps of photosynthesis," "A bar chart comparing the populations of New York, London, and Tokyo").
     *   The tool will return an image URL. You must place this URL into an image block: \`{ "type": "image", "url": "...", "caption": "..." }\`.
-3.  **Tables**:
+4.  **Tables**:
     *   When presenting structured data (e.g., comparisons, statistics, classifications), use a table block.
     *   Format it as: \`{ "type": "table", "caption": "...", "headers": ["Header 1", "Header 2"], "rows": [["Row 1 Col 1", "Row 1 Col 2"], ["Row 2 Col 1", "Row 2 Col 2"]] }\`.
-4.  **Lists**:
+5.  **Lists**:
     *   For sequential steps, use an ordered list. Format it as: \`{ "type": "list", "style": "ordered", "items": ["First step", "Second step"] }\`.
     *   For non-sequential items, use an unordered list. Format it as: \`{ "type": "list", "style": "unordered", "items": ["Bullet point 1", "Bullet point 2"] }\`.
-5.  **Title Rules**: All titles (document, section, sub-section) must be concise, between 5 and 10 words.
+6.  **Title Rules**: All titles (document, section, sub-section) must be concise, between 5 and 10 words.
 
 **User Request:**
 
