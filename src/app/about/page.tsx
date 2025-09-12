@@ -24,24 +24,36 @@ export default function AboutPage() {
         </nav>
       </header>
       <main className="flex-1">
-        <section className="w-full py-12 md:py-24 lg:py-32 bg-muted">
-          <div className="container px-4 md:px-6 text-center">
+        <section
+          className="relative w-full py-12 md:py-24 lg:py-32 bg-cover bg-center bg-fixed"
+          style={{
+            backgroundImage: `url('https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExMXRtcWpjdmxqd29nOHJqdTRlYzZtczRmdW4wYWNkZ3c0OGl4M3VtNyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/ITRemFlr5tS39AzQUL/giphy.gif')`,
+          }}
+        >
+          <div className="absolute inset-0 bg-black/60 z-0" />
+          <div className="relative z-10 container px-4 md:px-6 text-center text-white">
             <h1 className="text-3xl font-bold tracking-tighter sm:text-5xl">About AZMA AI</h1>
-            <p className="max-w-[700px] mx-auto text-muted-foreground md:text-xl mt-4">
+            <p className="max-w-[700px] mx-auto text-gray-200 md:text-xl mt-4">
               Empowering students through innovative academic assistance.
             </p>
           </div>
         </section>
 
-        <section className="w-full py-12 md:py-24 lg:py-32">
-          <div className="container px-4 md:px-6">
+        <section
+          className="relative w-full py-12 md:py-24 lg:py-32 bg-cover bg-center bg-fixed"
+          style={{
+            backgroundImage: `url('https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExMXRtcWpjdmxqd29nOHJqdTRlYzZtczRmdW4wYWNkZ3c0OGl4M3VtNyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/ITRemFlr5tS39AzQUL/giphy.gif')`,
+          }}
+        >
+          <div className="absolute inset-0 bg-black/60 z-0" />
+          <div className="relative z-10 container px-4 md:px-6 text-white">
             <div className="grid gap-10 lg:grid-cols-2 lg:gap-16 items-center">
               <div className="space-y-4">
                 <h2 className="text-2xl font-bold tracking-tighter sm:text-3xl">Our Mission</h2>
-                <p className="text-muted-foreground">
+                <p className="text-gray-200">
                   Our mission is to bridge the gap between academic challenges and student success. We believe that every student deserves access to the tools and support they need to excel. AZMA AI was born from a desire to create a comprehensive platform that simplifies the academic journey, from initial research to final submission.
                 </p>
-                <p className="text-muted-foreground">
+                <p className="text-gray-200">
                   We leverage cutting-edge AI to provide personalized research assistance, connect students with skilled virtual assistants, and offer a seamless way to manage tasks and find essential services like printing. Our goal is to reduce stress and boost productivity, allowing students to focus on what truly matters: learning and growth.
                 </p>
               </div>
@@ -57,12 +69,18 @@ export default function AboutPage() {
           </div>
         </section>
 
-        <section className="w-full py-12 md:py-24 lg:py-32 bg-muted">
-          <div className="container px-4 md:px-6">
+        <section
+          className="relative w-full py-12 md:py-24 lg:py-32 bg-cover bg-center bg-fixed"
+          style={{
+            backgroundImage: `url('https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExMXRtcWpjdmxqd29nOHJqdTRlYzZtczRmdW4wYWNkZ3c0OGl4M3VtNyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/ITRemFlr5tS39AzQUL/giphy.gif')`,
+          }}
+        >
+          <div className="absolute inset-0 bg-black/60 z-0" />
+          <div className="relative z-10 container px-4 md:px-6 text-white">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
                 <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">Core Values</h2>
-                <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+                <p className="max-w-[900px] text-gray-200 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
                   What Drives Us
                 </p>
               </div>
@@ -71,28 +89,34 @@ export default function AboutPage() {
               <div className="grid gap-1 text-center">
                 <Lightbulb className="h-10 w-10 mx-auto text-primary" />
                 <h3 className="text-lg font-bold">Innovation</h3>
-                <p className="text-sm text-muted-foreground">We constantly explore new technologies to provide the most effective academic tools.</p>
+                <p className="text-sm text-gray-300">We constantly explore new technologies to provide the most effective academic tools.</p>
               </div>
               <div className="grid gap-1 text-center">
                 <Target className="h-10 w-10 mx-auto text-primary" />
                 <h3 className="text-lg font-bold">Student-Centric</h3>
-                <p className="text-sm text-muted-foreground">Our platform is designed with the student's needs at the forefront of every feature.</p>
+                <p className="text-sm text-gray-300">Our platform is designed with the student's needs at the forefront of every feature.</p>
               </div>
               <div className="grid gap-1 text-center">
                 <Handshake className="h-10 w-10 mx-auto text-primary" />
                 <h3 className="text-lg font-bold">Integrity</h3>
-                <p className="text-sm text-muted-foreground">We are committed to fostering academic honesty and providing reliable, ethical support.</p>
+                <p className="text-sm text-gray-300">We are committed to fostering academic honesty and providing reliable, ethical support.</p>
               </div>
             </div>
           </div>
         </section>
         
-        <section className="w-full py-12 md:py-24 lg:py-32 border-t">
-          <div className="container px-4 md:px-6">
+        <section
+          className="relative w-full py-12 md:py-24 lg:py-32 bg-cover bg-center bg-fixed border-t"
+          style={{
+            backgroundImage: `url('https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExMXRtcWpjdmxqd29nOHJqdTRlYzZtczRmdW4wYWNkZ3c0OGl4M3VtNyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/ITRemFlr5tS39AzQUL/giphy.gif')`,
+          }}
+        >
+          <div className="absolute inset-0 bg-black/60 z-0" />
+          <div className="relative z-10 container px-4 md:px-6 text-white">
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
                 <div className="space-y-2">
                   <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">Join the Future of Academic Assistance</h2>
-                  <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+                  <p className="max-w-[900px] text-gray-200 md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
                     Ready to streamline your studies and achieve your goals? Sign up for AZMA AI today.
                   </p>
                 </div>

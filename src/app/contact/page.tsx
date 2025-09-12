@@ -55,18 +55,30 @@ export default function ContactPage() {
         </nav>
       </header>
       <main className="flex-1">
-        <section className="w-full py-12 md:py-24 lg:py-32 bg-muted">
-          <div className="container px-4 md:px-6 text-center">
+        <section
+          className="relative w-full py-12 md:py-24 lg:py-32 bg-cover bg-center bg-fixed"
+          style={{
+            backgroundImage: `url('https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExMXRtcWpjdmxqd29nOHJqdTRlYzZtczRmdW4wYWNkZ3c0OGl4M3VtNyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/ITRemFlr5tS39AzQUL/giphy.gif')`,
+          }}
+        >
+          <div className="absolute inset-0 bg-black/60 z-0" />
+          <div className="relative z-10 container px-4 md:px-6 text-center text-white">
             <h1 className="text-3xl font-bold tracking-tighter sm:text-5xl">Contact Us</h1>
-            <p className="max-w-[700px] mx-auto text-muted-foreground md:text-xl mt-4">
+            <p className="max-w-[700px] mx-auto text-gray-200 md:text-xl mt-4">
               Have questions or feedback? We'd love to hear from you.
             </p>
           </div>
         </section>
 
-        <section className="w-full py-12 md:py-24 lg:py-32">
-          <div className="container px-4 md:px-6">
-            <Card className="max-w-2xl mx-auto">
+        <section
+          className="relative w-full py-12 md:py-24 lg:py-32 bg-cover bg-center bg-fixed"
+          style={{
+            backgroundImage: `url('https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExMXRtcWpjdmxqd29nOHJqdTRlYzZtczRmdW4wYWNkZ3c0OGl4M3VtNyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/ITRemFlr5tS39AzQUL/giphy.gif')`,
+          }}
+        >
+          <div className="absolute inset-0 bg-black/60 z-0" />
+          <div className="relative z-10 container px-4 md:px-6">
+            <Card className="max-w-2xl mx-auto bg-background/80 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle>Send us a Message</CardTitle>
                 <CardDescription>Fill out the form below and we will get back to you as soon as possible.</CardDescription>
