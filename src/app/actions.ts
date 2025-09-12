@@ -7,6 +7,7 @@ import { paraphraseText } from '@/ai/flows/paraphrase-text';
 import { scanAndCleanDocument } from '@/ai/flows/scan-and-clean-document';
 import { scanTextSnippet } from '@/ai/flows/scan-text-snippet';
 import { checkPlagiarism } from '@/ai/flows/check-plagiarism';
+import { verifyReferences } from '@/ai/flows/verify-references';
 import { exportToDocx as buildDocx } from '@/lib/docx-exporter';
 import { Packer } from 'docx';
 import type { DocumentContent, References, StyleOptions } from '@/types';
@@ -181,6 +182,17 @@ export async function checkPlagiarismAction(document: DocumentContent) {
         return { data: null, error: 'Failed to check for plagiarism.' };
     }
 }
+
+export async function verifyReferencesAction(referencesToVerify: string) {
+    try {
+        const result = await verifyReferences({ referencesToVerify });
+        return { data: result, error: null };
+    } catch (error) {
+        console.error(error);
+        return { data: null, error: 'Failed to verify references.' };
+    }
+}
+
 
 export async function exportDocxAction(
   content: DocumentContent,

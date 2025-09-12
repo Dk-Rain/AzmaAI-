@@ -4,15 +4,17 @@
 import { useState, useEffect, useRef } from 'react';
 import type { DocumentContent, Section, StyleOptions, ContentBlock } from '@/types';
 import { Button } from './ui/button';
-import { Loader2, PenLine, ScanSearch } from 'lucide-react';
+import { Loader2, PenLine, ScanSearch, CheckCircle, XCircle, FileCheck } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { editSectionAction, paraphraseTextAction, scanTextSnippetAction } from '@/app/actions';
+import { editSectionAction, paraphraseTextAction, scanTextSnippetAction, verifyReferencesAction } from '@/app/actions';
 import { cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Textarea } from './ui/textarea';
 import { Label } from './ui/label';
 import Image from 'next/image';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import type { VerifyReferencesOutput } from '@/ai/flows/verify-references';
 
 
 interface DocumentEditorProps {
@@ -33,7 +35,9 @@ export function DocumentEditor({
   const [regenerationInstructions, setRegenerationInstructions] = useState('');
   const [isParaphrasing, setIsParaphrasing] = useState(false);
   const [isScanningSnippet, setIsScanningSnippet] = useState(false);
+  const [isVerifyingRefs, setIsVerifyingRefs] = useState(false);
   const [selection, setSelection] = useState<Selection | null>(null);
+  const [verificationResult, setVerificationResult] = useState<VerifyReferencesOutput | null>(null);
   const editorRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -121,6 +125,36 @@ export function DocumentEditor({
         });
     }
   };
+
+  const handleVerifyReferences = async () => {
+    if (!selection) return;
+
+    const selectedText = selection.toString();
+    setIsVerifyingRefs(true);
+    toast({
+        title: 'Verifying References...',
+        description: 'Checking the highlighted references against online databases.',
+    });
+
+    const { data, error } = await verifyReferencesAction(selectedText);
+    setIsVerifyingRefs(false);
+    setSelection(null); // Clear selection after action
+
+    if (error || !data) {
+        toast({
+            variant: 'destructive',
+            title: 'Verification Failed',
+            description: error,
+        });
+    } else {
+        setVerificationResult(data);
+        toast({
+            title: 'Verification Complete',
+            description: 'The results are ready for review.',
+        });
+    }
+  }
+
 
  const replaceSelection = (newText: string) => {
     if (!selection) return;
@@ -348,13 +382,13 @@ export function DocumentEditor({
           className="absolute z-10 flex gap-1"
           style={{
             top: rect.top - editorRect.top - 40, // Position above selection
-            left: rect.left - editorRect.left + (rect.width / 2) - 100, // Center on selection
+            left: rect.left - editorRect.left, // Align with left of selection
           }}
         >
             <Button
               size="sm"
               onClick={handleParaphrase}
-              disabled={isParaphrasing || isScanningSnippet}
+              disabled={isParaphrasing || isScanningSnippet || isVerifyingRefs}
               className="shadow-lg"
             >
               {isParaphrasing ? (
@@ -368,7 +402,7 @@ export function DocumentEditor({
               size="sm"
               variant="outline"
               onClick={handleScanSnippet}
-              disabled={isParaphrasing || isScanningSnippet}
+              disabled={isParaphrasing || isScanningSnippet || isVerifyingRefs}
               className="shadow-lg bg-background"
             >
               {isScanningSnippet ? (
@@ -377,6 +411,20 @@ export function DocumentEditor({
                 <ScanSearch className="mr-2 h-4 w-4" />
               )}
               Scan & Fix
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleVerifyReferences}
+              disabled={isParaphrasing || isScanningSnippet || isVerifyingRefs}
+              className="shadow-lg bg-background"
+            >
+              {isVerifyingRefs ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <FileCheck className="mr-2 h-4 w-4" />
+              )}
+              Verify References
             </Button>
         </div>
     );
@@ -470,9 +518,40 @@ export function DocumentEditor({
           )}
         </div>
       ))}
+      <Dialog open={!!verificationResult} onOpenChange={(isOpen) => !isOpen && setVerificationResult(null)}>
+        <DialogContent className="max-w-2xl">
+            <DialogHeader>
+                <DialogTitle>Reference Verification Results</DialogTitle>
+                <DialogDescription>
+                    Here is the analysis of the selected references.
+                </DialogDescription>
+            </DialogHeader>
+            <div className="mt-4 max-h-96 overflow-y-auto">
+                <ul className="space-y-4">
+                    {verificationResult?.references.map((ref, index) => (
+                        <li key={index} className="p-3 border rounded-lg">
+                            <p className="text-sm font-medium mb-2">"{ref.referenceText}"</p>
+                            <div className="flex items-center gap-2">
+                                {ref.isVerified ? (
+                                    <CheckCircle className="h-5 w-5 text-green-600" />
+                                ) : (
+                                    <XCircle className="h-5 w-5 text-destructive" />
+                                )}
+                                <span className={cn(
+                                    "text-xs font-semibold",
+                                    ref.isVerified ? 'text-green-700' : 'text-destructive'
+                                )}>
+                                    {ref.verificationNotes}
+                                </span>
+                            </div>
+                             {ref.doi && <p className="text-xs text-muted-foreground mt-1">DOI: {ref.doi}</p>}
+                        </li>
+                    ))}
+                </ul>
+            </div>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }
-
-    
-    
