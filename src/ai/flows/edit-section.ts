@@ -10,7 +10,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import { GenerateAcademicContentOutputSchema, SectionSchema } from '@/types';
+import { GenerateAcademicContentOutputSchema } from '@/types';
 
 const EditSectionInputSchema = z.object({
   document: GenerateAcademicContentOutputSchema.describe('The full existing document content.'),
@@ -38,7 +38,6 @@ const generateImageTool = ai.defineTool(
         }),
     },
     async ({ prompt }) => {
-        console.log(`Generating image with prompt: ${prompt}`);
         const { media } = await ai.generate({
             model: 'googleai/imagen-4.0-fast-generate-001',
             prompt: `academic illustration, clean vector style, infographic, ${prompt}`,
@@ -61,6 +60,7 @@ const editSectionPrompt = ai.definePrompt({
       instructions: z.string(),
   })},
   output: {schema: GenerateAcademicContentOutputSchema},
+  tools: [generateImageTool],
   prompt: `You are an expert academic editor. Your task is to modify a specific section of an existing document based on the user's instructions.
 
 **Instructions:**
@@ -86,7 +86,6 @@ const editSectionFlow = ai.defineFlow(
     name: 'editSectionFlow',
     inputSchema: EditSectionInputSchema,
     outputSchema: GenerateAcademicContentOutputSchema,
-    tools: [generateImageTool]
   },
   async ({ document, sectionTitle, instructions }) => {
     const {output} = await editSectionPrompt({

@@ -49,7 +49,6 @@ const generateImageTool = ai.defineTool(
         }),
     },
     async ({ prompt }) => {
-        console.log(`Generating image with prompt: ${prompt}`);
         const { media } = await ai.generate({
             model: 'googleai/imagen-4.0-fast-generate-001',
             prompt: `academic illustration, clean vector style, infographic, ${prompt}`,
@@ -71,6 +70,7 @@ const generateAcademicContentPrompt = ai.definePrompt({
     format: z.string().describe('The suggested structure or format for the document.')
   })},
   output: {schema: GenerateAcademicContentOutputSchema},
+  tools: [generateImageTool],
   prompt: `You are an expert academic content generator. Your primary task is to generate a comprehensive, well-structured academic document based on the user's request.
 
 You must determine the most appropriate format for the content. For standard text, use a 'text' block. When data or comparisons are best shown visually, generate a 'table' block. For itemizations, use a 'list' block. If a concept is best explained with a visual aid, you should create a descriptive prompt for an image and the 'generateImage' tool will create it.
@@ -108,7 +108,6 @@ const generateAcademicContentFlow = ai.defineFlow(
     name: 'generateAcademicContentFlow',
     inputSchema: GenerateAcademicContentInputSchema,
     outputSchema: GenerateAcademicContentOutputSchema,
-    tools: [generateImageTool]
   },
   async input => {
     const format = academicTaskFormats[input.taskType];
