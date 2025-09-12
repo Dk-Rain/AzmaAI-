@@ -63,6 +63,7 @@ export type PromoCode = {
   usageLimit: number; // Total number of times the code can be used
   usedCount: number;
   usagePerUser: number; // How many times a single user can use it
+  redeemedBy: string[]; // Array of user emails or IDs
   expiresAt: string | null;
   createdAt: string;
   isActive: boolean;

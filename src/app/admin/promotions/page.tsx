@@ -55,10 +55,10 @@ import { useToast } from '@/hooks/use-toast';
 import { Ticket, PlusCircle, MoreHorizontal, Edit, Trash2, RefreshCw } from 'lucide-react';
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { format } from "date-fns";
+import { format } from 'date-fns';
 
 
-const initialFormState: Omit<PromoCode, 'id' | 'createdAt' | 'usedCount'> = {
+const initialFormState: Omit<PromoCode, 'id' | 'createdAt' | 'usedCount' | 'redeemedBy'> = {
   code: '',
   type: 'percentage',
   value: 10,
@@ -133,6 +133,7 @@ export default function PromotionsPage() {
             id: new Date().toISOString(),
             ...formData,
             usedCount: 0,
+            redeemedBy: [],
             createdAt: new Date().toISOString(),
         };
         savePromoCodes([newCode, ...promoCodes]);
