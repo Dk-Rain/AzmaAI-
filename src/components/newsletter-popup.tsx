@@ -12,8 +12,8 @@ import Image from 'next/image';
 
 const fallbackAnnouncement: Announcement = {
   id: 'fallback-1',
-  title: 'Welcome to AzmaAI!',
-  message: 'This is an example announcement. Create your own in the admin dashboard to see it appear here.',
+  title: 'Stay Updated!',
+  message: "This is where you'll find the latest news, updates, and promotions from AzmaAI. Announcements created by an admin will appear here.",
   type: 'Info',
   audience: 'All Users',
   createdAt: new Date().toISOString(),
