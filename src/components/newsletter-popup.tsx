@@ -9,6 +9,17 @@ import { Megaphone, X, Gift, Info, AlertTriangle, Wrench } from 'lucide-react';
 import { Badge } from './ui/badge';
 import { cn } from '@/lib/utils';
 
+const fallbackAnnouncement: Announcement = {
+  id: 'fallback-1',
+  title: 'Welcome to AzmaAI!',
+  message: 'This is an example announcement. Create your own in the admin dashboard to see it appear here.',
+  type: 'Info',
+  audience: 'All Users',
+  createdAt: new Date().toISOString(),
+  status: 'Sent',
+};
+
+
 export function NewsletterPopup() {
   const [announcement, setAnnouncement] = useState<Announcement | null>(null);
   const [status, setStatus] = useState<'hidden' | 'open' | 'minimized'>('hidden');
@@ -22,10 +33,18 @@ export function NewsletterPopup() {
           // Get the most recent one
           setAnnouncement(allAnnouncements[0]);
           setStatus('open');
+          return;
         }
       }
+      // If no announcements are found, use the fallback for demonstration
+      setAnnouncement(fallbackAnnouncement);
+      setStatus('open');
+
     } catch (error) {
       console.error("Failed to load announcements from localStorage", error);
+      // Fallback in case of error too
+      setAnnouncement(fallbackAnnouncement);
+      setStatus('open');
     }
   }, []);
 
