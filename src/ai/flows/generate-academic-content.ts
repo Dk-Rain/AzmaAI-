@@ -37,10 +37,37 @@ export async function generateAcademicContent(
   return generateAcademicContentFlow(input);
 }
 
+const generateImageTool = ai.defineTool(
+    {
+        name: 'generateImage',
+        description: 'Generates an image from a text prompt. Use this to create diagrams, charts, or illustrations that visually explain a concept.',
+        inputSchema: z.object({
+            prompt: z.string().describe('A detailed, descriptive prompt for the image to be generated.'),
+        }),
+        outputSchema: z.object({
+            url: z.string().url().describe('The data URI of the generated image.'),
+        }),
+    },
+    async ({ prompt }) => {
+        console.log(`Generating image with prompt: ${prompt}`);
+        const { media } = await ai.generate({
+            model: 'googleai/imagen-4.0-fast-generate-001',
+            prompt: `academic illustration, clean vector style, infographic, ${prompt}`,
+            config: {
+                responseMimeType: 'image/png',
+            },
+        });
+        console.log(`Image generated: ${media.url.substring(0, 50)}...`);
+        return { url: media.url };
+    }
+);
+
 
 const generateAcademicContentPrompt = ai.definePrompt({
   name: 'generateAcademicContentPrompt',
-  input: {schema: GenerateAcademicContentInputSchema},
+  input: {schema: GenerateAcademicContentInputSchema.extend({
+    format: z.string().describe('The suggested structure or format for the document.')
+  })},
   output: {schema: GenerateAcademicContentOutputSchema},
   prompt: `You are an expert academic content generator. Your primary task is to generate a comprehensive, well-structured academic document based on the user's request.
 
@@ -79,6 +106,7 @@ const generateAcademicContentFlow = ai.defineFlow(
     name: 'generateAcademicContentFlow',
     inputSchema: GenerateAcademicContentInputSchema,
     outputSchema: GenerateAcademicContentOutputSchema,
+    tools: [generateImageTool]
   },
   async input => {
     const format = academicTaskFormats[input.taskType];
@@ -86,3 +114,4 @@ const generateAcademicContentFlow = ai.defineFlow(
     return output!;
   }
 );
+
