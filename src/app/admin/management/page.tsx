@@ -10,16 +10,31 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogTrigger,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog"
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
-import { Shield } from 'lucide-react';
+import { Shield, UserPlus } from 'lucide-react';
 
 export default function AdminManagementPage() {
   const [users, setUsers] = useState<User[]>([]);
   const { toast } = useToast();
+  const [isCreateAdminOpen, setIsCreateAdminOpen] = useState(false);
+  const [newAdmin, setNewAdmin] = useState({ fullName: '', email: '', password: '' });
+
 
   useEffect(() => {
     try {
@@ -43,12 +58,40 @@ export default function AdminManagementPage() {
   const saveUsers = (newUsers: User[]) => {
     setUsers(newUsers);
     localStorage.setItem('azma_all_users', JSON.stringify(newUsers));
-    toast({ title: "Permissions updated successfully."})
   }
+  
+  const handleCreateAdmin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newAdmin.fullName || !newAdmin.email) {
+        toast({ variant: 'destructive', title: "Missing fields", description: "Please fill out all fields."});
+        return;
+    }
+
+    const newUser: User = {
+        id: new Date().toISOString(),
+        fullName: newAdmin.fullName,
+        email: newAdmin.email,
+        role: 'Admin',
+        createdAt: new Date().toISOString(),
+        permissions: { canManageUsers: false, canManageTransactions: false, canManageSettings: false },
+    };
+
+    const updatedUsers = [...users, newUser];
+    saveUsers(updatedUsers);
+    toast({ title: 'Admin Created', description: `${newUser.fullName} has been added as an admin.`});
+    setIsCreateAdminOpen(false);
+    setNewAdmin({ fullName: '', email: '', password: '' });
+  };
+
 
   const handleRoleChange = (userId: string, isAdmin: boolean) => {
     const newUsers = users.map(user => {
       if (user.id === userId) {
+        // Prevent primary admin from being demoted
+        if (user.email === 'admin@azma.com') {
+            toast({ variant: 'destructive', title: 'Action Forbidden', description: 'The primary admin role cannot be changed.'});
+            return user;
+        }
         return { 
           ...user, 
           role: isAdmin ? 'Admin' : 'Student', // Revert to student if admin is revoked
@@ -58,6 +101,7 @@ export default function AdminManagementPage() {
       return user;
     });
     saveUsers(newUsers);
+    toast({ title: "Permissions updated successfully."})
   };
 
   const handlePermissionChange = (userId: string, permission: keyof UserPermissions, value: boolean) => {
@@ -74,10 +118,47 @@ export default function AdminManagementPage() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2"><Shield /> Admin Role Management</CardTitle>
-        <CardDescription>
-          Grant admin access and assign specific permissions to users.
-        </CardDescription>
+        <div className="flex justify-between items-start">
+            <div>
+                <CardTitle className="flex items-center gap-2"><Shield /> Admin Role Management</CardTitle>
+                <CardDescription>
+                Grant admin access and assign specific permissions to users.
+                </CardDescription>
+            </div>
+            <Dialog open={isCreateAdminOpen} onOpenChange={setIsCreateAdminOpen}>
+                <DialogTrigger asChild>
+                    <Button variant="outline"><UserPlus className="mr-2 h-4 w-4"/> Create New Admin</Button>
+                </DialogTrigger>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Create a New Admin User</DialogTitle>
+                        <DialogDescription>Fill in the details below to add a new administrator.</DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={handleCreateAdmin}>
+                        <div className="grid gap-4 py-4">
+                            <div className="grid gap-2">
+                                <Label htmlFor="fullName">Full Name</Label>
+                                <Input id="fullName" value={newAdmin.fullName} onChange={(e) => setNewAdmin({...newAdmin, fullName: e.target.value})} placeholder="John Doe" required/>
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="email">Email Address</Label>
+                                <Input id="email" type="email" value={newAdmin.email} onChange={(e) => setNewAdmin({...newAdmin, email: e.target.value})} placeholder="admin@example.com" required/>
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="password">Password</Label>
+                                <Input id="password" type="password" value={newAdmin.password} onChange={(e) => setNewAdmin({...newAdmin, password: e.target.value})} placeholder="Choose a secure password" required/>
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <DialogClose asChild>
+                                <Button type="button" variant="ghost">Cancel</Button>
+                            </DialogClose>
+                            <Button type="submit">Create Admin</Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
+        </div>
       </CardHeader>
       <CardContent className="space-y-6">
         {users.map((user, index) => (
@@ -98,6 +179,7 @@ export default function AdminManagementPage() {
                         id={`is-admin-${user.id}`}
                         checked={user.role === 'Admin'}
                         onCheckedChange={(checked) => handleRoleChange(user.id, checked)}
+                        disabled={user.email === 'admin@azma.com'}
                     />
                     <Label htmlFor={`is-admin-${user.id}`} className="font-medium">
                         Is Admin
