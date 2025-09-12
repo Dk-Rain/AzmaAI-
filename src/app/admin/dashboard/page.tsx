@@ -20,6 +20,14 @@ export default function AdminDashboard() {
     { month: "May", revenue: 22000, expenses: 15000 },
   ];
 
+  const subscriptionData = [
+    { month: "Jan", subscriptions: 1200 },
+    { month: "Feb", subscriptions: 1450 },
+    { month: "Mar", subscriptions: 1800 },
+    { month: "Apr", subscriptions: 2100 },
+    { month: "May", subscriptions: 2350 },
+  ];
+
   const portfolioData = [
     { name: "Students", value: 50 },
     { name: "Teachers", value: 25 },
@@ -27,7 +35,7 @@ export default function AdminDashboard() {
     { name: "Professionals", value: 10 },
   ];
 
-  const COLORS = ["hsl(var(--chart-1))", "hsl(var(--chart-2))", "hsl(var(--chart-3))", "hsl(var(--chart-5))", "hsl(var(--chart-4))"];
+  const COLORS = ["hsl(var(--chart-1))", "hsl(var(--chart-2))", "hsl(var(--chart-4))", "hsl(var(--chart-5))"];
 
   const revenueChartConfig = {
     revenue: {
@@ -84,12 +92,12 @@ export default function AdminDashboard() {
         </CardContent>
       </Card>
 
-      {/* Revenue Growth Line Chart */}
+      {/* Subscription Growth Line Chart */}
       <Card>
         <CardContent className="p-4">
-          <h3 className="font-semibold mb-2">Revenue Growth</h3>
+          <h3 className="font-semibold mb-2">Subscriptions</h3>
           <ResponsiveContainer width="100%" height={250}>
-            <LineChart data={revenueData}>
+            <LineChart data={subscriptionData}>
               <XAxis dataKey="month" />
               <YAxis />
               <Tooltip
@@ -108,10 +116,10 @@ export default function AdminDashboard() {
                           </div>
                           <div className="flex flex-col">
                             <span className="text-[0.70rem] uppercase text-muted-foreground">
-                              Revenue
+                              Subscriptions
                             </span>
                             <span className="font-bold">
-                              ₦{payload[0].value?.toLocaleString()}
+                              {payload[0].value?.toLocaleString()}
                             </span>
                           </div>
                         </div>
@@ -122,7 +130,7 @@ export default function AdminDashboard() {
                   return null
                 }}
               />
-              <Line type="monotone" dataKey="revenue" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
+              <Line type="monotone" dataKey="subscriptions" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
             </LineChart>
           </ResponsiveContainer>
         </CardContent>
