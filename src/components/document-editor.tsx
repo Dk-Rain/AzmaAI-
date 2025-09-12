@@ -158,31 +158,37 @@ export function DocumentEditor({
 
 
  const replaceSelection = (newText: string) => {
-    if (!selection) return;
+    if (!selection || selection.rangeCount === 0) return;
 
     const range = selection.getRangeAt(0);
-    range.deleteContents();
-    const newNode = document.createTextNode(newText);
-    range.insertNode(newNode);
+    const commonAncestor = range.commonAncestorContainer;
+    const editableDiv = commonAncestor.nodeType === Node.ELEMENT_NODE 
+        ? (commonAncestor as Element).closest('[contenteditable="true"]')
+        : commonAncestor.parentElement?.closest('[contenteditable="true"]');
 
-    // After replacing, we need to manually update the main content state
-    // This is a simplified approach. A more robust solution might involve
-    // finding the exact block and character offset.
-    if (editorRef.current) {
-        const titleElement = range.startContainer.parentElement?.closest('[data-title]');
-        if (titleElement) {
-            const sectionTitle = titleElement.getAttribute('data-title')!;
-            const blockIndex = parseInt(titleElement.getAttribute('data-block-index') || '0', 10);
-            const isSub = titleElement.getAttribute('data-is-sub') === 'true';
-            const parentTitle = titleElement.getAttribute('data-parent-title');
-            
-            // Re-read the content from the DOM after replacement
-            const newContent = titleElement.textContent || '';
-
-            updateBlockContent(sectionTitle, blockIndex, { type: 'text', text: newContent }, isSub, parentTitle || undefined);
+    if (editableDiv) {
+        const sectionTitle = editableDiv.getAttribute('data-section-title');
+        const subSectionTitle = editableDiv.getAttribute('data-subsection-title');
+        const blockIndex = parseInt(editableDiv.getAttribute('data-block-index') || '-1', 10);
+        
+        if (sectionTitle && blockIndex !== -1) {
+             range.deleteContents();
+             const textNode = document.createTextNode(newText);
+             range.insertNode(textNode);
+             
+             const newBlockContent = editableDiv.textContent || '';
+             
+             updateBlockContent(
+                sectionTitle,
+                blockIndex,
+                { type: 'text', text: newBlockContent },
+                !!subSectionTitle,
+                subSectionTitle || undefined
+             );
         }
     }
-    setSelection(null); // Clear selection after action
+    
+    setSelection(null);
 }
 
   const updateBlockContent = (
@@ -190,15 +196,15 @@ export function DocumentEditor({
     blockIndex: number,
     newBlock: ContentBlock,
     isSubSection: boolean = false,
-    parentSectionTitle?: string
+    subSectionTitle?: string
   ) => {
     setContent((prevContent) => {
       const newSections = prevContent.sections.map((section) => {
-        if (isSubSection && parentSectionTitle === section.title) {
+        if (isSubSection && sectionTitle === section.title && subSectionTitle) {
           return {
             ...section,
             subSections: section.subSections?.map((sub) =>
-              sub.title === sectionTitle
+              sub.title === subSectionTitle
                 ? {
                     ...sub,
                     content: sub.content.map((block, idx) =>
@@ -310,10 +316,9 @@ export function DocumentEditor({
                     contentEditable
                     suppressContentEditableWarning
                     onBlur={(e) => handleBlur(e, section, blockIndex, isSub, parentSection)}
-                    data-title={section.title}
+                    data-section-title={isSub ? parentSection?.title : section.title}
+                    data-subsection-title={isSub ? section.title : undefined}
                     data-block-index={blockIndex}
-                    data-is-sub={isSub}
-                    data-parent-title={parentSection?.title}
                     className="prose prose-sm dark:prose-invert max-w-none focus:outline-none focus:ring-2 focus:ring-primary rounded-md p-2 -m-2"
                     dangerouslySetInnerHTML={{ __html: block.text }}
                 />
