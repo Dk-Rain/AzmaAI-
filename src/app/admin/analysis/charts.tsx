@@ -41,7 +41,7 @@ export function UserRoleDistributionChart() {
         const data = Object.keys(roleCounts).map(role => ({
           role,
           count: roleCounts[role],
-          fill: roleColors[role] || "hsl(var(--muted))"
+          fill: roleColors[role as keyof typeof roleColors] || "hsl(var(--muted))"
         }));
         setChartData(data);
       } else {
@@ -57,7 +57,7 @@ export function UserRoleDistributionChart() {
     return <Skeleton className="h-[250px] w-full" />
   }
 
-  const chartConfig: ChartConfig = chartData.reduce((config, item) => {
+  const chartConfig = chartData.reduce((config, item) => {
     config[item.role] = { label: item.role, color: item.fill };
     return config;
   }, {} as ChartConfig);
