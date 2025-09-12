@@ -10,30 +10,15 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import type { DocumentContent } from '@/types';
+import { GenerateAcademicContentOutputSchema, GenerateAcademicContentOutput } from '@/types';
 
-const DocumentContentSchema = z.object({
-  title: z.string(),
-  sections: z.array(
-    z.object({
-      title: z.string(),
-      content: z.string(),
-      subSections: z.array(
-        z.object({
-          title: z.string(),
-          content: z.string(),
-        })
-      ).optional(),
-    })
-  ),
-});
 
 const ScanAndCleanDocumentInputSchema = z.object({
-  document: DocumentContentSchema.describe('The document content to be cleaned.'),
+  document: GenerateAcademicContentOutputSchema.describe('The document content to be cleaned.'),
 });
 export type ScanAndCleanDocumentInput = z.infer<typeof ScanAndCleanDocumentInputSchema>;
 
-export type ScanAndCleanDocumentOutput = DocumentContent;
+export type ScanAndCleanDocumentOutput = GenerateAcademicContentOutput;
 
 
 export async function scanAndCleanDocument(input: ScanAndCleanDocumentInput): Promise<ScanAndCleanDocumentOutput> {
@@ -43,14 +28,19 @@ export async function scanAndCleanDocument(input: ScanAndCleanDocumentInput): Pr
 const prompt = ai.definePrompt({
   name: 'scanAndCleanDocumentPrompt',
   input: {schema: z.object({ document: z.string() })},
-  output: {schema: DocumentContentSchema},
+  output: {schema: GenerateAcademicContentOutputSchema},
   prompt: `You are an expert document editor. Your task is to scan the provided document content for specific formatting artifacts and return a cleaned version of the document.
 
-You must remove any of the following characters or patterns if they appear inappropriately in the text:
+The document is structured with sections and sub-sections, where the 'content' field is an array of blocks (e.g., { "type": "text", "text": "..." }).
+
+You must iterate through every section and sub-section, and within each one, iterate through every 'text' block in the 'content' array.
+
+You must remove any of the following characters or patterns if they appear inappropriately in the text of these 'text' blocks:
 - Unwanted asterisks (*)
 - Unwanted hyphens or em-dashes (—) used as list markers instead of proper formatting.
 
-Do not correct grammar or spelling. Only remove the specified formatting artifacts.
+Do not correct grammar or spelling. Only remove the specified formatting artifacts from the 'text' fields.
+Do not modify 'image', 'table', or 'list' blocks.
 
 Return only the cleaned document content in the same JSON structure as the input. Do not add or remove any sections or change the overall structure.
 
@@ -65,7 +55,7 @@ const scanAndCleanFlow = ai.defineFlow(
   {
     name: 'scanAndCleanFlow',
     inputSchema: ScanAndCleanDocumentInputSchema,
-    outputSchema: DocumentContentSchema,
+    outputSchema: GenerateAcademicContentOutputSchema,
   },
   async ({document}) => {
     const {output} = await prompt({document: JSON.stringify(document)});

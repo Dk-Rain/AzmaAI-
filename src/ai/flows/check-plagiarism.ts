@@ -10,27 +10,10 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import type { DocumentContent } from '@/types';
-
-const DocumentContentSchema = z.object({
-  title: z.string(),
-  sections: z.array(
-    z.object({
-      title: z.string(),
-      content: z.string(),
-      subSections: z.array(
-        z.object({
-          title: z.string(),
-          content: z.string(),
-        })
-      ).optional(),
-    })
-  ),
-});
-
+import { GenerateAcademicContentOutputSchema } from '@/types';
 
 const CheckPlagiarismInputSchema = z.object({
-  document: DocumentContentSchema.describe('The document content to be checked for plagiarism.'),
+  document: GenerateAcademicContentOutputSchema.describe('The document content to be checked for plagiarism.'),
 });
 export type CheckPlagiarismInput = z.infer<typeof CheckPlagiarismInputSchema>;
 
@@ -57,7 +40,7 @@ const prompt = ai.definePrompt({
   output: {schema: PlagiarismResultSchema},
   prompt: `You are an expert academic editor with a specialization in identifying potential plagiarism. Your task is to analyze the provided document and identify any text that appears to be unoriginal or lacks proper citation.
 
-Analyze the document below and identify any sentences or paragraphs that seem to be copied from external sources, state common knowledge or data without citation, or are phrased in a non-original way.
+Analyze the document below. The content for each section is an array of blocks (text, image, etc.). Only analyze the content of 'text' blocks. Identify any sentences or paragraphs within these text blocks that seem to be copied from external sources, state common knowledge or data without citation, or are phrased in a non-original way.
 
 For each issue you find, provide the specific text, the section it belongs to, and a brief explanation. If the document appears to be original, state that clearly.
 
