@@ -46,7 +46,9 @@ const generateImageTool = ai.defineTool(
                 responseMimeType: 'image/png',
             },
         });
-        console.log(`Image generated: ${media.url.substring(0, 50)}...`);
+        if (!media) {
+            throw new Error('Image generation failed to return media.');
+        }
         return { url: media.url };
     }
 );
