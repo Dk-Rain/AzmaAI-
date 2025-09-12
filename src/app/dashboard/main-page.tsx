@@ -8,12 +8,13 @@ import { useToast } from '@/hooks/use-toast';
 import type { DocumentContent, References, StyleOptions } from '@/types';
 import { academicTaskFormats } from '@/types/academic-task-formats';
 import type { AcademicTaskType } from '@/types/academic-task-types';
+import type { DocumentHistoryEntry } from '@/types/admin';
 
 
 import { ControlPanel } from '@/components/control-panel';
 import { DocumentEditor } from '@/components/document-editor';
 import { Button } from '@/components/ui/button';
-import { exportDocxAction, exportTxtAction, exportCsvAction, scanAndCleanAction, checkPlagiarismAction } from '@/app/actions';
+import { exportTxtAction, exportCsvAction, scanAndCleanAction, checkPlagiarismAction } from '@/app/actions';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -186,7 +187,18 @@ export function MainPage() {
           throw new Error('Failed to fetch document');
         }
         
-        const blob = await response.blob();
+        const { file, historyEntry } = await response.json();
+        
+        // Save history entry to localStorage
+        try {
+          const history = JSON.parse(localStorage.getItem('azma_document_history') || '[]');
+          history.push(historyEntry);
+          localStorage.setItem('azma_document_history', JSON.stringify(history));
+        } catch (e) {
+          console.error("Could not save document history to localStorage", e);
+        }
+
+        const blob = new Blob([Buffer.from(file, 'base64')], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -466,5 +478,3 @@ export function MainPage() {
     </div>
   );
 }
-
-    

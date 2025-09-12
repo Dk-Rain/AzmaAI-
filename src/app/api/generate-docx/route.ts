@@ -1,6 +1,6 @@
 
 import { NextRequest, NextResponse } from 'next/server';
-import { exportToDocx } from '@/lib/docx-exporter';
+import { exportToDocx as buildDocx } from '@/lib/docx-exporter';
 import { Packer } from 'docx';
 
 export async function POST(req: NextRequest) {
@@ -11,14 +11,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing required document data' }, { status: 400 });
     }
 
-    const doc = await exportToDocx(content, references, styles);
+    const { doc, historyEntry } = await buildDocx(content, references, styles);
     const buffer = await Packer.toBuffer(doc);
 
     const headers = new Headers();
     headers.set('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
     headers.set('Content-Disposition', 'attachment; filename="generated.docx"');
     
-    return new NextResponse(buffer, { status: 200, headers });
+    // Pass historyEntry back to client to be saved in localStorage
+    const responseBody = JSON.stringify({
+        file: buffer.toString('base64'),
+        historyEntry: historyEntry
+    });
+
+    return new NextResponse(responseBody, {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
 
   } catch (err) {
     console.error(err);

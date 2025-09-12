@@ -28,3 +28,10 @@ export type Transaction = {
     date: string;
     plan: string;
 };
+
+export type DocumentHistoryEntry = {
+    docId: string;
+    title: string;
+    generatedAt: string;
+    generatedBy: string; // In a real app, this would be a user ID
+};

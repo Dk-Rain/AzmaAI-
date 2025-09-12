@@ -17,6 +17,7 @@ import {
   WidthType,
 } from 'docx';
 import type { DocumentContent, References, StyleOptions, ContentBlock } from '@/types';
+import type { DocumentHistoryEntry } from '@/types/admin';
 
 
 async function renderBlockToDocx(block: ContentBlock, styles: StyleOptions) {
@@ -86,6 +87,14 @@ async function renderBlockToDocx(block: ContentBlock, styles: StyleOptions) {
   }
 }
 
+// This function runs on the server, but we're simulating client-side localStorage interaction for the demo.
+// In a real app, this would write to a database.
+const saveDocumentToHistory = (entry: DocumentHistoryEntry) => {
+    // This is a placeholder for server-side logic.
+    // In a real scenario, you'd use a server-side API call to store this.
+    // For the demo, we will rely on the client action to save it.
+}
+
 
 export async function exportToDocx(
   content: DocumentContent,
@@ -101,6 +110,18 @@ export async function exportToDocx(
   );
 
   const uniqueId = `AZMA-DOC-${Date.now()}-${content.title.slice(0,10).replace(/\s/g, '')}`;
+
+  const historyEntry: DocumentHistoryEntry = {
+    docId: uniqueId,
+    title: content.title,
+    generatedAt: new Date().toISOString(),
+    // In a real app, you'd get the user ID from the session
+    generatedBy: 'current_user', 
+  };
+  
+  // In a real app, this would be an async call to a database service.
+  saveDocumentToHistory(historyEntry);
+
 
   const processSection = async (section: DocumentContent['sections'][0]) => {
     const sectionChildren = [];
@@ -275,5 +296,5 @@ export async function exportToDocx(
     ],
   });
 
-  return doc;
+  return { doc, historyEntry };
 }
