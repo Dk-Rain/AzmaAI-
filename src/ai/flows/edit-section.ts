@@ -10,7 +10,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import { GenerateAcademicContentOutputSchema, SectionSchema } from './generate-academic-content';
+import { GenerateAcademicContentOutputSchema, SectionSchema } from '@/types';
 
 const EditSectionInputSchema = z.object({
   document: GenerateAcademicContentOutputSchema.describe('The full existing document content.'),
