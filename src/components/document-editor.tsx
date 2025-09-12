@@ -4,7 +4,7 @@
 import { useState, useEffect, useRef } from 'react';
 import type { DocumentContent, Section, StyleOptions, ContentBlock } from '@/types';
 import { Button } from './ui/button';
-import { Loader2, PenLine, ScanSearch, CheckCircle, XCircle, FileCheck } from 'lucide-react';
+import { Loader2, PenLine, ScanSearch, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { editSectionAction, paraphraseTextAction, scanTextSnippetAction, verifyReferencesAction } from '@/app/actions';
 import { cn } from '@/lib/utils';
@@ -15,6 +15,7 @@ import Image from 'next/image';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import type { VerifyReferencesOutput } from '@/ai/flows/verify-references';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 
 interface DocumentEditorProps {
@@ -422,7 +423,7 @@ export function DocumentEditor({
               {isVerifyingRefs ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
-                <FileCheck className="mr-2 h-4 w-4" />
+                <CheckCircle className="mr-2 h-4 w-4" />
               )}
               Verify References
             </Button>
@@ -430,6 +431,31 @@ export function DocumentEditor({
     );
   };
 
+  const getStatusIndicator = (ref: VerifyReferencesOutput['references'][0]) => {
+    let status: 'verified' | 'unverified' | 'neutral' = 'unverified';
+    if (ref.isVerified) {
+        status = 'verified';
+    } else if (ref.verificationNotes.includes('DOI found but could not be verified')) {
+        status = 'neutral';
+    }
+
+    const StatusIcon = {
+        verified: <CheckCircle className="h-5 w-5 text-green-600" />,
+        unverified: <XCircle className="h-5 w-5 text-red-600" />,
+        neutral: <AlertCircle className="h-5 w-5 text-yellow-500" />,
+    }[status];
+    
+    return (
+        <TooltipProvider>
+            <Tooltip>
+                <TooltipTrigger>{StatusIcon}</TooltipTrigger>
+                <TooltipContent>
+                    <p>{ref.verificationNotes}</p>
+                </TooltipContent>
+            </Tooltip>
+        </TooltipProvider>
+    )
+  }
 
   return (
     <div
@@ -523,28 +549,18 @@ export function DocumentEditor({
             <DialogHeader>
                 <DialogTitle>Reference Verification Results</DialogTitle>
                 <DialogDescription>
-                    Here is the analysis of the selected references.
+                    Hover over the status icon for more details.
                 </DialogDescription>
             </DialogHeader>
             <div className="mt-4 max-h-96 overflow-y-auto">
                 <ul className="space-y-4">
                     {verificationResult?.references.map((ref, index) => (
-                        <li key={index} className="p-3 border rounded-lg">
-                            <p className="text-sm font-medium mb-2">"{ref.referenceText}"</p>
-                            <div className="flex items-center gap-2">
-                                {ref.isVerified ? (
-                                    <CheckCircle className="h-5 w-5 text-green-600" />
-                                ) : (
-                                    <XCircle className="h-5 w-5 text-destructive" />
-                                )}
-                                <span className={cn(
-                                    "text-xs font-semibold",
-                                    ref.isVerified ? 'text-green-700' : 'text-destructive'
-                                )}>
-                                    {ref.verificationNotes}
-                                </span>
-                            </div>
-                             {ref.doi && <p className="text-xs text-muted-foreground mt-1">DOI: {ref.doi}</p>}
+                        <li key={index} className="p-3 border rounded-lg flex items-start gap-4">
+                           {getStatusIndicator(ref)}
+                           <div>
+                            <p className="text-sm font-medium">"{ref.referenceText}"</p>
+                            {ref.doi && <p className="text-xs text-muted-foreground mt-1">DOI: {ref.doi}</p>}
+                           </div>
                         </li>
                     ))}
                 </ul>
@@ -555,3 +571,5 @@ export function DocumentEditor({
     </div>
   );
 }
+
+    
