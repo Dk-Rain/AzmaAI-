@@ -166,6 +166,7 @@ Your output must be a single, valid JSON object that strictly adheres to the Gen
 4.  **Lists**:
     *   For sequential steps, use an ordered list. Format it as: \`{ "type": "list", "style": "ordered", "items": ["First step", "Second step"] }\`.
     *   For non-sequential items, use an unordered list. Format it as: \`{ "type": "list", "style": "unordered", "items": ["Bullet point 1", "Bullet point 2"] }\`.
+5.  **Title Rules**: All titles (document, section, sub-section) must be concise, between 5 and 10 words.
 
 **User Request:**
 
@@ -175,7 +176,7 @@ Your output must be a single, valid JSON object that strictly adheres to the Gen
 *   **Parameters**: {{{parameters}}}
 *   **Suggested Format**: {{{format}}}
 
-Adhere to all instructions and generate a complete, high-quality academic document in the specified JSON format. Ensure all titles (document, section, sub-section) are concise and under 10 words. You MUST include a "References" section populated with the sources you used. Do NOT include an "Abstract" section unless explicitly requested in the parameters.
+Adhere to all instructions and generate a complete, high-quality academic document in the specified JSON format. You MUST include a "References" section populated with the sources you used. Do NOT include an "Abstract" section unless explicitly requested in the parameters.
 `,
 });
 

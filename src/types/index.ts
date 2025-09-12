@@ -32,18 +32,18 @@ export const ContentBlockSchema = z.union([TextBlockSchema, ImageBlockSchema, Ta
 
 
 export const SubSectionSchema = z.object({
-  title: z.string().describe('The title of the sub-section, no more than 10 words.'),
+  title: z.string().describe('The title of the sub-section. It must be between 5 and 10 words.'),
   content: z.array(ContentBlockSchema).describe('The content of the sub-section, which can be text, images, tables, or lists.'),
 });
 
 export const SectionSchema = z.object({
-  title: z.string().describe('The title of the section, no more than 10 words.'),
+  title: z.string().describe('The title of the section. It must be between 5 and 10 words.'),
   content: z.array(ContentBlockSchema).describe('The content of the section, which can be text, images, tables, or lists.'),
   subSections: z.array(SubSectionSchema).optional().describe('The sub-sections within the section.'),
 });
 
 export const GenerateAcademicContentOutputSchema = z.object({
-  title: z.string().describe('The title of the generated academic content. It must not be more than 10 words.'),
+  title: z.string().describe('The title of the generated academic content. It must be between 5 and 10 words.'),
   sections: z.array(SectionSchema).describe('The sections of the generated academic content.'),
 });
 export type GenerateAcademicContentOutput = z.infer<typeof GenerateAcademicContentOutputSchema>;
@@ -124,5 +124,3 @@ export type Workspace = {
   archivedItems: ArchivedItem[];
   sharedDocuments: SharedDocument[];
 }
-
-    
