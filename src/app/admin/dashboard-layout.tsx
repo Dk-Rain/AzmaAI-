@@ -163,11 +163,11 @@ export default function DashboardLayout({
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => router.push('/dashboard/profile')}>
+              <DropdownMenuItem onClick={() => router.push('/admin/profile')}>
                 <Users className="mr-2 h-4 w-4" />
                 <span>Profile</span>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => router.push('/dashboard/settings')}>
+              <DropdownMenuItem onClick={() => router.push('/admin/settings')}>
                 <Settings className="mr-2 h-4 w-4" />
                 <span>Settings</span>
               </DropdownMenuItem>
