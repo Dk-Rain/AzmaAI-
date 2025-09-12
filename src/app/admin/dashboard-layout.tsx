@@ -14,6 +14,7 @@ import {
   Shield,
   BadgeCheck,
   Megaphone,
+  Ticket,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -85,6 +86,7 @@ export default function DashboardLayout({
     { href: '/admin/users', label: 'Users', icon: Users },
     { href: '/admin/transactions', label: 'Transactions', icon: CreditCard },
     { href: '/admin/announcements', label: 'Announcements', icon: Megaphone },
+    { href: '/admin/promotions', label: 'Promotions', icon: Ticket },
     { href: '/admin/management', label: 'Admin Management', icon: Shield },
     { href: '/admin/verification', label: 'Verification', icon: BadgeCheck },
   ];

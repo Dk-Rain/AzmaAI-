@@ -54,3 +54,16 @@ export type Announcement = {
     status: 'Sent' | 'Draft';
     imageUrl?: string;
 };
+
+export type PromoCode = {
+  id: string;
+  code: string;
+  type: 'percentage' | 'fixed';
+  value: number;
+  usageLimit: number; // Total number of times the code can be used
+  usedCount: number;
+  usagePerUser: number; // How many times a single user can use it
+  expiresAt: string | null;
+  createdAt: string;
+  isActive: boolean;
+};
