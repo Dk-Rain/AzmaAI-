@@ -2,15 +2,18 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import type { DocumentContent, Section, StyleOptions } from '@/types';
+import type { DocumentContent, Section, StyleOptions, ContentBlock } from '@/types';
 import { Button } from './ui/button';
-import { Loader2, RefreshCw, PenLine, ScanSearch } from 'lucide-react';
+import { Loader2, PenLine, ScanSearch } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { regenerateSectionAction, paraphraseTextAction, scanTextSnippetAction } from '@/app/actions';
 import { cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Textarea } from './ui/textarea';
 import { Label } from './ui/label';
+import Image from 'next/image';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableCaption } from '@/components/ui/table';
+
 
 interface DocumentEditorProps {
   content: DocumentContent;
@@ -119,32 +122,38 @@ export function DocumentEditor({
     }
   };
 
-  const replaceSelection = (newText: string) => {
+ const replaceSelection = (newText: string) => {
     if (!selection) return;
+
     const range = selection.getRangeAt(0);
     range.deleteContents();
-    range.insertNode(document.createTextNode(newText));
+    const newNode = document.createTextNode(newText);
+    range.insertNode(newNode);
 
     // After replacing, we need to manually update the main content state
+    // This is a simplified approach. A more robust solution might involve
+    // finding the exact block and character offset.
     if (editorRef.current) {
-        const titleElement = editorRef.current.querySelector(
-        `[data-title="${range.startContainer.parentElement?.closest('[data-title]')?.getAttribute('data-title')}"]`
-        );
+        const titleElement = range.startContainer.parentElement?.closest('[data-title]');
         if (titleElement) {
-        const newContent = titleElement.textContent || '';
-        const sectionTitle = titleElement.getAttribute('data-title')!;
-        const isSub = titleElement.getAttribute('data-is-sub') === 'true';
-        const parentTitle = titleElement.getAttribute('data-parent-title');
-        updateSectionContent(sectionTitle, newContent, isSub, parentTitle || undefined);
+            const sectionTitle = titleElement.getAttribute('data-title')!;
+            const blockIndex = parseInt(titleElement.getAttribute('data-block-index') || '0', 10);
+            const isSub = titleElement.getAttribute('data-is-sub') === 'true';
+            const parentTitle = titleElement.getAttribute('data-parent-title');
+            
+            // Re-read the content from the DOM after replacement
+            const newContent = titleElement.textContent || '';
+
+            updateBlockContent(sectionTitle, blockIndex, { type: 'text', text: newContent }, isSub, parentTitle || undefined);
         }
     }
     setSelection(null); // Clear selection after action
-  }
+}
 
-
-  const updateSectionContent = (
+  const updateBlockContent = (
     sectionTitle: string,
-    newContent: string,
+    blockIndex: number,
+    newBlock: ContentBlock,
     isSubSection: boolean = false,
     parentSectionTitle?: string
   ) => {
@@ -154,12 +163,24 @@ export function DocumentEditor({
           return {
             ...section,
             subSections: section.subSections?.map((sub) =>
-              sub.title === sectionTitle ? { ...sub, content: newContent } : sub
+              sub.title === sectionTitle
+                ? {
+                    ...sub,
+                    content: sub.content.map((block, idx) =>
+                      idx === blockIndex ? newBlock : block
+                    ),
+                  }
+                : sub
             ),
           };
         }
         if (!isSubSection && section.title === sectionTitle) {
-          return { ...section, content: newContent };
+          return {
+            ...section,
+            content: section.content.map((block, idx) =>
+              idx === blockIndex ? newBlock : block
+            ),
+          };
         }
         return section;
       });
@@ -192,7 +213,14 @@ export function DocumentEditor({
         description: error,
       });
     } else {
-      updateSectionContent(sectionTitle, data);
+      // Find the section to update and replace its content
+      setContent(prevContent => ({
+        ...prevContent,
+        sections: prevContent.sections.map(sec => 
+          sec.title === sectionTitle ? { ...sec, content: data } : sec
+        ),
+      }));
+
       toast({
         title: 'Section Regenerated',
         description: `"${sectionTitle}" has been updated.`,
@@ -221,14 +249,16 @@ export function DocumentEditor({
   const handleBlur = (
     e: React.FocusEvent<HTMLDivElement>,
     section: Section,
+    blockIndex: number,
     isSub: boolean = false,
     parent?: Section
   ) => {
     const newText = e.currentTarget.innerText;
+    const newBlock: ContentBlock = { type: 'text', text: newText };
     if (isSub && parent) {
-      updateSectionContent(section.title, newText, true, parent.title);
+      updateBlockContent(section.title, blockIndex, newBlock, true, parent.title);
     } else {
-      updateSectionContent(section.title, newText);
+      updateBlockContent(section.title, blockIndex, newBlock);
     }
   };
   
@@ -238,6 +268,75 @@ export function DocumentEditor({
       setContent(prev => ({...prev, title: newTitle}));
     }
   }
+  
+  const renderBlock = (block: ContentBlock, blockIndex: number, section: Section, isSub: boolean, parentSection?: Section) => {
+    switch (block.type) {
+        case 'text':
+            return (
+                <div
+                    key={blockIndex}
+                    contentEditable
+                    suppressContentEditableWarning
+                    onBlur={(e) => handleBlur(e, section, blockIndex, isSub, parentSection)}
+                    data-title={section.title}
+                    data-block-index={blockIndex}
+                    data-is-sub={isSub}
+                    data-parent-title={parentSection?.title}
+                    className="prose prose-sm dark:prose-invert max-w-none focus:outline-none focus:ring-2 focus:ring-primary rounded-md p-2 -m-2"
+                >
+                    {block.text}
+                </div>
+            );
+        case 'image':
+            return (
+                <div key={blockIndex} className="my-4 text-center">
+                    <Image
+                        src={block.url}
+                        alt={block.caption || 'Generated visual'}
+                        width={600}
+                        height={400}
+                        className="mx-auto rounded-lg shadow-md"
+                    />
+                    {block.caption && <p className="text-sm text-muted-foreground mt-2 italic">{block.caption}</p>}
+                </div>
+            );
+        case 'table':
+            return (
+                 <Table key={blockIndex} className="my-4">
+                    {block.caption && <TableCaption>{block.caption}</TableCaption>}
+                    <TableHeader>
+                        <TableRow>
+                            {block.headers.map((header, hIndex) => (
+                                <TableHead key={hIndex}>{header}</TableHead>
+                            ))}
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {block.rows.map((row, rIndex) => (
+                            <TableRow key={rIndex}>
+                                {row.map((cell, cIndex) => (
+                                    <TableCell key={cIndex}>{cell}</TableCell>
+                                ))}
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            );
+        case 'list':
+            const ListTag = block.style === 'ordered' ? 'ol' : 'ul';
+            const listStyle = block.style === 'ordered' ? 'list-decimal' : 'list-disc';
+            return (
+                <ListTag key={blockIndex} className={`my-4 ml-6 ${listStyle}`}>
+                    {block.items.map((item, iIndex) => (
+                        <li key={iIndex} className="mb-1">{item}</li>
+                    ))}
+                </ListTag>
+            );
+        default:
+            return null;
+    }
+  };
+
 
   const SelectionToolbar = () => {
     if (!selection) return null;
@@ -356,18 +455,10 @@ export function DocumentEditor({
                   </div>
               </PopoverContent>
             </Popover>
+          </div>
+            
+            {Array.isArray(section.content) && section.content.map((block, blockIndex) => renderBlock(block, blockIndex, section, false))}
 
-          </div>
-          <div
-            contentEditable
-            suppressContentEditableWarning
-            onBlur={(e) => handleBlur(e, section)}
-            data-title={section.title}
-            data-is-sub="false"
-            className="prose prose-sm dark:prose-invert max-w-none focus:outline-none focus:ring-2 focus:ring-primary rounded-md p-2 -m-2"
-          >
-            {section.content}
-          </div>
 
           {section.subSections && section.subSections.length > 0 && (
             <div className="ml-6 mt-4">
@@ -376,17 +467,7 @@ export function DocumentEditor({
                   <h3 className="text-lg font-semibold mb-1">
                     {sub.title}
                   </h3>
-                  <div
-                    contentEditable
-                    suppressContentEditableWarning
-                    onBlur={(e) => handleBlur(e, sub, true, section)}
-                    data-title={sub.title}
-                    data-is-sub="true"
-                    data-parent-title={section.title}
-                    className="prose prose-sm dark:prose-invert max-w-none focus:outline-none focus:ring-2 focus:ring-primary rounded-md p-2 -m-2"
-                  >
-                    {sub.content}
-                  </div>
+                   {Array.isArray(sub.content) && sub.content.map((block, blockIndex) => renderBlock(block, blockIndex, sub, true, section))}
                 </div>
               ))}
             </div>
@@ -396,3 +477,5 @@ export function DocumentEditor({
     </div>
   );
 }
+
+    

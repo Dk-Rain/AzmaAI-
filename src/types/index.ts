@@ -1,14 +1,41 @@
 
-import type { ArrangeContentOutput } from '@/ai/flows/arrange-content-into-academic-format';
+import type { GenerateAcademicContentOutput } from '@/ai/flows/generate-academic-content';
 import type { ManageReferencesOutput } from '@/ai/flows/manage-references';
 import { z } from 'zod';
 import { academicTaskTypes } from './academic-task-types';
 import type { GenerateAcademicContentInput } from '@/ai/flows/generate-academic-content';
 
-
-export type DocumentContent = ArrangeContentOutput;
-export type Section = ArrangeContentOutput['sections'][0];
+export type DocumentContent = GenerateAcademicContentOutput;
+export type Section = DocumentContent['sections'][0];
 export type SubSection = NonNullable<Section['subSections']>[0];
+
+
+export type TextBlock = {
+    type: 'text';
+    text: string;
+};
+
+export type ImageBlock = {
+    type: 'image';
+    url: string;
+    caption?: string;
+};
+
+export type TableBlock = {
+    type: 'table';
+    caption?: string;
+    headers: string[];
+    rows: string[][];
+};
+
+export type ListBlock = {
+    type: 'list';
+    style: 'ordered' | 'unordered';
+    items: string[];
+};
+
+export type ContentBlock = TextBlock | ImageBlock | TableBlock | ListBlock;
+
 
 export const availableFonts = [
   'Literata',
@@ -40,3 +67,5 @@ export const GenerationSchema = z.object({
 });
 
 export type GenerationFormValues = z.infer<typeof GenerationSchema>;
+
+    
