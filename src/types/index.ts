@@ -91,3 +91,28 @@ export const GenerationSchema = z.object({
 });
 
 export type GenerationFormValues = z.infer<typeof GenerationSchema>;
+
+export type DocumentItem = {
+  id: string;
+  title: string;
+  content: DocumentContent;
+  references: References;
+  timestamp: string;
+}
+
+export type Project = {
+  id: string;
+  name: string;
+  documents: DocumentItem[];
+  timestamp: string;
+}
+
+export type ArchivedItem = (DocumentItem & { itemType: 'document' }) | (Project & { itemType: 'project' });
+
+export type Workspace = {
+  projects: Project[];
+  standaloneDocuments: DocumentItem[];
+  archivedItems: ArchivedItem[];
+}
+
+    

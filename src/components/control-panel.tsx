@@ -7,10 +7,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { 
     PenSquare, Loader2, Check, AlertCircle, Sparkles, 
-    Trash2, Search, Library, PlusCircle, FolderPlus, MountainIcon, Folder, File, GripVertical, ChevronDown, MoreHorizontal, Edit, FolderInput, PenLine
+    Trash2, Search, Library, PlusCircle, FolderPlus, MountainIcon, Folder, File, GripVertical, ChevronDown, MoreHorizontal, Edit, FolderInput, PenLine, Archive
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import type { DocumentContent, References, StyleOptions, FontType } from '@/types';
+import type { DocumentContent, References, StyleOptions, FontType, Workspace, Project, DocumentItem } from '@/types';
 import { GenerationSchema, GenerationFormValues, availableFonts } from '@/types';
 import { academicTaskTypes } from '@/types/academic-task-types';
 import { academicTaskFormats } from '@/types/academic-task-formats';
@@ -62,25 +62,6 @@ interface ControlPanelProps {
   content: DocumentContent;
 }
 
-type DocumentItem = {
-  id: string;
-  title: string;
-  content: DocumentContent;
-  references: References;
-  timestamp: string;
-}
-
-type Project = {
-  id: string;
-  name: string;
-  documents: DocumentItem[];
-  timestamp: string;
-}
-
-type Workspace = {
-  projects: Project[];
-  standaloneDocuments: DocumentItem[];
-}
 
 export function ControlPanel({
   setContent,
@@ -91,7 +72,7 @@ export function ControlPanel({
   content
 }: ControlPanelProps) {
   const [isGenerating, setIsGenerating] = useState(false);
-  const [workspace, setWorkspace] = useState<Workspace>({ projects: [], standaloneDocuments: [] });
+  const [workspace, setWorkspace] = useState<Workspace>({ projects: [], standaloneDocuments: [], archivedItems: [] });
   const [searchQuery, setSearchQuery] = useState('');
   const [newTaskLocation, setNewTaskLocation] = useState<string>('standalone');
   const [isNewTaskDialogOpen, setIsNewTaskDialogOpen] = useState(false);
@@ -111,11 +92,42 @@ export function ControlPanel({
 
   const taskType = generationForm.watch('taskType');
   
+  const handleTaskTypeChange = (newTaskType: AcademicTaskType) => {
+    generationForm.setValue('taskType', newTaskType);
+    
+    // Check if the title is a default one before changing it
+    const isDefaultTitle = content.title.includes("Your Academic Paper Title") || 
+                           content.title.includes("New Research Paper Title") || 
+                           content.title.includes("New Assignment Title") || 
+                           content.title.includes('New ');
+                           
+    const format = academicTaskFormats[newTaskType];
+    const sections = format
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line.startsWith('- '))
+      .map(line => ({
+        title: line.substring(2).trim(),
+        content: [],
+      }));
+    
+    const newContent: DocumentContent = {
+      title: isDefaultTitle ? `New ${newTaskType} Title` : content.title,
+      sections,
+    };
+
+    setContent(newContent);
+  };
+  
   useEffect(() => {
     try {
       const storedWorkspace = localStorage.getItem('azma_workspace');
       if (storedWorkspace) {
         const parsedWorkspace = JSON.parse(storedWorkspace);
+        // Ensure archivedItems exists
+        if (!parsedWorkspace.archivedItems) {
+            parsedWorkspace.archivedItems = [];
+        }
         setWorkspace(parsedWorkspace);
         // By default, expand all projects that have documents
         setExpandedProjects(parsedWorkspace.projects.filter((p: Project) => p.documents.length > 0).map((p: Project) => p.id));
@@ -132,27 +144,6 @@ export function ControlPanel({
     } catch (error) {
         console.error("Failed to save workspace to localStorage", error);
     }
-  }
-
-  const handleTaskTypeChange = (newTaskType: AcademicTaskType) => {
-      generationForm.setValue('taskType', newTaskType);
-      
-      const format = academicTaskFormats[newTaskType];
-      const sections = format
-        .split('\n')
-        .map(line => line.trim())
-        .filter(line => line.startsWith('- '))
-        .map(line => ({
-          title: line.substring(2).trim(),
-          content: [],
-        }));
-      
-      const newContent: DocumentContent = {
-        title: content.title.includes("Your Academic Paper Title") || content.title.includes("New Research Paper Title") || content.title.includes("New Assignment Title") || content.title.includes('New') ? `New ${newTaskType} Title` : content.title,
-        sections,
-      };
-
-      setContent(newContent);
   }
   
 
@@ -171,6 +162,7 @@ export function ControlPanel({
     const filteredStandaloneDocs = workspace.standaloneDocuments.filter(doc => doc.title.toLowerCase().includes(lowercasedQuery));
     
     return {
+        ...workspace,
         projects: filteredProjects,
         standaloneDocuments: filteredStandaloneDocs,
     };
@@ -230,6 +222,45 @@ export function ControlPanel({
     saveWorkspace(newWorkspace);
     toast({ variant: 'destructive', title: 'Project Deleted' });
   }
+
+  const archiveDocument = (id: string, projectId?: string) => {
+    let newWorkspace = { ...workspace };
+    let docToArchive: DocumentItem | undefined;
+
+    if (projectId) {
+        const project = newWorkspace.projects.find(p => p.id === projectId);
+        docToArchive = project?.documents.find(d => d.id === id);
+        if (docToArchive) {
+            newWorkspace.projects = newWorkspace.projects.map(p => 
+                p.id === projectId ? { ...p, documents: p.documents.filter(d => d.id !== id) } : p
+            );
+        }
+    } else {
+        docToArchive = newWorkspace.standaloneDocuments.find(d => d.id === id);
+        if (docToArchive) {
+            newWorkspace.standaloneDocuments = newWorkspace.standaloneDocuments.filter(d => d.id !== id);
+        }
+    }
+
+    if (docToArchive) {
+        newWorkspace.archivedItems = [...newWorkspace.archivedItems, { ...docToArchive, itemType: 'document' }];
+        saveWorkspace(newWorkspace);
+        toast({ title: 'Document Archived' });
+    }
+  };
+
+  const archiveProject = (id: string) => {
+      let newWorkspace = { ...workspace };
+      const projectToArchive = newWorkspace.projects.find(p => p.id === id);
+
+      if (projectToArchive) {
+          newWorkspace.projects = newWorkspace.projects.filter(p => p.id !== id);
+          newWorkspace.archivedItems = [...newWorkspace.archivedItems, { ...projectToArchive, itemType: 'project' }];
+          saveWorkspace(newWorkspace);
+          toast({ title: 'Project Archived' });
+      }
+  };
+
 
   const handleNewProject = () => {
     const projectName = prompt("Enter the name for your new project folder:");
@@ -481,6 +512,9 @@ export function ControlPanel({
                                       <DropdownMenuItem onClick={() => openRenameDialog({id: project.id, name: project.name, type: 'project'})}>
                                           <Edit className="mr-2 h-4 w-4"/> Rename
                                       </DropdownMenuItem>
+                                      <DropdownMenuItem onClick={() => archiveProject(project.id)}>
+                                        <Archive className="mr-2 h-4 w-4" /> Archive
+                                      </DropdownMenuItem>
                                       <AlertDialog>
                                           <AlertDialogTrigger asChild>
                                               <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
@@ -521,6 +555,9 @@ export function ControlPanel({
                                                   <DropdownMenuItem onClick={() => openRenameDialog({id: doc.id, name: doc.title, type: 'document', projectId: project.id})}>
                                                       <Edit className="mr-2 h-4 w-4"/> Rename
                                                   </DropdownMenuItem>
+                                                   <DropdownMenuItem onClick={() => archiveDocument(doc.id, project.id)}>
+                                                        <Archive className="mr-2 h-4 w-4" /> Archive
+                                                    </DropdownMenuItem>
                                                   <AlertDialog>
                                                       <AlertDialogTrigger asChild>
                                                         <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
@@ -584,6 +621,9 @@ export function ControlPanel({
                                                 </DropdownMenuSubContent>
                                             </DropdownMenuPortal>
                                         </DropdownMenuSub>
+                                        <DropdownMenuItem onClick={() => archiveDocument(doc.id)}>
+                                            <Archive className="mr-2 h-4 w-4" /> Archive
+                                        </DropdownMenuItem>
 
                                         <AlertDialog>
                                             <AlertDialogTrigger asChild>
@@ -634,7 +674,7 @@ export function ControlPanel({
                             render={({ field }) => (
                             <FormItem>
                                 <FormLabel>Task Type</FormLabel>
-                                <Select onValueChange={(value) => handleTaskTypeChange(value as AcademicTaskType)} defaultValue={field.value}>
+                                <Select onValueChange={(value) => handleTaskTypeChange(value as AcademicTaskType)} value={field.value}>
                                 <FormControl>
                                     <SelectTrigger>
                                     <SelectValue placeholder="Select a task type" />
@@ -801,6 +841,8 @@ export function ControlPanel({
     </div>
   );
 }
+
+    
 
     
 

@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ArrowLeft, ArchiveRestore, Trash2, Search, Library } from 'lucide-react';
+import { ArrowLeft, ArchiveRestore, Trash2, Search, Library, Folder, File } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
@@ -27,66 +27,82 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import type { Workspace, ArchivedItem } from '@/types';
 
-
-// Dummy history item type, mirrors what's in control-panel
-type HistoryItem = {
-  id: string;
-  title: string;
-  timestamp: string;
-  content?: any; 
-  references?: any;
-};
 
 export default function ArchivedChatsPage() {
-  const [archived, setArchived] = useState<HistoryItem[]>([]);
+  const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const { toast } = useToast();
 
   useEffect(() => {
-    // In a real app, this would be a separate list.
-    // For now, we'll just use the main history as a stand-in.
     try {
-      const storedHistory = localStorage.getItem('azma_history');
-      if (storedHistory) {
-        setArchived(JSON.parse(storedHistory));
+      const storedWorkspace = localStorage.getItem('azma_workspace');
+      if (storedWorkspace) {
+        const parsed = JSON.parse(storedWorkspace);
+        if (!parsed.archivedItems) {
+            parsed.archivedItems = [];
+        }
+        setWorkspace(parsed);
       }
     } catch (error) {
-      console.error("Failed to load history from localStorage", error);
+      console.error("Failed to load workspace from localStorage", error);
     }
   }, []);
 
+  const saveWorkspace = (newWorkspace: Workspace) => {
+    setWorkspace(newWorkspace);
+    localStorage.setItem('azma_workspace', JSON.stringify(newWorkspace));
+  };
+
+
   const filteredArchived = useMemo(() => {
-    if (!searchQuery) return archived;
-    return archived.filter(item => item.title.toLowerCase().includes(searchQuery.toLowerCase()));
-  }, [archived, searchQuery]);
+    if (!workspace || !workspace.archivedItems) return [];
+    if (!searchQuery) return workspace.archivedItems;
+    
+    const lowercasedQuery = searchQuery.toLowerCase();
+    return workspace.archivedItems.filter(item => {
+        const name = item.itemType === 'project' ? item.name : item.title;
+        return name.toLowerCase().includes(lowercasedQuery);
+    });
+  }, [workspace, searchQuery]);
 
   const unarchiveItem = (id: string) => {
-    // This is a placeholder action.
-    // In a real app, you'd update the item's state.
+    if (!workspace) return;
+    const itemToUnarchive = workspace.archivedItems.find(item => item.id === id);
+    if (!itemToUnarchive) return;
+
+    const newWorkspace = { ...workspace };
+    // Remove from archive
+    newWorkspace.archivedItems = newWorkspace.archivedItems.filter(item => item.id !== id);
+
+    // Add back to active items
+    if (itemToUnarchive.itemType === 'project') {
+        const { itemType, ...project } = itemToUnarchive;
+        newWorkspace.projects = [project, ...newWorkspace.projects];
+    } else {
+        const { itemType, ...document } = itemToUnarchive;
+        newWorkspace.standaloneDocuments = [document, ...newWorkspace.standaloneDocuments];
+    }
+
+    saveWorkspace(newWorkspace);
     toast({
-      title: 'Project Unarchived',
-      description: 'The project has been moved back to your active projects list.',
+      title: 'Item Unarchived',
+      description: 'The item has been restored to your active projects.',
     });
-    // For demo, we'll just filter it out of the view
-    setArchived(prev => prev.filter(item => item.id !== id));
   };
   
   const deleteItem = (id: string) => {
-    // This is also a placeholder.
-    // In a real app, this would permanently delete the item.
-     try {
-      const updatedHistory = archived.filter(item => item.id !== id);
-      setArchived(updatedHistory);
-      // Persist this change if you want it to be permanent for the session
-      localStorage.setItem('azma_history', JSON.stringify(updatedHistory)); 
-      toast({
-        variant: 'destructive',
-        title: 'Project Deleted Permanently',
-      });
-    } catch (error) {
-      console.error("Failed to delete from history in localStorage", error);
-    }
+    if (!workspace) return;
+    const newWorkspace = {
+        ...workspace,
+        archivedItems: workspace.archivedItems.filter(item => item.id !== id),
+    };
+    saveWorkspace(newWorkspace);
+    toast({
+      variant: 'destructive',
+      title: 'Item Deleted Permanently',
+    });
   };
 
 
@@ -126,9 +142,12 @@ export default function ArchivedChatsPage() {
                   {filteredArchived.length > 0 ? (
                     filteredArchived.map(item => (
                       <div key={item.id} className="flex items-center justify-between p-3 border-b group">
-                        <div>
-                          <p className="font-medium">{item.title}</p>
-                          <p className="text-sm text-muted-foreground">Archived on: {new Date(item.id).toLocaleDateString()}</p>
+                        <div className='flex items-center gap-2'>
+                          {item.itemType === 'project' ? <Folder className="h-5 w-5 text-primary" /> : <File className="h-5 w-5 text-muted-foreground" />}
+                          <div>
+                            <p className="font-medium">{item.itemType === 'project' ? item.name : item.title}</p>
+                            <p className="text-sm text-muted-foreground">Archived on: {new Date(item.id).toLocaleDateString()}</p>
+                          </div>
                         </div>
                         <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100">
                           <Button variant="outline" size="sm" onClick={() => unarchiveItem(item.id)}>
@@ -148,7 +167,7 @@ export default function ArchivedChatsPage() {
                                 <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                                 <AlertDialogDescription>
                                   This action cannot be undone. This will permanently delete the
-                                  project from our servers.
+                                  item from our servers.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
@@ -182,3 +201,4 @@ export default function ArchivedChatsPage() {
   );
 }
 
+    
