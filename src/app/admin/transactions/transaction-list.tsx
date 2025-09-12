@@ -34,8 +34,10 @@ export function TransactionList() {
   useEffect(() => {
     try {
       const storedTransactions = localStorage.getItem('azma_transactions');
+      let loadedTransactions: Transaction[];
+
       if (storedTransactions) {
-        setTransactions(JSON.parse(storedTransactions));
+        loadedTransactions = JSON.parse(storedTransactions);
       } else {
         const defaultTransactions: Transaction[] = [
           { id: 'txn_1', invoiceId: 'INV001', userFullName: 'John Doe', userEmail: 'john@azma.com', amount: 2000, status: 'Success', date: new Date(2024, 5, 1).toISOString(), plan: 'Student Plan' },
@@ -43,9 +45,14 @@ export function TransactionList() {
           { id: 'txn_3', invoiceId: 'INV003', userFullName: 'Peter Jones', userEmail: 'peter@example.com', amount: 5000, status: 'Failed', date: new Date(2024, 5, 4).toISOString(), plan: 'Teacher Plan' },
            { id: 'txn_4', invoiceId: 'INV004', userFullName: 'Sarah Miller', userEmail: 'sarah@example.com', amount: 8000, status: 'Pending', date: new Date(2024, 5, 5).toISOString(), plan: 'Professional Plan' },
         ];
-        setTransactions(defaultTransactions);
+        loadedTransactions = defaultTransactions;
         localStorage.setItem('azma_transactions', JSON.stringify(defaultTransactions));
       }
+
+      // Sort transactions by date, newest first
+      loadedTransactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      setTransactions(loadedTransactions);
+
     } catch (error) {
       console.error("Failed to load transactions from localStorage", error);
     }
