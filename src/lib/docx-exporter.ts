@@ -10,8 +10,81 @@ import {
   AlignmentType,
   convertInchesToTwip,
   PageBreak,
+  ImageRun,
+  Table,
+  TableRow,
+  TableCell,
+  WidthType,
 } from 'docx';
-import type { DocumentContent, References, StyleOptions } from '@/types';
+import type { DocumentContent, References, StyleOptions, ContentBlock } from '@/types';
+
+
+async function renderBlockToDocx(block: ContentBlock, styles: StyleOptions) {
+  switch (block.type) {
+    case 'text':
+      return [new Paragraph({ text: block.text, style: 'default' })];
+    
+    case 'image':
+      try {
+        const response = await fetch(block.url);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch image: ${response.statusText}`);
+        }
+        const imageBuffer = await response.arrayBuffer();
+        return [
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            children: [
+              new ImageRun({
+                data: imageBuffer,
+                transformation: {
+                  width: 500,
+                  height: 300,
+                },
+              }),
+            ],
+          }),
+          block.caption ? new Paragraph({ text: block.caption, alignment: AlignmentType.CENTER, style: 'default' }) : new Paragraph({}),
+        ];
+      } catch (error) {
+        console.error('Failed to fetch image for DOCX:', error);
+        return [new Paragraph({ text: `[Image could not be loaded: ${block.url}]`, style: 'default' })];
+      }
+
+    case 'list':
+      return block.items.map(item => new Paragraph({
+        text: item,
+        bullet: { level: 0 },
+        style: 'default',
+      }));
+
+    case 'table':
+      const table = new Table({
+        width: {
+          size: 100,
+          type: WidthType.PERCENTAGE,
+        },
+        rows: [
+          new TableRow({
+            children: block.headers.map(header => new TableCell({
+              children: [new Paragraph({ text: header, style: 'default', alignment: AlignmentType.CENTER })],
+            })),
+          }),
+          ...block.rows.map(row => new TableRow({
+            children: row.map(cell => new TableCell({
+              children: [new Paragraph({ text: cell, style: 'default' })],
+            })),
+          })),
+        ],
+      });
+      // A table must be followed by a paragraph to avoid issues in some word processors
+      return [table, new Paragraph({ text: block.caption || '', alignment: AlignmentType.CENTER, style: 'default' })];
+
+    default:
+      const exhaustiveCheck: never = block;
+      return [new Paragraph({ text: `[Unsupported Block]`, style: 'default' })];
+  }
+}
 
 
 export async function exportToDocx(
@@ -28,6 +101,118 @@ export async function exportToDocx(
   );
 
   const uniqueId = `AZMA-DOC-${Date.now()}-${content.title.slice(0,10).replace(/\s/g, '')}`;
+
+  const processSection = async (section: DocumentContent['sections'][0]) => {
+    const sectionChildren = [];
+    
+    sectionChildren.push(new Paragraph({
+        text: section.title || '',
+        heading: HeadingLevel.HEADING_1,
+        style: 'h1',
+    }));
+
+    for (const block of (section.content || [])) {
+        const renderedBlocks = await renderBlockToDocx(block, styles);
+        sectionChildren.push(...renderedBlocks);
+    }
+    
+    if(section.subSections) {
+        for (const subSection of section.subSections) {
+            sectionChildren.push(new Paragraph({
+                text: subSection.title || '',
+                heading: HeadingLevel.HEADING_2,
+                style: 'h2',
+            }));
+            for (const block of (subSection.content || [])) {
+                const renderedBlocks = await renderBlockToDocx(block, styles);
+                sectionChildren.push(...renderedBlocks);
+            }
+        }
+    }
+    return sectionChildren;
+  }
+  
+  const children = [
+      // Verification Page
+      new Paragraph({
+          alignment: AlignmentType.CENTER,
+          children: [
+              new TextRun({
+                  text: "Document Verification",
+                  bold: true,
+                  size: 28,
+              }),
+          ],
+          spacing: { after: 400 },
+      }),
+      new Paragraph({
+          alignment: AlignmentType.CENTER,
+          children: [
+              new TextRun({
+                  text: "Generated and Verified by AzmaAI",
+                  size: 24,
+                  italics: true,
+              }),
+          ],
+          spacing: { after: 800 },
+      }),
+      new Paragraph({
+          alignment: AlignmentType.LEFT,
+          children: [
+              new TextRun({
+                  text: "Document ID:",
+                  bold: true,
+                  size: 24,
+              }),
+          ],
+          spacing: { after: 200 },
+      }),
+      new Paragraph({
+          alignment: AlignmentType.LEFT,
+          children: [
+              new TextRun({
+                  text: uniqueId,
+                  size: 22,
+              }),
+          ],
+          style: 'default',
+      }),
+      new Paragraph({
+          children: [new PageBreak()]
+      }),
+
+      // Original Content
+      new Paragraph({
+        text: content.title || '',
+        heading: HeadingLevel.TITLE,
+        alignment: AlignmentType.CENTER,
+        style: 'default',
+      }),
+      new Paragraph({ text: '' }), // Spacer
+  ];
+
+  for (const section of (content.sections || [])) {
+      const sectionBlocks = await processSection(section);
+      children.push(...sectionBlocks);
+  }
+  
+  // Conditionally add the references section
+  if (!hasReferencesSection && (references || []).length > 0) {
+    children.push(new Paragraph({ text: '' })); // Spacer
+    children.push(new Paragraph({
+        text: 'References',
+        heading: HeadingLevel.HEADING_1,
+        style: 'h1',
+    }));
+    references.forEach(ref => {
+        children.push(new Paragraph({
+            text: ref.referenceText,
+            style: 'default',
+            bullet: { level: 0 },
+        }));
+    });
+  }
+
 
   const doc = new Document({
     styles: {
@@ -85,108 +270,7 @@ export async function exportToDocx(
             },
           },
         },
-        children: [
-            // Verification Page
-            new Paragraph({
-                alignment: AlignmentType.CENTER,
-                children: [
-                    new TextRun({
-                        text: "Document Verification",
-                        bold: true,
-                        size: 28,
-                    }),
-                ],
-                spacing: { after: 400 },
-            }),
-            new Paragraph({
-                alignment: AlignmentType.CENTER,
-                children: [
-                    new TextRun({
-                        text: "Generated and Verified by AzmaAI",
-                        size: 24,
-                        italics: true,
-                    }),
-                ],
-                spacing: { after: 800 },
-            }),
-             new Paragraph({
-                alignment: AlignmentType.LEFT,
-                children: [
-                    new TextRun({
-                        text: "Document ID:",
-                        bold: true,
-                        size: 24,
-                    }),
-                ],
-                spacing: { after: 200 },
-            }),
-             new Paragraph({
-                alignment: AlignmentType.LEFT,
-                children: [
-                    new TextRun({
-                        text: uniqueId,
-                        size: 22,
-                    }),
-                ],
-                style: 'default',
-            }),
-            new Paragraph({
-                children: [new PageBreak()]
-            }),
-
-          // Original Content
-          new Paragraph({
-            text: content.title || '',
-            heading: HeadingLevel.TITLE,
-            alignment: AlignmentType.CENTER,
-            style: 'default',
-          }),
-          new Paragraph({ text: '' }), // Spacer
-          ...(content.sections || []).flatMap((section) => [
-            new Paragraph({
-              text: section.title || '',
-              heading: HeadingLevel.HEADING_1,
-              style: 'h1',
-            }),
-            ...Array.isArray(section.content) ? section.content.map(block => new Paragraph({
-                text: block.type === 'text' ? block.text : `[Unsupported Block: ${block.type}]`,
-                style: 'default',
-            })) : [new Paragraph({ text: '', style: 'default'})],
-            ...(section.subSections || []).flatMap((subSection) => [
-                  new Paragraph({ text: '' }), // Spacer
-                  new Paragraph({
-                    text: subSection.title || '',
-                    heading: HeadingLevel.HEADING_2,
-                    style: 'h2',
-                  }),
-                  ...Array.isArray(subSection.content) ? subSection.content.map(block => new Paragraph({
-                      text: block.type === 'text' ? block.text : `[Unsupported Block: ${block.type}]`,
-                      style: 'default',
-                  })) : [new Paragraph({ text: '', style: 'default'})],
-                ])
-          ]),
-          // Conditionally add the references section
-          ...(!hasReferencesSection && (references || []).length > 0
-            ? [
-                new Paragraph({ text: '' }), // Spacer
-                new Paragraph({
-                  text: 'References',
-                  heading: HeadingLevel.HEADING_1,
-                  style: 'h1',
-                }),
-                ...references.map(
-                  (ref) =>
-                    new Paragraph({
-                      text: ref.referenceText,
-                      style: 'default',
-                      bullet: {
-                        level: 0,
-                      },
-                    })
-                ),
-              ]
-            : []),
-        ],
+        children: children,
       },
     ],
   });
