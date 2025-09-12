@@ -43,3 +43,13 @@ export type PricingSettings = {
     professor: { monthly: number; yearly: number };
     teacher: { monthly: number; yearly: number };
 }
+
+export type Announcement = {
+    id: string;
+    title: string;
+    message: string;
+    type: 'Info' | 'Promotion' | 'Warning' | 'Update';
+    audience: 'All Users' | 'Students' | 'Professors' | 'Teachers' | 'Researchers' | 'Professionals';
+    createdAt: string;
+    status: 'Sent' | 'Draft';
+};
