@@ -41,19 +41,34 @@ export default function SealVerifyPage() {
                 }]));
             }
             if (!allPromoCodes) {
-                 localStorage.setItem('azma_promo_codes', JSON.stringify([{
-                    id: 'promo-demo-1',
-                    code: 'DEMO2024',
-                    type: 'percentage',
-                    value: 25,
-                    usageLimit: 10,
-                    usedCount: 0,
-                    usagePerUser: 1,
-                    redeemedBy: [],
-                    expiresAt: null,
-                    createdAt: new Date().toISOString(),
-                    isActive: true,
-                }]));
+                 localStorage.setItem('azma_promo_codes', JSON.stringify([
+                    {
+                        id: 'promo-demo-1',
+                        code: 'DEMO2024',
+                        type: 'percentage',
+                        value: 25,
+                        usageLimit: 10,
+                        usedCount: 0,
+                        usagePerUser: 1,
+                        redeemedBy: [],
+                        expiresAt: null,
+                        createdAt: new Date().toISOString(),
+                        isActive: true,
+                    },
+                    {
+                        id: 'promo-demo-2',
+                        code: 'SAVE500',
+                        type: 'fixed',
+                        value: 500,
+                        usageLimit: 20,
+                        usedCount: 0,
+                        usagePerUser: 1,
+                        redeemedBy: [],
+                        expiresAt: null,
+                        createdAt: new Date().toISOString(),
+                        isActive: true,
+                    }
+                ]));
             }
         } catch (e) {
             console.error('Could not set up demo data in localStorage', e);
@@ -251,5 +266,7 @@ export default function SealVerifyPage() {
         </div>
     );
 }
+
+    
 
     
