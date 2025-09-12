@@ -23,7 +23,8 @@ import {
 import { Switch } from "@/components/ui/switch"
 import { useToast } from "@/hooks/use-toast"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Trash2, KeyRound, Building } from "lucide-react";
+import { Trash2, KeyRound, Building, Brush } from "lucide-react";
+import { useTheme } from "next-themes";
 
 type AppSettings = {
     appName: string;
@@ -36,6 +37,8 @@ type AppSettings = {
 
 export default function AdminSettingsPage() {
     const { toast } = useToast();
+    const { setTheme, theme } = useTheme();
+    const [mounted, setMounted] = useState(false);
     const [settings, setSettings] = useState<AppSettings>({
         appName: 'AzmaAI',
         allowRegistrations: true,
@@ -49,6 +52,7 @@ export default function AdminSettingsPage() {
 
 
     useEffect(() => {
+        setMounted(true);
         try {
             const storedSettings = localStorage.getItem('azma_app_settings');
             if (storedSettings) {
@@ -104,6 +108,40 @@ export default function AdminSettingsPage() {
 
   return (
     <div className="grid gap-6">
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2"><Brush /> Appearance</CardTitle>
+                <CardDescription>
+                    Customize the look and feel of the admin dashboard.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="grid gap-2">
+                    <div className="font-medium">Theme</div>
+                    <div className="text-sm text-muted-foreground">Select a theme for the admin interface.</div>
+                    {mounted && <div className="flex items-center gap-2">
+                        <Button
+                            variant={theme === 'light' ? 'default' : 'outline'}
+                            onClick={() => setTheme('light')}
+                        >
+                            Light
+                        </Button>
+                        <Button
+                            variant={theme === 'dark' ? 'default' : 'outline'}
+                            onClick={() => setTheme('dark')}
+                        >
+                            Dark
+                        </Button>
+                        <Button
+                             variant={theme === 'system' ? 'default' : 'outline'}
+                             onClick={() => setTheme('system')}
+                        >
+                            System
+                        </Button>
+                    </div>}
+                </div>
+            </CardContent>
+        </Card>
         <Card>
             <CardHeader>
                 <CardTitle>General Settings</CardTitle>
