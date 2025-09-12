@@ -241,18 +241,18 @@ export default function AdminSettingsPage() {
                             <AlertDialogDescription>
                                 This will permanently delete all user accounts and their associated data from local storage.
                                 This is useful for resetting the application demo.
-                                <div className="mt-4">
-                                  <Label htmlFor="delete-confirm">To confirm, type "delete" below:</Label>
-                                  <Input 
-                                    id="delete-confirm"
-                                    value={deleteConfirmation}
-                                    onChange={(e) => setDeleteConfirmation(e.target.value)}
-                                    className="mt-1"
-                                    autoFocus
-                                  />
-                                </div>
                             </AlertDialogDescription>
                         </AlertDialogHeader>
+                        <div className="pt-2">
+                            <Label htmlFor="delete-confirm">To confirm, type "delete" below:</Label>
+                            <Input 
+                            id="delete-confirm"
+                            value={deleteConfirmation}
+                            onChange={(e) => setDeleteConfirmation(e.target.value)}
+                            className="mt-1"
+                            autoFocus
+                            />
+                        </div>
                         <AlertDialogFooter>
                             <AlertDialogCancel onClick={() => setDeleteConfirmation('')}>Cancel</AlertDialogCancel>
                             <AlertDialogAction 
