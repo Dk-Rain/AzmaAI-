@@ -139,92 +139,94 @@ export default function AnnouncementsPage() {
           <DialogTrigger asChild>
             <Button><PlusCircle className="mr-2 h-4 w-4" /> Create Announcement</Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
+          <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle>New Announcement</DialogTitle>
               <DialogDescription>
                 Compose a new message to be displayed to users.
               </DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleCreateAnnouncement} className="space-y-4">
-              {newAnnouncement.imageUrl ? (
-                <div className="relative">
-                  <Image src={newAnnouncement.imageUrl} alt="Image preview" width={400} height={200} className="w-full h-auto object-cover rounded-md" />
-                  <Button
-                    variant="destructive"
-                    size="icon"
-                    className="absolute top-2 right-2 h-6 w-6"
-                    onClick={() => setNewAnnouncement(prev => ({ ...prev, imageUrl: '' }))}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              ) : (
+            <div className="max-h-[80vh] overflow-y-auto pr-4">
+              <form onSubmit={handleCreateAnnouncement} className="space-y-4">
+                {newAnnouncement.imageUrl ? (
+                  <div className="relative">
+                    <Image src={newAnnouncement.imageUrl} alt="Image preview" width={400} height={200} className="w-full h-auto object-cover rounded-md" />
+                    <Button
+                      variant="destructive"
+                      size="icon"
+                      className="absolute top-2 right-2 h-6 w-6"
+                      onClick={() => setNewAnnouncement(prev => ({ ...prev, imageUrl: '' }))}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Label>Poster/Flyer (Optional)</Label>
+                    <Button type="button" variant="outline" className="w-full" onClick={() => fileInputRef.current?.click()}>
+                      <Upload className="mr-2 h-4 w-4" /> Upload Image
+                    </Button>
+                    <Input
+                      type="file"
+                      ref={fileInputRef}
+                      className="hidden"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                    />
+                  </div>
+                )}
                 <div className="space-y-2">
-                  <Label>Poster/Flyer (Optional)</Label>
-                  <Button type="button" variant="outline" className="w-full" onClick={() => fileInputRef.current?.click()}>
-                    <Upload className="mr-2 h-4 w-4" /> Upload Image
-                  </Button>
+                  <Label htmlFor="title">Title</Label>
                   <Input
-                    type="file"
-                    ref={fileInputRef}
-                    className="hidden"
-                    accept="image/*"
-                    onChange={handleImageUpload}
+                    id="title"
+                    value={newAnnouncement.title}
+                    onChange={(e) => setNewAnnouncement({ ...newAnnouncement, title: e.target.value })}
+                    placeholder="e.g., System Maintenance Alert"
+                    required
                   />
                 </div>
-              )}
-              <div className="space-y-2">
-                <Label htmlFor="title">Title</Label>
-                <Input
-                  id="title"
-                  value={newAnnouncement.title}
-                  onChange={(e) => setNewAnnouncement({ ...newAnnouncement, title: e.target.value })}
-                  placeholder="e.g., System Maintenance Alert"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="message">Message</Label>
-                <Textarea
-                  id="message"
-                  value={newAnnouncement.message}
-                  onChange={(e) => setNewAnnouncement({ ...newAnnouncement, message: e.target.value })}
-                  placeholder="e.g., We will be undergoing scheduled maintenance..."
-                  required
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="type">Type</Label>
-                  <Select
-                    value={newAnnouncement.type}
-                    onValueChange={(value) => setNewAnnouncement({ ...newAnnouncement, type: value as Announcement['type'] })}
-                  >
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {typeOptions.map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                  <Label htmlFor="message">Message</Label>
+                  <Textarea
+                    id="message"
+                    value={newAnnouncement.message}
+                    onChange={(e) => setNewAnnouncement({ ...newAnnouncement, message: e.target.value })}
+                    placeholder="e.g., We will be undergoing scheduled maintenance..."
+                    required
+                  />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="audience">Audience</Label>
-                  <Select
-                    value={newAnnouncement.audience}
-                    onValueChange={(value) => setNewAnnouncement({ ...newAnnouncement, audience: value as Announcement['audience'] })}
-                  >
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {audienceOptions.map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="type">Type</Label>
+                    <Select
+                      value={newAnnouncement.type}
+                      onValueChange={(value) => setNewAnnouncement({ ...newAnnouncement, type: value as Announcement['type'] })}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {typeOptions.map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="audience">Audience</Label>
+                    <Select
+                      value={newAnnouncement.audience}
+                      onValueChange={(value) => setNewAnnouncement({ ...newAnnouncement, audience: value as Announcement['audience'] })}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {audienceOptions.map(opt => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-              </div>
-              <DialogFooter>
-                <DialogClose asChild><Button variant="ghost">Cancel</Button></DialogClose>
-                <Button type="submit"><Send className="mr-2 h-4 w-4" />Send Announcement</Button>
-              </DialogFooter>
-            </form>
+                <DialogFooter className="sticky bottom-0 bg-background/90 pt-4">
+                  <DialogClose asChild><Button variant="ghost">Cancel</Button></DialogClose>
+                  <Button type="submit"><Send className="mr-2 h-4 w-4" />Send Announcement</Button>
+                </DialogFooter>
+              </form>
+            </div>
           </DialogContent>
         </Dialog>
       </CardHeader>
