@@ -57,10 +57,14 @@ export function UserRoleDistributionChart() {
     return <Skeleton className="h-[250px] w-full" />
   }
 
-  const chartConfig = chartData.reduce((config, item) => {
-    config[item.role] = { label: item.role, color: item.fill };
-    return config;
-  }, {} as ChartConfig);
+  const chartConfig = {
+    Student: { label: "Student", color: "hsl(var(--chart-1))" },
+    Professor: { label: "Professor", color: "hsl(var(--chart-2))" },
+    Teacher: { label: "Teacher", color: "hsl(var(--chart-3))" },
+    Researcher: { label: "Researcher", color: "hsl(var(--chart-4))" },
+    Professional: { label: "Professional", color: "hsl(var(--chart-5))" },
+    Admin: { label: "Admin", color: "hsl(var(--primary))" },
+  } satisfies ChartConfig;
 
   return (
     <ChartContainer config={chartConfig} className="min-h-[250px] w-full">
