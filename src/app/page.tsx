@@ -324,9 +324,9 @@ export default function LandingPage() {
             <Link href="#pricing" className="text-xs hover:underline underline-offset-4" prefetch={false}>
               Pricing
             </Link>
-            <a href="mailto:support@azmaai.com" className="text-xs hover:underline underline-offset-4">
+            <Link href="/contact" className="text-xs hover:underline underline-offset-4" prefetch={false}>
               Contact
-            </a>
+            </Link>
              <Link href="#" className="text-xs hover:underline underline-offset-4" prefetch={false}>
               Privacy Policy
             </Link>

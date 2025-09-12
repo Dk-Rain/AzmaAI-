@@ -119,6 +119,9 @@ export default function AboutPage() {
           <Link href="#pricing" className="text-xs hover:underline underline-offset-4" prefetch={false}>
             Pricing
           </Link>
+          <Link href="/contact" className="text-xs hover:underline underline-offset-4" prefetch={false}>
+            Contact
+          </Link>
            <Link href="#" className="text-xs hover:underline underline-offset-4" prefetch={false}>
             Privacy Policy
           </Link>
