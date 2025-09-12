@@ -3,6 +3,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { CheckCircle, FolderOpen, Gauge, Library, Lock, PlayCircle, Rocket, School, BookOpenCheck } from 'lucide-react';
 import Image from 'next/image';
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel"
 
 export default function LandingPage() {
   return (
@@ -205,47 +212,103 @@ export default function LandingPage() {
                 <h2 className="text-3xl font-bold tracking-tight">Pricing Plans</h2>
                 <p className="mx-auto max-w-2xl text-muted-foreground">Choose a plan that fits your academic needs.</p>
               </div>
-              <div className="mx-auto grid max-w-5xl items-start gap-8 sm:grid-cols-3 md:gap-12">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Free Plan</CardTitle>
-                    <CardDescription>Limited pages, limited references.</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                      <p className="text-3xl font-bold">₦0</p>
-                      <p className="text-sm text-muted-foreground">For getting started</p>
-                  </CardContent>
-                  <CardFooter>
-                    <Button variant="outline" className="w-full" asChild><Link href="/signup">Get Started</Link></Button>
-                  </CardFooter>
-                </Card>
-                 <Card className="border-primary shadow-lg">
-                  <CardHeader>
-                    <CardTitle>Student Plan</CardTitle>
-                    <CardDescription>Unlimited assignments, export to Word/PDF.</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                      <p className="text-3xl font-bold">₦2,000<span className="text-sm font-normal text-muted-foreground">/mo</span></p>
-                      <p className="text-sm text-muted-foreground">Perfect for coursework</p>
-                  </CardContent>
-                  <CardFooter>
-                    <Button className="w-full" asChild><Link href="/signup">Choose Student</Link></Button>
-                  </CardFooter>
-                </Card>
-                 <Card>
-                  <CardHeader>
-                    <CardTitle>Pro Plan</CardTitle>
-                    <CardDescription>+ plagiarism check, advanced templates.</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                      <p className="text-3xl font-bold">₦8,000<span className="text-sm font-normal text-muted-foreground">/mo</span></p>
-                      <p className="text-sm text-muted-foreground">For serious researchers</p>
-                  </CardContent>
-                  <CardFooter>
-                    <Button variant="outline" className="w-full" asChild><Link href="/signup">Choose Pro</Link></Button>
-                  </CardFooter>
-                </Card>
-              </div>
+              <Carousel 
+                opts={{
+                  align: "start",
+                  loop: true,
+                }}
+                className="w-full max-w-sm sm:max-w-xl md:max-w-2xl lg:max-w-4xl mx-auto"
+              >
+                <CarouselContent>
+                  <CarouselItem className="md:basis-1/2 lg:basis-1/3">
+                    <div className="p-1 h-full">
+                      <Card className="flex flex-col h-full">
+                        <CardHeader>
+                          <CardTitle>Free Plan</CardTitle>
+                          <CardDescription>Limited pages, limited references.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-2 flex-grow">
+                            <p className="text-3xl font-bold">₦0</p>
+                            <p className="text-sm text-muted-foreground">For getting started</p>
+                        </CardContent>
+                        <CardFooter>
+                          <Button variant="outline" className="w-full" asChild><Link href="/signup">Get Started</Link></Button>
+                        </CardFooter>
+                      </Card>
+                    </div>
+                  </CarouselItem>
+                  <CarouselItem className="md:basis-1/2 lg:basis-1/3">
+                    <div className="p-1 h-full">
+                      <Card className="border-primary shadow-lg flex flex-col h-full">
+                        <CardHeader>
+                          <CardTitle>Student Plan</CardTitle>
+                          <CardDescription>Unlimited assignments, export to Word/PDF.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-2 flex-grow">
+                            <p className="text-3xl font-bold">₦2,000<span className="text-sm font-normal text-muted-foreground">/mo</span></p>
+                            <p className="text-sm text-muted-foreground">Perfect for coursework</p>
+                        </CardContent>
+                        <CardFooter>
+                          <Button className="w-full" asChild><Link href="/signup">Choose Student</Link></Button>
+                        </CardFooter>
+                      </Card>
+                    </div>
+                  </CarouselItem>
+                   <CarouselItem className="md:basis-1/2 lg:basis-1/3">
+                    <div className="p-1 h-full">
+                      <Card className="flex flex-col h-full">
+                        <CardHeader>
+                          <CardTitle>Teacher Plan</CardTitle>
+                          <CardDescription>Lesson plans, exam questions, and reports.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-2 flex-grow">
+                            <p className="text-3xl font-bold">₦5,000<span className="text-sm font-normal text-muted-foreground">/mo</span></p>
+                            <p className="text-sm text-muted-foreground">Ideal for educators</p>
+                        </CardContent>
+                        <CardFooter>
+                          <Button variant="outline" className="w-full" asChild><Link href="/signup">Choose Teacher</Link></Button>
+                        </CardFooter>
+                      </Card>
+                    </div>
+                  </CarouselItem>
+                  <CarouselItem className="md:basis-1/2 lg:basis-1/3">
+                     <div className="p-1 h-full">
+                        <Card className="flex flex-col h-full">
+                          <CardHeader>
+                            <CardTitle>Researcher Plan</CardTitle>
+                            <CardDescription>Advanced data tools & journal templates.</CardDescription>
+                          </CardHeader>
+                          <CardContent className="space-y-2 flex-grow">
+                              <p className="text-3xl font-bold">₦8,000<span className="text-sm font-normal text-muted-foreground">/mo</span></p>
+                              <p className="text-sm text-muted-foreground">For serious researchers</p>
+                          </CardContent>
+                          <CardFooter>
+                            <Button variant="outline" className="w-full" asChild><Link href="/signup">Choose Researcher</Link></Button>
+                          </CardFooter>
+                        </Card>
+                     </div>
+                  </CarouselItem>
+                   <CarouselItem className="md:basis-1/2 lg:basis-1/3">
+                    <div className="p-1 h-full">
+                      <Card className="flex flex-col h-full">
+                        <CardHeader>
+                          <CardTitle>Pro Plan</CardTitle>
+                          <CardDescription>+ plagiarism check, advanced templates.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-2 flex-grow">
+                            <p className="text-3xl font-bold">₦8,000<span className="text-sm font-normal text-muted-foreground">/mo</span></p>
+                            <p className="text-sm text-muted-foreground">For professionals</p>
+                        </CardContent>
+                        <CardFooter>
+                          <Button variant="outline" className="w-full" asChild><Link href="/signup">Choose Pro</Link></Button>
+                        </CardFooter>
+                      </Card>
+                    </div>
+                  </CarouselItem>
+                </CarouselContent>
+                <CarouselPrevious />
+                <CarouselNext />
+              </Carousel>
             </div>
           </section>
         </main>
