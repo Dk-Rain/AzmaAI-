@@ -571,5 +571,3 @@ export function DocumentEditor({
     </div>
   );
 }
-
-    
