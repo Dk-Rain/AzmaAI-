@@ -153,7 +153,7 @@ export function ControlPanel({
 
       setContent(newContent);
     }
-  }, [taskType, setContent]);
+  }, [taskType, setContent, content]);
   
 
   const filteredWorkspace = useMemo(() => {
@@ -801,3 +801,5 @@ export function ControlPanel({
     </div>
   );
 }
+
+    
