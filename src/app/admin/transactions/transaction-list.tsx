@@ -138,10 +138,6 @@ export function TransactionList() {
                       <FileText className="mr-2 h-4 w-4" />
                       View Details
                     </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => handleDownloadReceipt(transaction)}>
-                        <Download className="mr-2 h-4 w-4" />
-                        Download Receipt
-                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </TableCell>
