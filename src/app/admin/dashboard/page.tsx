@@ -4,14 +4,8 @@ import { useState, useEffect } from "react";
 import {
   Activity,
   ArrowUpRight,
-  Book,
-  CircleUser,
   CreditCard,
   DollarSign,
-  Folder,
-  Menu,
-  Package2,
-  Search,
   Users,
 } from "lucide-react"
 import Link from "next/link"
@@ -38,45 +32,43 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import type { Workspace } from "@/types";
-import type { User } from "@/types/admin";
 import { Skeleton } from "@/components/ui/skeleton";
 
 type Stats = {
-    totalUsers: number;
-    documentsGenerated: number;
-    activeProjects: number;
-    aiGenerations: number;
+    totalRevenue: number;
+    subscriptions: number;
+    sales: number;
+    activeNow: number;
+}
+
+type Transaction = {
+    name: string;
+    email: string;
+    amount: string;
+    status: 'Approved' | 'Declined' | 'Pending';
+    date: string;
 }
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState<Stats | null>(null);
-  const [recentUsers, setRecentUsers] = useState<User[]>([]);
+  const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([]);
 
   useEffect(() => {
-    try {
-        const storedUsers = localStorage.getItem('azma_all_users');
-        const allUsers: User[] = storedUsers ? JSON.parse(storedUsers) : [];
-        
-        const storedWorkspace = localStorage.getItem('azma_workspace');
-        const workspace: Workspace = storedWorkspace ? JSON.parse(storedWorkspace) : { projects: [], standaloneDocuments: [] };
+    // This is all mock data. In a real application, you would fetch this from your backend.
+    setStats({
+        totalRevenue: 45231.89,
+        subscriptions: 2350,
+        sales: 12234,
+        activeNow: 573,
+    });
 
-        const docCount = (workspace.projects || []).reduce((acc, p) => acc + (p.documents?.length || 0), 0) + (workspace.standaloneDocuments?.length || 0);
-
-        setStats({
-            totalUsers: allUsers.length,
-            documentsGenerated: docCount,
-            activeProjects: workspace.projects?.length || 0,
-            aiGenerations: 1532, // Placeholder
-        });
-
-        // Get last 5 users
-        const sortedUsers = allUsers.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-        setRecentUsers(sortedUsers.slice(0, 5));
-
-    } catch (error) {
-        console.error("Failed to load dashboard stats from localStorage", error);
-    }
+    setRecentTransactions([
+        { name: 'Liam Johnson', email: 'liam@example.com', amount: '₦250.00', status: 'Approved', date: '2023-06-23' },
+        { name: 'Olivia Smith', email: 'olivia@example.com', amount: '₦150.00', status: 'Declined', date: '2023-06-24' },
+        { name: 'Noah Williams', email: 'noah@example.com', amount: '₦350.00', status: 'Pending', date: '2023-06-25' },
+        { name: 'Emma Brown', email: 'emma@example.com', amount: '₦450.00', status: 'Approved', date: '2023-06-26' },
+        { name: 'James Jones', email: 'james@example.com', amount: '₦550.00', status: 'Approved', date: '2023-06-27' },
+    ]);
   }, []);
 
 
@@ -89,7 +81,7 @@ export default function AdminDashboard() {
                 <Card><CardHeader><Skeleton className="h-4 w-2/3" /></CardHeader><CardContent><Skeleton className="h-8 w-1/2" /><Skeleton className="h-3 w-1/3 mt-1" /></CardContent></Card>
                 <Card><CardHeader><Skeleton className="h-4 w-2/3" /></CardHeader><CardContent><Skeleton className="h-8 w-1/2" /><Skeleton className="h-3 w-1/3 mt-1" /></CardContent></Card>
             </div>
-            <div className="mt-6">
+            <div className="mt-6 grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-1">
                 <Card>
                     <CardHeader><Skeleton className="h-6 w-1/4" /></CardHeader>
                     <CardContent><Skeleton className="h-40 w-full" /></CardContent>
@@ -105,94 +97,104 @@ export default function AdminDashboard() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
-                Total Users
+                Total Revenue
+              </CardTitle>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">₦{stats.totalRevenue.toLocaleString()}</div>
+              <p className="text-xs text-muted-foreground">
+                +20.1% from last month
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Subscriptions
               </CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.totalUsers}</div>
+              <div className="text-2xl font-bold">+{stats.subscriptions.toLocaleString()}</div>
               <p className="text-xs text-muted-foreground">
-                All registered users
+                +180.1% from last month
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Sales</CardTitle>
+              <CreditCard className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">+{stats.sales.toLocaleString()}</div>
+              <p className="text-xs text-muted-foreground">
+                +19% from last month
               </p>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
-                Documents Generated
-              </CardTitle>
-              <Book className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.documentsGenerated}</div>
-              <p className="text-xs text-muted-foreground">
-                Across all projects
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Projects</CardTitle>
-              <Folder className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.activeProjects}</div>
-              <p className="text-xs text-muted-foreground">
-                User-created project folders
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                AI Generations
+                Active Now
               </CardTitle>
               <Activity className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.aiGenerations.toLocaleString()}</div>
+              <div className="text-2xl font-bold">+{stats.activeNow}</div>
               <p className="text-xs text-muted-foreground">
-                Total content generation events
+                +201 since last hour
               </p>
             </CardContent>
           </Card>
         </div>
-        <div className="mt-6">
+        <div className="mt-6 grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-1">
           <Card>
-            <CardHeader>
-              <CardTitle>Recent Users</CardTitle>
-              <CardDescription>
-                The latest users who have signed up.
-              </CardDescription>
+            <CardHeader className="flex flex-row items-center">
+                <div className="grid gap-2">
+                    <CardTitle>Recent Transactions</CardTitle>
+                    <CardDescription>
+                        You made {stats.sales.toLocaleString()} sales this month.
+                    </CardDescription>
+                </div>
+                <Button asChild size="sm" className="ml-auto gap-1">
+                    <Link href="#">
+                    View All
+                    <ArrowUpRight className="h-4 w-4" />
+                    </Link>
+                </Button>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Customer</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Date Joined</TableHead>
+                    <TableHead className="text-center">Status</TableHead>
+                    <TableHead className="text-right">Date</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {recentUsers.length > 0 ? recentUsers.map(user => (
-                    <TableRow key={user.id}>
+                  {recentTransactions.map((transaction, index) => (
+                    <TableRow key={index}>
                       <TableCell>
-                        <div className="font-medium">{user.fullName}</div>
+                        <div className="font-medium">{transaction.name}</div>
                         <div className="hidden text-sm text-muted-foreground md:inline">
-                          {user.email}
+                          {transaction.email}
                         </div>
                       </TableCell>
-                      <TableCell>
-                          <Badge variant="outline">{user.role}</Badge>
+                      <TableCell className="text-center">
+                          <Badge 
+                            variant={transaction.status === 'Approved' ? 'default' : transaction.status === 'Pending' ? 'secondary' : 'destructive'}
+                          >
+                            {transaction.status}
+                          </Badge>
                       </TableCell>
-                      <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
+                      <TableCell className="text-right">{transaction.date}</TableCell>
+                      <TableCell className="text-right">{transaction.amount}</TableCell>
                     </TableRow>
-                  )) : (
-                     <TableRow>
-                        <TableCell colSpan={3} className="text-center">No users found.</TableCell>
-                     </TableRow>
-                  )}
+                  ))}
                 </TableBody>
               </Table>
             </CardContent>
