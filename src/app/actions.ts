@@ -2,7 +2,7 @@
 'use server';
 
 import { generateAcademicContent } from '@/ai/flows/generate-academic-content';
-import { manageReferences } from '@/ai/flows/manage-references';
+
 import { paraphraseText } from '@/ai/flows/paraphrase-text';
 import { scanAndCleanDocument } from '@/ai/flows/scan-and-clean-document';
 import { scanTextSnippet } from '@/ai/flows/scan-text-snippet';
@@ -86,7 +86,16 @@ function formatAsCsv(content: DocumentContent, references: References): string {
 export async function generateContentAction(values: GenerationFormValues) {
   try {
     const generatedContent = await generateAcademicContent(values);
-    return { data: generatedContent, error: null };
+    
+    const referencesSection = generatedContent.sections.find(s => s.title.toLowerCase() === 'references');
+    const references: References = referencesSection ? referencesSection.content.map(c => {
+        if (c.type === 'text') {
+            return { referenceText: c.text, isVerified: false }; // We can't verify here, but we can format
+        }
+        return null;
+    }).filter((r): r is { referenceText: string; isVerified: boolean; } => r !== null) : [];
+
+    return { data: { content: generatedContent, references }, error: null };
   } catch (error) {
     console.error(error);
     return { data: null, error: 'Failed to generate content.' };
@@ -171,18 +180,6 @@ export async function checkPlagiarismAction(document: DocumentContent) {
         console.error(error);
         return { data: null, error: 'Failed to check for plagiarism.' };
     }
-}
-
-export async function manageReferencesAction(
-  referencesToVerify: string,
-) {
-  try {
-    const result = await manageReferences({ referencesToVerify });
-    return { data: result.references, error: null };
-  } catch (error) {
-    console.error(error);
-    return { data: null, error: 'Failed to manage references.' };
-  }
 }
 
 export async function exportDocxAction(

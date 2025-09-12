@@ -15,8 +15,8 @@ import { GenerationSchema, GenerationFormValues, availableFonts } from '@/types'
 import { academicTaskTypes } from '@/types/academic-task-types';
 import { academicTaskFormats } from '@/types/academic-task-formats';
 
-import {
-  manageReferencesAction,
+import { 
+
   generateContentAction,
 } from '@/app/actions';
 
@@ -62,10 +62,6 @@ interface ControlPanelProps {
   content: DocumentContent;
 }
 
-const referenceSchema = z.object({
-  referencesToVerify: z.string().min(1, 'Please paste references to verify.'),
-});
-
 type DocumentItem = {
   id: string;
   title: string;
@@ -95,7 +91,6 @@ export function ControlPanel({
   content
 }: ControlPanelProps) {
   const [isGenerating, setIsGenerating] = useState(false);
-  const [isManagingRefs, setIsManagingRefs] = useState(false);
   const [workspace, setWorkspace] = useState<Workspace>({ projects: [], standaloneDocuments: [] });
   const [searchQuery, setSearchQuery] = useState('');
   const [newTaskLocation, setNewTaskLocation] = useState<string>('standalone');
@@ -112,10 +107,7 @@ export function ControlPanel({
     defaultValues: { topic: '', parameters: '', taskType: 'Research Paper', numPages: 1 },
   });
 
-  const referenceForm = useForm<z.infer<typeof referenceSchema>>({
-    resolver: zodResolver(referenceSchema),
-    defaultValues: { referencesToVerify: '' },
-  });
+
 
   const taskType = generationForm.watch('taskType');
   
@@ -151,7 +143,7 @@ export function ControlPanel({
         .filter(line => line.startsWith('- '))
         .map(line => ({
           title: line.substring(2).trim(),
-          content: `Placeholder for ${line.substring(2).trim()}`,
+          content: [],
         }));
       
       const newContent: DocumentContent = {
@@ -161,7 +153,7 @@ export function ControlPanel({
 
       setContent(newContent);
     }
-  }, [taskType]);
+  }, [taskType, setContent]);
   
 
   const filteredWorkspace = useMemo(() => {
@@ -263,7 +255,7 @@ export function ControlPanel({
         .filter(line => line.startsWith('- '))
         .map(line => ({
           title: line.substring(2).trim(),
-          content: `Placeholder for ${line.substring(2).trim()}`,
+          content: [],
         }));
     
     const newDocContent: DocumentContent = {
@@ -381,9 +373,9 @@ export function ControlPanel({
         description: error,
       });
     } else {
-      setContent(data);
-      setReferences([]);
-      saveDocument(data, []);
+      setContent(data.content);
+      setReferences(data.references);
+      saveDocument(data.content, data.references);
       toast({
         title: 'Content Generated',
         description: 'Your document has been created and saved to your projects.',
@@ -391,31 +383,6 @@ export function ControlPanel({
     }
   }
 
-  async function onVerifyReferences(values: z.infer<typeof referenceSchema>) {
-    setIsManagingRefs(true);
-    toast({
-      title: 'Verifying References...',
-      description: `The AI is checking your references against the CrossRef database.`,
-    });
-
-    const { data, error } = await manageReferencesAction(values.referencesToVerify);
-    setIsManagingRefs(false);
-
-    if (error || !data) {
-      toast({
-        variant: 'destructive',
-        title: 'Reference Verification Failed',
-        description: error,
-      });
-    } else {
-      setReferences(data);
-      saveDocument(content, data);
-      toast({
-        title: 'References Verified',
-        description: 'The reference list has been updated with verification status.',
-      });
-    }
-  }
 
   return (
     <div className="flex flex-col h-full">
@@ -798,67 +765,6 @@ export function ControlPanel({
                             />
                         </div>
                     </div>
-                    <Separator />
-                    {/* Manage References */}
-                    <div>
-                        <Form {...referenceForm}>
-                        <form
-                            onSubmit={referenceForm.handleSubmit(onVerifyReferences)}
-                            className="space-y-4"
-                        >
-                            <h3 className="text-base font-semibold">Verify References</h3>
-                            <FormField
-                            control={referenceForm.control}
-                            name="referencesToVerify"
-                            render={({ field }) => (
-                                <FormItem>
-                                <FormLabel>Paste References Here</FormLabel>
-                                <FormControl>
-                                    <Textarea 
-                                        placeholder="Paste the reference list from your document here to verify their authenticity..."
-                                        className="h-32"
-                                        {...field} />
-                                </FormControl>
-                                <FormMessage />
-                                </FormItem>
-                            )}
-                            />
-                            <Button type="submit" disabled={isManagingRefs} className="w-full">
-                            {isManagingRefs ? (
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            ) : (
-                                <Check className="mr-2 h-4 w-4" />
-                            )}
-                            Verify References
-                            </Button>
-                        </form>
-                        </Form>
-                        <div className="mt-4 space-y-2">
-                        <h4 className="font-semibold text-sm">Verified References</h4>
-                        <ScrollArea className="h-40 w-full rounded-md border p-2">
-                            {references.length > 0 ? (
-                            references.map((ref, index) => (
-                                <div key={index} className="text-sm p-2 border-b">
-                                <p>{ref.referenceText}</p>
-                                {ref.isVerified ? (
-                                    <Badge variant="secondary" className="mt-1 bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300">
-                                    <Check className="mr-1 h-3 w-3" /> Verified
-                                    </Badge>
-                                ) : (
-                                    <Badge variant="destructive" className="mt-1">
-                                    <AlertCircle className="mr-1 h-3 w-3" /> Unverified
-                                    </Badge>
-                                )}
-                                </div>
-                            ))
-                            ) : (
-                            <p className="text-muted-foreground text-sm p-2">
-                                No references verified yet.
-                            </p>
-                            )}
-                        </ScrollArea>
-                        </div>
-                    </div>
                 </div>
             </ScrollArea>
         </TabsContent>
@@ -895,5 +801,3 @@ export function ControlPanel({
     </div>
   );
 }
-
-    
