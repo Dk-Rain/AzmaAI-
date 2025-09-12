@@ -23,15 +23,37 @@ export default function LoginPage() {
     // Placeholder for auth
     setTimeout(() => {
         setIsLoading(false);
-        // Simulate saving user data to be accessible by dashboard
+        // In a real app, you would verify credentials against a backend
+        // and fetch user data.
+        
+        // For this demo, we'll check if we are logging in as an admin
+        // And if the user exists in localStorage, otherwise create a default student.
+        let user;
+        if(email.toLowerCase() === 'admin@azma.com'){
+             user = { fullName: 'Admin User', email: email, role: 'Admin' };
+        } else {
+            try {
+                // This is a mock implementation. In a real app, you wouldn't store all users in one key.
+                const allUsers = JSON.parse(localStorage.getItem('azma_all_users') || '[]');
+                const existingUser = allUsers.find((u: any) => u.email === email);
+                user = existingUser || { fullName: 'Demo User', email: email, role: 'Student' };
+            } catch (e) {
+                 user = { fullName: 'Demo User', email: email, role: 'Student' };
+            }
+        }
+
         try {
-          // In a real app, you'd fetch this from your backend
-          localStorage.setItem('azmaUser', JSON.stringify({ fullName: 'Demo User', email: email, role: 'Student' }));
+          localStorage.setItem('azmaUser', JSON.stringify(user));
         } catch (error) {
            console.error("Could not save user to localStorage", error);
         }
         toast({ title: "Login successful!"});
-        router.push('/dashboard');
+        
+        if (user.role === 'Admin') {
+            router.push('/admin');
+        } else {
+            router.push('/dashboard');
+        }
     }, 1000)
   };
 
