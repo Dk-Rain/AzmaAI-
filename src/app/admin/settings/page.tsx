@@ -23,12 +23,15 @@ import {
 import { Switch } from "@/components/ui/switch"
 import { useToast } from "@/hooks/use-toast"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Trash2 } from "lucide-react";
+import { Trash2, KeyRound, Building } from "lucide-react";
 
 type AppSettings = {
     appName: string;
     allowRegistrations: boolean;
     defaultUserRole: string;
+    maintenanceMode: boolean;
+    paymentGatewayPublicKey: string;
+    paymentGatewaySecretKey: string;
 };
 
 export default function AdminSettingsPage() {
@@ -37,6 +40,9 @@ export default function AdminSettingsPage() {
         appName: 'AzmaAI',
         allowRegistrations: true,
         defaultUserRole: 'Student',
+        maintenanceMode: false,
+        paymentGatewayPublicKey: '',
+        paymentGatewaySecretKey: '',
     });
     const [isLoading, setIsLoading] = useState(false);
 
@@ -117,6 +123,30 @@ export default function AdminSettingsPage() {
 
         <Card>
             <CardHeader>
+                <CardTitle>Application Status</CardTitle>
+                 <CardDescription>
+                    Control the accessibility of the application.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                 <div className="flex items-center justify-between space-x-2">
+                    <Label htmlFor="maintenance-mode" className="flex flex-col space-y-1">
+                        <span>Maintenance Mode</span>
+                        <span className="font-normal leading-snug text-muted-foreground">
+                        When enabled, users will be shown a maintenance page.
+                        </span>
+                    </Label>
+                    <Switch
+                        id="maintenance-mode"
+                        checked={settings.maintenanceMode}
+                        onCheckedChange={(checked) => setSettings({...settings, maintenanceMode: checked})}
+                    />
+                </div>
+            </CardContent>
+        </Card>
+
+        <Card>
+            <CardHeader>
                 <CardTitle>User Management</CardTitle>
                 <CardDescription>
                 Control user registration and default roles.
@@ -152,6 +182,36 @@ export default function AdminSettingsPage() {
                             <SelectItem value="Professor">Professor</SelectItem>
                         </SelectContent>
                     </Select>
+                </div>
+            </CardContent>
+        </Card>
+
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2"><KeyRound /> Payment Gateway</CardTitle>
+                <CardDescription>
+                    Configure API keys for your payment provider (e.g., Stripe, Paystack).
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <div className="grid gap-2">
+                    <Label htmlFor="public-key">Public Key</Label>
+                    <Input 
+                        id="public-key"
+                        placeholder="pk_test_xxxxxxxxxxxxxxxxxxxxxxxx"
+                        value={settings.paymentGatewayPublicKey}
+                        onChange={(e) => setSettings({...settings, paymentGatewayPublicKey: e.target.value})}
+                    />
+                </div>
+                <div className="grid gap-2">
+                    <Label htmlFor="secret-key">Secret Key</Label>
+                    <Input 
+                        id="secret-key"
+                        type="password"
+                        placeholder="sk_test_xxxxxxxxxxxxxxxxxxxxxxxx"
+                        value={settings.paymentGatewaySecretKey}
+                        onChange={(e) => setSettings({...settings, paymentGatewaySecretKey: e.target.value})}
+                    />
                 </div>
             </CardContent>
         </Card>
