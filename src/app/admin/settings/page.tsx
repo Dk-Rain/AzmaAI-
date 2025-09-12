@@ -190,7 +190,7 @@ export default function AdminSettingsPage() {
             <CardHeader>
                 <CardTitle className="flex items-center gap-2"><KeyRound /> Payment Gateway</CardTitle>
                 <CardDescription>
-                    Configure API keys for your payment provider (e.g., Stripe, Paystack).
+                    Configure API keys for your payment provider (e.g., Flutterwave, Paystack).
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
