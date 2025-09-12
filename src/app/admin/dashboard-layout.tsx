@@ -79,7 +79,6 @@ export default function DashboardLayout({
   const navLinks = [
     { href: '/admin/dashboard', label: 'Dashboard', icon: Home },
     { href: '/admin/users', label: 'Users', icon: Users },
-    { href: '/admin/analysis', label: 'Analysis', icon: PieChart },
   ];
 
   return (
