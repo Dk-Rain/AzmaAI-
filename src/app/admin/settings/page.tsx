@@ -45,6 +45,8 @@ export default function AdminSettingsPage() {
         paymentGatewaySecretKey: '',
     });
     const [isLoading, setIsLoading] = useState(false);
+    const [deleteConfirmation, setDeleteConfirmation] = useState('');
+
 
     useEffect(() => {
         try {
@@ -95,6 +97,8 @@ export default function AdminSettingsPage() {
                 title: 'Failed to Clear Data',
                 description: 'Could not clear data from localStorage.',
             });
+        } finally {
+            setDeleteConfirmation('');
         }
     }
 
@@ -237,11 +241,26 @@ export default function AdminSettingsPage() {
                             <AlertDialogDescription>
                                 This will permanently delete all user accounts and their associated data from local storage.
                                 This is useful for resetting the application demo.
+                                <div className="mt-4">
+                                  <Label htmlFor="delete-confirm">To confirm, type "delete" below:</Label>
+                                  <Input 
+                                    id="delete-confirm"
+                                    value={deleteConfirmation}
+                                    onChange={(e) => setDeleteConfirmation(e.target.value)}
+                                    className="mt-1"
+                                    autoFocus
+                                  />
+                                </div>
                             </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={handleClearData}>Delete All Data</AlertDialogAction>
+                            <AlertDialogCancel onClick={() => setDeleteConfirmation('')}>Cancel</AlertDialogCancel>
+                            <AlertDialogAction 
+                                onClick={handleClearData} 
+                                disabled={deleteConfirmation !== 'delete'}
+                            >
+                                Delete All Data
+                            </AlertDialogAction>
                         </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>
