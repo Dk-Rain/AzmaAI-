@@ -12,7 +12,7 @@ export default function AdminLayout({
 
   // If we are on the auth page, just render the children (the auth page itself)
   // without the dashboard layout.
-  if (pathname === '/admin/auth') {
+  if (pathname === '/admin') {
     return <>{children}</>;
   }
 

@@ -53,12 +53,12 @@ export default function DashboardLayout({
             title: 'Access Denied',
             description: 'You do not have permission to view this page.'
         });
-        router.push('/admin/auth');
+        router.push('/admin');
       } else {
         setUser(parsedUser);
       }
     } else {
-      router.push('/admin/auth');
+      router.push('/admin');
     }
     setIsLoading(false);
   }, [router, toast]);
@@ -66,7 +66,7 @@ export default function DashboardLayout({
   const handleLogout = () => {
     localStorage.removeItem('azmaUser');
     toast({ title: 'Logged out successfully.' });
-    router.push('/admin/auth');
+    router.push('/admin');
   };
 
   const isActive = (path: string) => pathname === path;
@@ -76,7 +76,7 @@ export default function DashboardLayout({
   }
 
   const navLinks = [
-    { href: '/admin', label: 'Dashboard', icon: Home },
+    { href: '/admin/dashboard', label: 'Dashboard', icon: Home },
     { href: '/admin/users', label: 'Users', icon: Users, badge: 6 },
   ];
 
@@ -85,7 +85,7 @@ export default function DashboardLayout({
       <div className="hidden border-r bg-muted/40 md:block">
         <div className="flex h-full max-h-screen flex-col gap-2">
           <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
-            <Link href="/admin" className="flex items-center gap-2 font-semibold">
+            <Link href="/admin/dashboard" className="flex items-center gap-2 font-semibold">
               <School className="h-6 w-6" />
               <span className="">AzmaAI Admin</span>
             </Link>
