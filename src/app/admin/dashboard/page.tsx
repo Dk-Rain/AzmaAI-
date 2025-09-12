@@ -29,27 +29,32 @@ export default function AdminDashboard() {
   ];
 
   const portfolioData = [
-    { name: "Students", value: 50 },
-    { name: "Teachers", value: 25 },
-    { name: "Researchers", value: 15 },
-    { name: "Professionals", value: 10 },
+    { name: "Students", value: 50, fill: "var(--color-students)" },
+    { name: "Teachers", value: 25, fill: "var(--color-teachers)" },
+    { name: "Researchers", value: 15, fill: "var(--color-researchers)" },
+    { name: "Professionals", value: 10, fill: "var(--color-professionals)" },
   ];
-
-  const COLORS = ["hsl(var(--chart-1))", "hsl(var(--chart-2))", "hsl(var(--chart-4))", "hsl(var(--chart-5))"];
 
   const revenueChartConfig = {
     revenue: {
       label: "Revenue",
       color: "hsl(var(--chart-1))",
     },
-  } satisfies ChartConfig
+  } satisfies ChartConfig;
+
+  const subscriptionChartConfig = {
+    subscriptions: {
+      label: "Subscriptions",
+      color: "hsl(var(--chart-2))",
+    },
+  } satisfies ChartConfig;
 
   const portfolioChartConfig = {
-      Students: { label: 'Students', color: COLORS[0]},
-      Teachers: { label: 'Teachers', color: COLORS[1]},
-      Researchers: { label: 'Researchers', color: COLORS[2]},
-      Professionals: { label: 'Professionals', color: COLORS[3]},
-  } satisfies ChartConfig
+      students: { label: 'Students', color: "hsl(var(--chart-1))"},
+      teachers: { label: 'Teachers', color: "hsl(var(--chart-2))"},
+      researchers: { label: 'Researchers', color: "hsl(var(--chart-4))"},
+      professionals: { label: 'Professionals', color: "hsl(var(--chart-5))"},
+  } satisfies ChartConfig;
 
 
   return (
@@ -96,43 +101,15 @@ export default function AdminDashboard() {
       <Card>
         <CardContent className="p-4">
           <h3 className="font-semibold mb-2">Subscriptions</h3>
-          <ResponsiveContainer width="100%" height={250}>
-            <LineChart data={subscriptionData}>
-              <XAxis dataKey="month" />
-              <YAxis />
-              <Tooltip
-                content={({ active, payload }) => {
-                  if (active && payload && payload.length) {
-                    return (
-                      <div className="rounded-lg border bg-background p-2 shadow-sm">
-                        <div className="grid grid-cols-2 gap-2">
-                          <div className="flex flex-col">
-                            <span className="text-[0.70rem] uppercase text-muted-foreground">
-                              Month
-                            </span>
-                            <span className="font-bold text-muted-foreground">
-                              {payload[0].payload.month}
-                            </span>
-                          </div>
-                          <div className="flex flex-col">
-                            <span className="text-[0.70rem] uppercase text-muted-foreground">
-                              Subscriptions
-                            </span>
-                            <span className="font-bold">
-                              {payload[0].value?.toLocaleString()}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    )
-                  }
-
-                  return null
-                }}
-              />
-              <Line type="monotone" dataKey="subscriptions" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
+          <ChartContainer config={subscriptionChartConfig} className="min-h-[250px] w-full">
+            <LineChart data={subscriptionData} accessibilityLayer>
+              <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} />
+              <YAxis tickLine={false} axisLine={false} tickMargin={8} />
+              <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
+              <Legend />
+              <Line type="monotone" dataKey="subscriptions" stroke="var(--color-subscriptions)" strokeWidth={2} dot={false} />
             </LineChart>
-          </ResponsiveContainer>
+          </ChartContainer>
         </CardContent>
       </Card>
 
@@ -143,11 +120,7 @@ export default function AdminDashboard() {
            <ChartContainer config={portfolioChartConfig} className="min-h-[250px] w-full">
             <PieChart>
               <ChartTooltip content={<ChartTooltipContent nameKey="value" hideLabel />} />
-              <Pie data={portfolioData} dataKey="value" nameKey="name" outerRadius={90}>
-                {portfolioData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
+              <Pie data={portfolioData} dataKey="value" nameKey="name" outerRadius={90}/>
               <Legend />
             </PieChart>
           </ChartContainer>
