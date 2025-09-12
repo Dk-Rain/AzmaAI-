@@ -217,10 +217,12 @@ export default function SettingsPage() {
                           <div className="space-y-1">
                             <h4 className="font-medium">Shared links</h4>
                           </div>
-                          <Button variant="outline">
-                            <Share2 className="mr-2 h-4 w-4" />
-                            Manage
-                           </Button>
+                          <Link href="/dashboard/settings/shared-links">
+                            <Button variant="outline">
+                              <Share2 className="mr-2 h-4 w-4" />
+                              Manage
+                            </Button>
+                          </Link>
                         </div>
                         <Separator />
                          <div className="flex items-center justify-between space-x-4">

@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { 
     PenSquare, Loader2, Check, AlertCircle, Sparkles, 
-    Trash2, Search, Library, PlusCircle, FolderPlus, MountainIcon, Folder, File, GripVertical, ChevronDown, MoreHorizontal, Edit, FolderInput, PenLine, Archive
+    Trash2, Search, Library, PlusCircle, FolderPlus, MountainIcon, Folder, File, GripVertical, ChevronDown, MoreHorizontal, Edit, FolderInput, PenLine, Archive, Share2
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { DocumentContent, References, StyleOptions, FontType, Workspace, Project, DocumentItem } from '@/types';
@@ -72,7 +72,7 @@ export function ControlPanel({
   content
 }: ControlPanelProps) {
   const [isGenerating, setIsGenerating] = useState(false);
-  const [workspace, setWorkspace] = useState<Workspace>({ projects: [], standaloneDocuments: [], archivedItems: [] });
+  const [workspace, setWorkspace] = useState<Workspace>({ projects: [], standaloneDocuments: [], archivedItems: [], sharedDocuments: [] });
   const [searchQuery, setSearchQuery] = useState('');
   const [newTaskLocation, setNewTaskLocation] = useState<string>('standalone');
   const [isNewTaskDialogOpen, setIsNewTaskDialogOpen] = useState(false);
@@ -124,10 +124,10 @@ export function ControlPanel({
       const storedWorkspace = localStorage.getItem('azma_workspace');
       if (storedWorkspace) {
         const parsedWorkspace = JSON.parse(storedWorkspace);
-        // Ensure archivedItems exists
-        if (!parsedWorkspace.archivedItems) {
-            parsedWorkspace.archivedItems = [];
-        }
+        // Ensure arrays exist
+        if (!parsedWorkspace.archivedItems) parsedWorkspace.archivedItems = [];
+        if (!parsedWorkspace.sharedDocuments) parsedWorkspace.sharedDocuments = [];
+
         setWorkspace(parsedWorkspace);
         // By default, expand all projects that have documents
         setExpandedProjects(parsedWorkspace.projects.filter((p: Project) => p.documents.length > 0).map((p: Project) => p.id));
@@ -259,6 +259,51 @@ export function ControlPanel({
           saveWorkspace(newWorkspace);
           toast({ title: 'Project Archived' });
       }
+  };
+
+  const shareDocument = (docId: string, projectId?: string) => {
+    const newWorkspace = { ...workspace };
+    let docToShare: DocumentItem | undefined;
+
+    const findDoc = (docs: DocumentItem[]) => docs.find(d => d.id === docId);
+
+    if (projectId) {
+      const project = newWorkspace.projects.find(p => p.id === projectId);
+      docToShare = findDoc(project?.documents || []);
+    } else {
+      docToShare = findDoc(newWorkspace.standaloneDocuments);
+    }
+
+    if (!docToShare) return;
+
+    const publicId = docToShare.publicId || `${docId.substring(0, 8)}-${Date.now().toString(36)}`;
+    
+    // Update the document item to mark it as shared
+    const updateDoc = (doc: DocumentItem) => 
+        doc.id === docId ? { ...doc, isShared: true, publicId } : doc;
+
+    if (projectId) {
+        newWorkspace.projects = newWorkspace.projects.map(p => 
+            p.id === projectId ? { ...p, documents: p.documents.map(updateDoc) } : p
+        );
+    } else {
+        newWorkspace.standaloneDocuments = newWorkspace.standaloneDocuments.map(updateDoc);
+    }
+    
+    // Add to shared documents list if not already there
+    if (!newWorkspace.sharedDocuments.some(d => d.id === docId)) {
+        newWorkspace.sharedDocuments.push({ ...docToShare, publicId });
+    }
+
+    saveWorkspace(newWorkspace);
+    
+    const shareUrl = `${window.location.origin}/share/${publicId}`;
+    navigator.clipboard.writeText(shareUrl);
+
+    toast({
+        title: 'Share Link Copied!',
+        description: 'A public link to your document has been copied to your clipboard.',
+    });
   };
 
 
@@ -555,6 +600,9 @@ export function ControlPanel({
                                                   <DropdownMenuItem onClick={() => openRenameDialog({id: doc.id, name: doc.title, type: 'document', projectId: project.id})}>
                                                       <Edit className="mr-2 h-4 w-4"/> Rename
                                                   </DropdownMenuItem>
+                                                  <DropdownMenuItem onClick={() => shareDocument(doc.id, project.id)}>
+                                                      <Share2 className="mr-2 h-4 w-4" /> Share
+                                                  </DropdownMenuItem>
                                                    <DropdownMenuItem onClick={() => archiveDocument(doc.id, project.id)}>
                                                         <Archive className="mr-2 h-4 w-4" /> Archive
                                                     </DropdownMenuItem>
@@ -602,7 +650,9 @@ export function ControlPanel({
                                         <DropdownMenuItem onClick={() => openRenameDialog({id: doc.id, name: doc.title, type: 'document'})}>
                                             <Edit className="mr-2 h-4 w-4"/> Rename
                                         </DropdownMenuItem>
-                                        
+                                         <DropdownMenuItem onClick={() => shareDocument(doc.id)}>
+                                            <Share2 className="mr-2 h-4 w-4" /> Share
+                                        </DropdownMenuItem>
                                         <DropdownMenuSub>
                                             <DropdownMenuSubTrigger>
                                                 <FolderInput className="mr-2 h-4 w-4"/>

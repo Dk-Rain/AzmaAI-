@@ -98,6 +98,8 @@ export type DocumentItem = {
   content: DocumentContent;
   references: References;
   timestamp: string;
+  isShared?: boolean;
+  publicId?: string;
 }
 
 export type Project = {
@@ -109,10 +111,18 @@ export type Project = {
 
 export type ArchivedItem = (DocumentItem & { itemType: 'document' }) | (Project & { itemType: 'project' });
 
+export type SharedDocument = {
+    id: string;
+    publicId: string;
+    title: string;
+    sharedAt: string;
+}
+
 export type Workspace = {
   projects: Project[];
   standaloneDocuments: DocumentItem[];
   archivedItems: ArchivedItem[];
+  sharedDocuments: SharedDocument[];
 }
 
     
