@@ -2,7 +2,7 @@
 'use server';
 
 /**
- * @fileOverview Verifies references using the CrossRef API.
+ * @fileOverview Verifies references using the CrossRef, PubMed, and arXiv APIs.
  *
  * - verifyReferences - A function that verifies a list of references.
  * - VerifyReferencesInput - The input type for the verifyReferences function.
@@ -22,8 +22,8 @@ const VerifyReferencesOutputSchema = z.object({
     z.object({
       referenceText: z.string().describe('The original reference text that was checked.'),
       doi: z.string().optional().describe('The DOI extracted from the reference, if any.'),
-      isVerified: z.boolean().describe('Whether the reference was successfully verified via the CrossRef API.'),
-      verificationNotes: z.string().describe('Notes on the verification status (e.g., "Verified via DOI," "No DOI found," "DOI not found on CrossRef").')
+      isVerified: z.boolean().describe('Whether the reference was successfully verified via an API call.'),
+      verificationNotes: z.string().describe('Notes on the verification status (e.g., "Verified via DOI," "No DOI found," "Not found on any database").')
     })
   ).describe('An array of reference verification results.'),
 });
@@ -55,27 +55,57 @@ const verifyReferencesFlow = ai.defineFlow(
       let isVerified = false;
       let verificationNotes = '';
       
+      // 1. Try verifying with DOI via CrossRef
       if (doi) {
         try {
-          // Call CrossRef API to verify DOI
           const crossrefApiResponse = await fetch(`https://api.crossref.org/works/${doi}`);
           if (crossrefApiResponse.ok) {
             const result = await crossrefApiResponse.json();
             if (result.status === 'ok') {
               isVerified = true;
               verificationNotes = 'Verified via DOI on CrossRef.';
-            } else {
-               verificationNotes = 'DOI found but could not be verified on CrossRef.';
             }
-          } else {
-            verificationNotes = 'DOI not found on CrossRef.';
           }
         } catch (error) {
           console.error(`Error verifying DOI ${doi}:`, error);
-          verificationNotes = 'An error occurred during verification.';
         }
-      } else {
-        verificationNotes = 'No DOI found in the reference text.';
+      }
+      
+      // 2. If not verified, try searching on PubMed
+      if (!isVerified) {
+         try {
+            const searchResponse = await fetch(`https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term=${encodeURIComponent(referenceText)}&retmax=1&format=json`);
+            if (searchResponse.ok) {
+                const searchData = await searchResponse.json();
+                if (searchData.esearchresult.idlist.length > 0) {
+                    isVerified = true;
+                    verificationNotes = 'Found a likely match on PubMed.';
+                }
+            }
+         } catch (error) {
+            console.error(`Error searching PubMed for "${referenceText}":`, error);
+         }
+      }
+
+      // 3. If still not verified, try searching on arXiv
+      if (!isVerified) {
+         try {
+            const response = await fetch(`https://export.arxiv.org/api/query?search_query=all:${encodeURIComponent(referenceText)}&start=0&max_results=1`);
+            if (response.ok) {
+                const xmlText = await response.text();
+                if (xmlText.includes('<entry>')) {
+                    isVerified = true;
+                    verificationNotes = 'Found a likely match on arXiv.';
+                }
+            }
+         } catch (error) {
+            console.error(`Error searching arXiv for "${referenceText}":`, error);
+         }
+      }
+
+      // 4. Final verification notes if nothing was found
+      if (!isVerified) {
+          verificationNotes = doi ? 'DOI found but could not be verified.' : 'Could not find a match on PubMed or arXiv.';
       }
       
       verifiedReferences.push({
