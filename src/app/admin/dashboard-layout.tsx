@@ -171,9 +171,9 @@ export default function DashboardLayout({
                 <Settings className="mr-2 h-4 w-4" />
                 <span>Settings</span>
               </DropdownMenuItem>
-               <DropdownMenuItem onClick={() => router.push('/dashboard')}>
+               <DropdownMenuItem onClick={() => router.push('/admin/dashboard')}>
                 <Home className="mr-2 h-4 w-4" />
-                <span>User Dashboard</span>
+                <span>Admin Dashboard</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout}>
