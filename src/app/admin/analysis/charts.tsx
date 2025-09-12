@@ -1,7 +1,7 @@
 
 'use client';
 import { useState, useEffect } from 'react';
-import { Bar, BarChart, CartesianGrid, XAxis, Pie, PieChart, Cell } from "recharts"
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Pie, PieChart, Cell, Area, AreaChart, ResponsiveContainer, Legend } from "recharts"
 import {
   ChartContainer,
   ChartTooltip,
@@ -11,39 +11,35 @@ import {
   type ChartConfig
 } from "@/components/ui/chart"
 import type { User } from '@/types/admin';
-import type { Workspace } from '@/types';
+import type { Workspace, DocumentItem } from '@/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import { academicTaskTypes } from '@/types/academic-task-types';
 
 
-const roleColors: {[key: string]: string} = {
-    Student: "hsl(var(--chart-1))",
-    Professor: "hsl(var(--chart-2))",
-    Teacher: "hsl(var(--chart-3))",
-    Researcher: "hsl(var(--chart-4))",
-    Professional: "hsl(var(--chart-5))",
-    Admin: "hsl(var(--primary))",
-};
-
-
-export function UserRoleDistributionChart() {
+export function UserGrowthChart() {
   const [chartData, setChartData] = useState<any[] | null>(null);
-  
+
   useEffect(() => {
     try {
       const storedUsers = localStorage.getItem('azma_all_users');
       if (storedUsers) {
         const users: User[] = JSON.parse(storedUsers);
-        const roleCounts = users.reduce((acc, user) => {
-          acc[user.role] = (acc[user.role] || 0) + 1;
-          return acc;
-        }, {} as Record<string, number>);
+        
+        users.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
-        const data = Object.keys(roleCounts).map(role => ({
-          role,
-          count: roleCounts[role],
-          fill: roleColors[role as keyof typeof roleColors] || "hsl(var(--muted))"
-        }));
-        setChartData(data);
+        let cumulativeUsers = 0;
+        const data = users.map(user => {
+          cumulativeUsers++;
+          return {
+            date: new Date(user.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+            users: cumulativeUsers,
+          };
+        });
+        
+        // Deduplicate dates, keeping the last entry for each day
+        const uniqueData = Array.from(new Map(data.map(item => [item.date, item])).values());
+
+        setChartData(uniqueData);
       } else {
         setChartData([]);
       }
@@ -54,37 +50,53 @@ export function UserRoleDistributionChart() {
   }, []);
 
   if (!chartData) {
-    return <Skeleton className="h-[250px] w-full" />
+    return <Skeleton className="h-[250px] w-full" />;
   }
 
   const chartConfig = {
-    Student: { label: "Student", color: "hsl(var(--chart-1))" },
-    Professor: { label: "Professor", color: "hsl(var(--chart-2))" },
-    Teacher: { label: "Teacher", color: "hsl(var(--chart-3))" },
-    Researcher: { label: "Researcher", color: "hsl(var(--chart-4))" },
-    Professional: { label: "Professional", color: "hsl(var(--chart-5))" },
-    Admin: { label: "Admin", color: "hsl(var(--primary))" },
+    users: {
+      label: "Users",
+      color: "hsl(var(--chart-1))",
+    },
   } satisfies ChartConfig;
 
   return (
     <ChartContainer config={chartConfig} className="min-h-[250px] w-full">
-      <PieChart>
-        <ChartTooltip content={<ChartTooltipContent nameKey="count" hideLabel />} />
-        <Pie data={chartData} dataKey="count" nameKey="role" innerRadius={60} strokeWidth={5}>
-            {chartData.map((entry) => (
-                <Cell key={`cell-${entry.role}`} fill={entry.fill} />
-            ))}
-        </Pie>
-        <ChartLegend
-          content={<ChartLegendContent nameKey="role" />}
-          className="-translate-y-2 flex-wrap gap-2 [&>*]:basis-1/4 [&>*]:justify-center"
+      <AreaChart
+        accessibilityLayer
+        data={chartData}
+        margin={{
+          left: 12,
+          right: 12,
+        }}
+      >
+        <CartesianGrid vertical={false} />
+        <XAxis
+          dataKey="date"
+          tickLine={false}
+          axisLine={false}
+          tickMargin={8}
+          tickFormatter={(value) => value}
         />
-      </PieChart>
+        <YAxis
+            tickLine={false}
+            axisLine={false}
+            tickMargin={8}
+        />
+        <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
+        <Area
+          dataKey="users"
+          type="natural"
+          fill="var(--color-users)"
+          fillOpacity={0.4}
+          stroke="var(--color-users)"
+        />
+      </AreaChart>
     </ChartContainer>
-  )
+  );
 }
 
-export function DocumentCreationChart() {
+export function ContentVolumeChart() {
     const [chartData, setChartData] = useState<any[] | null>(null);
 
     useEffect(() => {
@@ -97,21 +109,18 @@ export function DocumentCreationChart() {
                     ...workspace.projects.flatMap(p => p.documents)
                 ];
 
-                const monthlyCounts = allDocuments.reduce((acc, doc) => {
-                    const date = new Date(doc.timestamp);
-                    const month = date.toLocaleString('default', { month: 'short' });
-                    acc[month] = (acc[month] || 0) + 1;
+                const dailyCounts = allDocuments.reduce((acc, doc) => {
+                    const date = new Date(doc.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    acc[date] = (acc[date] || 0) + 1;
                     return acc;
                 }, {} as Record<string, number>);
-
-                const data = Object.keys(monthlyCounts).map(month => ({
-                    month,
-                    documents: monthlyCounts[month]
+                
+                const data = Object.keys(dailyCounts).map(date => ({
+                    date,
+                    documents: dailyCounts[date]
                 }));
                 
-                // Sort by month order
-                const monthOrder = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-                data.sort((a, b) => monthOrder.indexOf(a.month) - monthOrder.indexOf(b.month));
+                data.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
                 setChartData(data);
             } else {
@@ -130,7 +139,7 @@ export function DocumentCreationChart() {
     const chartConfig = {
         documents: {
             label: "Documents",
-            color: "hsl(var(--chart-1))",
+            color: "hsl(var(--chart-2))",
         },
     } satisfies ChartConfig
 
@@ -139,18 +148,95 @@ export function DocumentCreationChart() {
           <BarChart data={chartData} accessibilityLayer>
             <CartesianGrid vertical={false} />
             <XAxis
-              dataKey="month"
+              dataKey="date"
               tickLine={false}
               tickMargin={10}
               axisLine={false}
               tickFormatter={(value) => value}
             />
+            <YAxis 
+                tickLine={false}
+                axisLine={false}
+                tickMargin={8}
+            />
             <ChartTooltip
               cursor={false}
-              content={<ChartTooltipContent hideLabel />}
+              content={<ChartTooltipContent />}
             />
-            <Bar dataKey="documents" fill="var(--color-documents)" radius={8} />
+            <Bar dataKey="documents" fill="var(--color-documents)" radius={4} />
           </BarChart>
         </ChartContainer>
     )
+}
+
+
+export function TaskDistributionChart() {
+  const [chartData, setChartData] = useState<any[] | null>(null);
+  const chartColors = [
+    "hsl(var(--chart-1))", "hsl(var(--chart-2))", "hsl(var(--chart-3))",
+    "hsl(var(--chart-4))", "hsl(var(--chart-5))", "hsl(var(--primary))"
+  ];
+  
+  useEffect(() => {
+    try {
+      const storedWorkspace = localStorage.getItem('azma_workspace');
+      if (storedWorkspace) {
+        const workspace: Workspace = JSON.parse(storedWorkspace);
+        const allDocuments = [
+          ...workspace.standaloneDocuments,
+          ...workspace.projects.flatMap(p => p.documents)
+        ];
+
+        const taskTypeCounts = allDocuments.reduce((acc, doc) => {
+          const taskType = doc.content?.title?.startsWith("New ") ?
+              doc.content.title.split(" - ")[0].replace("New ", "") :
+              "Unknown";
+
+          if (academicTaskTypes.includes(taskType as any)) {
+             acc[taskType] = (acc[taskType] || 0) + 1;
+          } else {
+             acc["Other"] = (acc["Other"] || 0) + 1;
+          }
+          return acc;
+        }, {} as Record<string, number>);
+
+        const data = Object.keys(taskTypeCounts).map((task, index) => ({
+          name: task,
+          value: taskTypeCounts[task],
+          fill: chartColors[index % chartColors.length]
+        }));
+        setChartData(data);
+      } else {
+        setChartData([]);
+      }
+    } catch (error) {
+      console.error(error);
+      setChartData([]);
+    }
+  }, []);
+
+  if (!chartData) {
+    return <Skeleton className="h-[400px] w-full" />
+  }
+
+  const chartConfig = chartData.reduce((acc, item) => {
+    acc[item.name] = { label: item.name, color: item.fill };
+    return acc;
+  }, {} as ChartConfig);
+
+  return (
+    <ChartContainer config={chartConfig} className="min-h-[400px] w-full">
+      <ResponsiveContainer width="100%" height={400}>
+        <PieChart>
+          <ChartTooltip content={<ChartTooltipContent nameKey="value" hideLabel />} />
+          <Pie data={chartData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={80} outerRadius={120} strokeWidth={5}>
+              {chartData.map((entry) => (
+                  <Cell key={`cell-${entry.name}`} fill={entry.fill} />
+              ))}
+          </Pie>
+          <Legend content={<ChartLegendContent nameKey="name" />} />
+        </PieChart>
+      </ResponsiveContainer>
+    </ChartContainer>
+  )
 }
