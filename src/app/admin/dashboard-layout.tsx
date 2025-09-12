@@ -185,16 +185,8 @@ export default function DashboardLayout({
             </DropdownMenuContent>
           </DropdownMenu>
         </header>
-        <main 
-          className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 bg-cover bg-center bg-fixed relative"
-          style={{
-            backgroundImage: `url('https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExMXRtcWpjdmxqd29nOHJqdTRlYzZtczRmdW4wYWNkZ3c0OGl4M3VtNyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/ITRemFlr5tS39AzQUL/giphy.gif')`,
-          }}
-        >
-          <div className="absolute inset-0 bg-black/70 z-0" />
-          <div className="relative z-10">
-            {children}
-          </div>
+        <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6 bg-muted/40">
+          {children}
         </main>
       </div>
     </div>
