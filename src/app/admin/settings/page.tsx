@@ -23,8 +23,9 @@ import {
 import { Switch } from "@/components/ui/switch"
 import { useToast } from "@/hooks/use-toast"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Trash2, KeyRound, Building, Brush } from "lucide-react";
+import { Trash2, KeyRound, Building, Brush, Tag } from "lucide-react";
 import { useTheme } from "next-themes";
+import type { PricingSettings } from '@/types/admin';
 
 type AppSettings = {
     appName: string;
@@ -33,6 +34,14 @@ type AppSettings = {
     maintenanceMode: boolean;
     paymentGatewayPublicKey: string;
     paymentGatewaySecretKey: string;
+};
+
+const initialPricing: PricingSettings = {
+    student: { monthly: 2000, yearly: 8000 },
+    professional: { monthly: 2000, yearly: 8000 },
+    researcher: { monthly: 8000, yearly: 20000 },
+    professor: { monthly: 8000, yearly: 20000 },
+    teacher: { monthly: 5000, yearly: 15000 },
 };
 
 export default function AdminSettingsPage() {
@@ -47,6 +56,7 @@ export default function AdminSettingsPage() {
         paymentGatewayPublicKey: '',
         paymentGatewaySecretKey: '',
     });
+    const [pricing, setPricing] = useState<PricingSettings>(initialPricing);
     const [isLoading, setIsLoading] = useState(false);
     const [deleteConfirmation, setDeleteConfirmation] = useState('');
 
@@ -58,10 +68,26 @@ export default function AdminSettingsPage() {
             if (storedSettings) {
                 setSettings(JSON.parse(storedSettings));
             }
+            const storedPricing = localStorage.getItem('azma_pricing_settings');
+            if (storedPricing) {
+                setPricing(JSON.parse(storedPricing));
+            }
         } catch (error) {
             console.error('Failed to load settings from localStorage', error);
         }
     }, []);
+    
+    const handlePricingChange = (role: keyof PricingSettings, cycle: 'monthly' | 'yearly', value: string) => {
+        const numericValue = parseInt(value, 10) || 0;
+        setPricing(prev => ({
+            ...prev,
+            [role]: {
+                ...prev[role],
+                [cycle]: numericValue,
+            }
+        }));
+    };
+
 
     const handleSave = () => {
         setIsLoading(true);
@@ -69,6 +95,7 @@ export default function AdminSettingsPage() {
         setTimeout(() => {
             try {
                 localStorage.setItem('azma_app_settings', JSON.stringify(settings));
+                localStorage.setItem('azma_pricing_settings', JSON.stringify(pricing));
                 toast({
                     title: 'Settings Saved',
                     description: 'Your changes have been successfully saved.',
@@ -90,6 +117,7 @@ export default function AdminSettingsPage() {
             localStorage.removeItem('azma_all_users');
             localStorage.removeItem('azmaUser');
             localStorage.removeItem('azma_workspace');
+            localStorage.removeItem('azma_pricing_settings');
             toast({
                 variant: 'destructive',
                 title: 'All User Data Cleared',
@@ -160,6 +188,45 @@ export default function AdminSettingsPage() {
                         />
                     </div>
                 </form>
+            </CardContent>
+        </Card>
+
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2"><Tag /> Subscription Pricing</CardTitle>
+                <CardDescription>
+                    Set the monthly and yearly prices for each subscription plan.
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                {Object.keys(pricing).map(role => (
+                    <div key={role} className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end p-4 border rounded-lg">
+                        <div className="md:col-span-1">
+                            <Label className="capitalize font-semibold">{role} Plan</Label>
+                            <p className="text-xs text-muted-foreground">Prices in NGN.</p>
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor={`price-${role}-monthly`}>Monthly Price</Label>
+                            <Input
+                                id={`price-${role}-monthly`}
+                                type="number"
+                                value={pricing[role as keyof PricingSettings].monthly}
+                                onChange={(e) => handlePricingChange(role as keyof PricingSettings, 'monthly', e.target.value)}
+                                placeholder="e.g., 2000"
+                            />
+                        </div>
+                         <div className="grid gap-2">
+                            <Label htmlFor={`price-${role}-yearly`}>Yearly Price</Label>
+                            <Input
+                                id={`price-${role}-yearly`}
+                                type="number"
+                                value={pricing[role as keyof PricingSettings].yearly}
+                                onChange={(e) => handlePricingChange(role as keyof PricingSettings, 'yearly', e.target.value)}
+                                placeholder="e.g., 20000"
+                            />
+                        </div>
+                    </div>
+                ))}
             </CardContent>
         </Card>
 

@@ -25,24 +25,26 @@ import { Switch } from '@/components/ui/switch';
 import { ArrowLeft, CheckCircle2, Star, XCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
+import type { PricingSettings } from '@/types/admin';
 
 
 type UserData = {
   role: string;
 };
 
-const pricing = {
-    student: { monthly: 2000, yearly: 8000, name: 'Student Plan' },
-    professional: { monthly: 2000, yearly: 8000, name: 'Professional Plan' },
-    researcher: { monthly: 8000, yearly: 20000, name: 'Researcher Plan' },
-    professor: { monthly: 8000, yearly: 20000, name: 'Professor Plan' },
-    teacher: { monthly: 5000, yearly: 15000, name: 'Teacher Plan' },
+const defaultPricing: PricingSettings = {
+    student: { monthly: 2000, yearly: 8000 },
+    professional: { monthly: 2000, yearly: 8000 },
+    researcher: { monthly: 8000, yearly: 20000 },
+    professor: { monthly: 8000, yearly: 20000 },
+    teacher: { monthly: 5000, yearly: 15000 },
 };
 
 
 export default function UpgradePage() {
   const [isYearly, setIsYearly] = useState(false);
   const [user, setUser] = useState<UserData | null>(null);
+  const [pricing, setPricing] = useState<PricingSettings>(defaultPricing);
   const router = useRouter();
   const { toast } = useToast();
 
@@ -54,8 +56,13 @@ export default function UpgradePage() {
         } else {
             router.push('/login');
         }
+
+        const storedPricing = localStorage.getItem('azma_pricing_settings');
+        if (storedPricing) {
+            setPricing(JSON.parse(storedPricing));
+        }
     } catch (error) {
-        console.error("Failed to parse user data from localStorage", error);
+        console.error("Failed to parse data from localStorage", error);
         router.push('/login');
     }
   }, [router]);
@@ -72,7 +79,13 @@ export default function UpgradePage() {
     window.location.href = "mailto:sales@azma.com?subject=Enterprise%20Plan%20Inquiry";
   };
 
-  const currentPlan = user?.role ? pricing[user.role.toLowerCase() as keyof typeof pricing] : null;
+  const getPlanName = (role: string) => {
+    return `${role.charAt(0).toUpperCase() + role.slice(1)} Plan`;
+  }
+  
+  const currentPlanRole = user?.role ? user.role.toLowerCase() as keyof PricingSettings : null;
+  const currentPlan = currentPlanRole ? pricing[currentPlanRole] : null;
+
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
@@ -126,7 +139,7 @@ export default function UpgradePage() {
                         </div>
                     </div>
                     <CardHeader>
-                        <CardTitle>{currentPlan?.name || 'AZMA Premium'}</CardTitle>
+                        <CardTitle>{currentPlanRole ? getPlanName(currentPlanRole) : 'AZMA Premium'}</CardTitle>
                         <CardDescription>Premium Subscription for {user?.role}</CardDescription>
                         <div className="text-4xl font-bold">
                            ₦{currentPlan ? (isYearly ? currentPlan.yearly.toLocaleString() : currentPlan.monthly.toLocaleString()) : '...'}

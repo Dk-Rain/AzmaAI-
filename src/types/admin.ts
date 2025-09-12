@@ -35,3 +35,11 @@ export type DocumentHistoryEntry = {
     generatedAt: string;
     generatedBy: string; // In a real app, this would be a user ID
 };
+
+export type PricingSettings = {
+    student: { monthly: number; yearly: number };
+    professional: { monthly: number; yearly: number };
+    researcher: { monthly: number; yearly: number };
+    professor: { monthly: number; yearly: number };
+    teacher: { monthly: number; yearly: number };
+}
