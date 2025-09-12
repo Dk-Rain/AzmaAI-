@@ -348,7 +348,7 @@ export function DocumentEditor({
           className="absolute z-10 flex gap-1"
           style={{
             top: rect.top - editorRect.top - 40, // Position above selection
-            left: rect.left - editorRect.top + (rect.width / 2) - 100, // Center on selection
+            left: rect.left - editorRect.left + (rect.width / 2) - 100, // Center on selection
           }}
         >
             <Button
@@ -474,4 +474,5 @@ export function DocumentEditor({
   );
 }
 
+    
     
