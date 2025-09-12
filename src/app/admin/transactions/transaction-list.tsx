@@ -17,13 +17,16 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { MoreHorizontal, FileText, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { MoreHorizontal, FileText, CheckCircle, XCircle, Clock, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 
 export function TransactionList() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -46,6 +49,39 @@ export function TransactionList() {
       console.error("Failed to load transactions from localStorage", error);
     }
   }, []);
+  
+  const handleViewDetails = (transaction: Transaction) => {
+    setSelectedTransaction(transaction);
+    setIsDetailsOpen(true);
+  }
+
+  const handleDownloadReceipt = (transaction: Transaction) => {
+    const receiptContent = `
+      AZMA AI - Transaction Receipt
+      -----------------------------
+      Transaction ID: ${transaction.id}
+      Invoice ID: ${transaction.invoiceId}
+      Date: ${new Date(transaction.date).toLocaleString()}
+
+      User: ${transaction.userFullName} (${transaction.userEmail})
+      Plan: ${transaction.plan}
+      Amount: ₦${transaction.amount.toLocaleString()}
+      Status: ${transaction.status}
+      -----------------------------
+      Thank you for your business.
+    `;
+
+    const blob = new Blob([receiptContent], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `receipt-${transaction.invoiceId}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast({ title: 'Receipt Downloaded' });
+  };
 
   const getStatusBadge = (status: Transaction['status']) => {
     switch(status) {
@@ -61,52 +97,104 @@ export function TransactionList() {
   }
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Invoice ID</TableHead>
-          <TableHead>User</TableHead>
-          <TableHead>Plan</TableHead>
-          <TableHead>Amount</TableHead>
-          <TableHead>Status</TableHead>
-          <TableHead>Date</TableHead>
-          <TableHead>
-            <span className="sr-only">Actions</span>
-          </TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {transactions.map((transaction) => (
-          <TableRow key={transaction.id}>
-            <TableCell className="font-medium">{transaction.invoiceId}</TableCell>
-            <TableCell>
-                <div className="font-medium">{transaction.userFullName}</div>
-                <div className="text-sm text-muted-foreground">{transaction.userEmail}</div>
-            </TableCell>
-            <TableCell>{transaction.plan}</TableCell>
-            <TableCell>₦{transaction.amount.toLocaleString()}</TableCell>
-            <TableCell>{getStatusBadge(transaction.status)}</TableCell>
-            <TableCell>{new Date(transaction.date).toLocaleDateString()}</TableCell>
-            <TableCell>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button aria-haspopup="true" size="icon" variant="ghost">
-                    <MoreHorizontal className="h-4 w-4" />
-                    <span className="sr-only">Toggle menu</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                  <DropdownMenuItem>
-                    <FileText className="mr-2 h-4 w-4" />
-                    View Details
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </TableCell>
+    <>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Invoice ID</TableHead>
+            <TableHead>User</TableHead>
+            <TableHead>Plan</TableHead>
+            <TableHead>Amount</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Date</TableHead>
+            <TableHead>
+              <span className="sr-only">Actions</span>
+            </TableHead>
           </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+        </TableHeader>
+        <TableBody>
+          {transactions.map((transaction) => (
+            <TableRow key={transaction.id}>
+              <TableCell className="font-medium">{transaction.invoiceId}</TableCell>
+              <TableCell>
+                  <div className="font-medium">{transaction.userFullName}</div>
+                  <div className="text-sm text-muted-foreground">{transaction.userEmail}</div>
+              </TableCell>
+              <TableCell>{transaction.plan}</TableCell>
+              <TableCell>₦{transaction.amount.toLocaleString()}</TableCell>
+              <TableCell>{getStatusBadge(transaction.status)}</TableCell>
+              <TableCell>{new Date(transaction.date).toLocaleDateString()}</TableCell>
+              <TableCell>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button aria-haspopup="true" size="icon" variant="ghost">
+                      <MoreHorizontal className="h-4 w-4" />
+                      <span className="sr-only">Toggle menu</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                    <DropdownMenuItem onSelect={() => handleViewDetails(transaction)}>
+                      <FileText className="mr-2 h-4 w-4" />
+                      View Details
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => handleDownloadReceipt(transaction)}>
+                        <Download className="mr-2 h-4 w-4" />
+                        Download Receipt
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+      
+      <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
+          <DialogContent>
+              <DialogHeader>
+                  <DialogTitle>Transaction Details</DialogTitle>
+                  <DialogDescription>
+                      Invoice: {selectedTransaction?.invoiceId}
+                  </DialogDescription>
+              </DialogHeader>
+              {selectedTransaction && (
+                  <div className="grid gap-4 py-4 text-sm">
+                      <div className="grid grid-cols-[100px_1fr] items-center gap-2">
+                          <span className="font-medium text-muted-foreground">User:</span>
+                          <span>{selectedTransaction.userFullName} ({selectedTransaction.userEmail})</span>
+                      </div>
+                      <div className="grid grid-cols-[100px_1fr] items-center gap-2">
+                          <span className="font-medium text-muted-foreground">Date:</span>
+                          <span>{new Date(selectedTransaction.date).toLocaleString()}</span>
+                      </div>
+                      <div className="grid grid-cols-[100px_1fr] items-center gap-2">
+                          <span className="font-medium text-muted-foreground">Plan:</span>
+                          <span>{selectedTransaction.plan}</span>
+                      </div>
+                      <div className="grid grid-cols-[100px_1fr] items-center gap-2">
+                          <span className="font-medium text-muted-foreground">Amount:</span>
+                          <span className="font-semibold">₦{selectedTransaction.amount.toLocaleString()}</span>
+                      </div>
+                      <div className="grid grid-cols-[100px_1fr] items-center gap-2">
+                          <span className="font-medium text-muted-foreground">Status:</span>
+                          <div>{getStatusBadge(selectedTransaction.status)}</div>
+                      </div>
+                       <div className="grid grid-cols-[100px_1fr] items-center gap-2">
+                          <span className="font-medium text-muted-foreground">Transaction ID:</span>
+                          <span className="font-mono text-xs">{selectedTransaction.id}</span>
+                      </div>
+                  </div>
+              )}
+               <div className="flex justify-end gap-2">
+                    <Button variant="outline" onClick={() => setIsDetailsOpen(false)}>Close</Button>
+                    <Button onClick={() => selectedTransaction && handleDownloadReceipt(selectedTransaction)}>
+                        <Download className="mr-2 h-4 w-4" />
+                        Download Receipt
+                    </Button>
+               </div>
+          </DialogContent>
+      </Dialog>
+    </>
   )
 }
