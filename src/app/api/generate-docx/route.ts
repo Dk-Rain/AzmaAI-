@@ -2,14 +2,28 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { exportToDocx as buildDocx } from '@/lib/docx-exporter';
 import { Packer } from 'docx';
+import { GenerateAcademicContentOutputSchema } from '@/types';
+import * as z from 'zod';
+
+const RequestBodySchema = z.object({
+  content: GenerateAcademicContentOutputSchema,
+  references: z.any(), // Not strictly validating references/styles for now, just ensuring they exist
+  styles: z.any(),
+});
+
 
 export async function POST(req: NextRequest) {
   try {
-    const { content, references, styles } = await req.json();
+    const body = await req.json();
 
-    if (!content || !references || !styles) {
-      return NextResponse.json({ error: 'Missing required document data' }, { status: 400 });
+    const validation = RequestBodySchema.safeParse(body);
+
+    if (!validation.success) {
+      console.error("Invalid request body:", validation.error.issues);
+      return NextResponse.json({ error: 'Missing or invalid required document data', details: validation.error.flatten() }, { status: 400 });
     }
+    
+    const { content, references, styles } = validation.data;
 
     const { doc, historyEntry } = await buildDocx(content, references, styles);
     const buffer = await Packer.toBuffer(doc);
