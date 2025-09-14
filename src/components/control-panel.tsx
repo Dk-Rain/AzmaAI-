@@ -95,7 +95,6 @@ export function ControlPanel({
   const handleTaskTypeChange = (newTaskType: AcademicTaskType) => {
     generationForm.setValue('taskType', newTaskType);
     
-    // Check if the title is a default one before changing it
     const isDefaultTitle = content.title.includes("Your Academic Paper Title") || 
                            content.title.includes("New Research Paper Title") || 
                            content.title.includes("New Assignment Title") || 
@@ -292,7 +291,7 @@ export function ControlPanel({
     
     // Add to shared documents list if not already there
     if (!newWorkspace.sharedDocuments.some(d => d.id === docId)) {
-        newWorkspace.sharedDocuments.push({ ...docToShare, publicId });
+        newWorkspace.sharedDocuments.push({ ...docToShare, publicId, sharedAt: new Date().toISOString(), title: docToShare.title });
     }
 
     saveWorkspace(newWorkspace);
@@ -895,5 +894,8 @@ export function ControlPanel({
     
 
     
+
+    
+
 
     
