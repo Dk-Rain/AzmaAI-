@@ -14,7 +14,7 @@ import type { DocumentHistoryEntry } from '@/types/admin';
 import { ControlPanel } from '@/components/control-panel';
 import { DocumentEditor } from '@/components/document-editor';
 import { Button } from '@/components/ui/button';
-import { exportTxtAction, exportCsvAction, scanAndCleanAction, checkPlagiarismAction, editSectionAction, regenerateSectionAction } from '@/app/actions';
+import { exportTxtAction, exportCsvAction, scanAndCleanAction, checkPlagiarismAction, editSectionAction } from '@/app/actions';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -67,7 +67,7 @@ export function MainPage() {
     fontFamily: 'Literata',
   });
   const [isExporting, setIsExporting] = useState(false);
-  const [isScanning, setIsScanning] = useState(isScanning);
+  const [isScanning, setIsScanning] = useState(false);
   const [isCheckingPlagiarism, setIsCheckingPlagiarism] = useState(false);
   const [plagiarismResult, setPlagiarismResult] = useState<CheckPlagiarismOutput | null>(null);
   const [user, setUser] = useState<UserData | null>(null);
@@ -455,5 +455,3 @@ export function MainPage() {
     </div>
   );
 }
-
-    
