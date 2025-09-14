@@ -154,7 +154,7 @@ export async function exportToDocx(
     return sectionChildren;
   }
   
-  const docChildren: (Paragraph | Table | PageBreak)[] = [
+  const docChildren: (Paragraph | Table)[] = [
       // Verification Page
       new Paragraph({
           alignment: AlignmentType.CENTER,
@@ -292,7 +292,7 @@ export async function exportToDocx(
             },
           },
         },
-        children: docChildren as (Paragraph | Table | PageBreak)[],
+        children: docChildren,
       },
     ],
   });
