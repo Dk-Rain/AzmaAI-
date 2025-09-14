@@ -40,7 +40,7 @@ const sections = format
   .filter(line => line.startsWith('- '))
   .map(line => ({
     title: line.substring(2).trim(),
-    content: `Placeholder for ${line.substring(2).trim()}`,
+    content: [{ type: 'text' as const, text: `Placeholder for ${line.substring(2).trim()}` }],
   }));
 
 
