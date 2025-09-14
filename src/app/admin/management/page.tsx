@@ -108,7 +108,7 @@ export default function AdminManagementPage() {
     const newUsers = users.map(user => {
       if (user.id === userId && user.role === 'Admin') {
         const newPermissions = { ...user.permissions, [permission]: value };
-        return { ...user, permissions: newPermissions };
+        return { ...user, permissions: newPermissions } as User;
       }
       return user;
     });
@@ -223,3 +223,5 @@ export default function AdminManagementPage() {
     </Card>
   );
 }
+
+    
