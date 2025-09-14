@@ -15,6 +15,7 @@ import {
   TableRow,
   TableCell,
   WidthType,
+  ISectionOptions,
 } from 'docx';
 import type { DocumentContent, References, StyleOptions, ContentBlock } from '@/types';
 import type { DocumentHistoryEntry } from '@/types/admin';
@@ -124,7 +125,7 @@ export async function exportToDocx(
 
 
   const processSection = async (section: DocumentContent['sections'][0]) => {
-    const sectionChildren = [];
+    const sectionChildren: (Paragraph | Table)[] = [];
     
     sectionChildren.push(new Paragraph({
         text: section.title || '',
@@ -153,7 +154,7 @@ export async function exportToDocx(
     return sectionChildren;
   }
   
-  const children = [
+  const children: (Paragraph | Table | PageBreak)[] = [
       // Verification Page
       new Paragraph({
           alignment: AlignmentType.CENTER,
