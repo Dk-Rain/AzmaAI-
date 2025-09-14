@@ -96,7 +96,7 @@ export default function AdminManagementPage() {
           ...user, 
           role: isAdmin ? 'Admin' : 'Student', // Revert to student if admin is revoked
           permissions: isAdmin ? user.permissions || { canManageUsers: false, canManageTransactions: false, canManageSettings: false } : undefined
-        };
+        } as User;
       }
       return user;
     });
