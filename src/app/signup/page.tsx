@@ -1,3 +1,4 @@
+
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
@@ -14,6 +15,10 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { MountainIcon } from 'lucide-react';
+import { auth, db } from '@/lib/firebase';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { setDoc, doc } from 'firebase/firestore';
+
 
 export default function SignupPage() {
   const [fullName, setFullName] = useState('');
@@ -37,19 +42,34 @@ export default function SignupPage() {
     }
     setIsLoading(true);
     
-    // Placeholder for auth
-    setTimeout(() => {
-        setIsLoading(false);
-        // Simulate saving user data to be accessible by dashboard
-        try {
-          localStorage.setItem('azmaUser', JSON.stringify({ fullName, email, role, phoneNumber, username: fullName, photoUrl: '' }));
-        } catch (error) {
-           console.error("Could not save user to localStorage", error);
-        }
+    try {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
 
+        // Update user profile in Firebase Auth
+        await updateProfile(user, { displayName: fullName });
+
+        // Create a user document in Firestore
+        await setDoc(doc(db, "users", user.uid), {
+            uid: user.uid,
+            fullName,
+            email,
+            role,
+            phoneNumber,
+            createdAt: new Date().toISOString(),
+        });
+        
         toast({ title: "Account created successfully!" });
         router.push('/dashboard');
-    }, 1000);
+    } catch (error: any) {
+        toast({
+            variant: 'destructive',
+            title: "Signup failed",
+            description: error.message,
+        });
+    } finally {
+        setIsLoading(false);
+    }
   };
 
   return (

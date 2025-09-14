@@ -1,3 +1,4 @@
+
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
@@ -7,6 +8,8 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { MountainIcon } from 'lucide-react';
+import { auth } from '@/lib/firebase';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 
 
 export default function LoginPage() {
@@ -20,41 +23,26 @@ export default function LoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    // Placeholder for auth
-    setTimeout(() => {
-        setIsLoading(false);
-        // In a real app, you would verify credentials against a backend
-        // and fetch user data.
-        
-        // For this demo, we'll check if we are logging in as an admin
-        // And if the user exists in localStorage, otherwise create a default student.
-        let user;
-        if(email.toLowerCase() === 'admin@azma.com'){
-             user = { fullName: 'Admin User', email: email, role: 'Admin' };
-        } else {
-            try {
-                // This is a mock implementation. In a real app, you wouldn't store all users in one key.
-                const allUsers = JSON.parse(localStorage.getItem('azma_all_users') || '[]');
-                const existingUser = allUsers.find((u: any) => u.email === email);
-                user = existingUser || { fullName: 'Demo User', email: email, role: 'Student' };
-            } catch (e) {
-                 user = { fullName: 'Demo User', email: email, role: 'Student' };
-            }
-        }
-
-        try {
-          localStorage.setItem('azmaUser', JSON.stringify(user));
-        } catch (error) {
-           console.error("Could not save user to localStorage", error);
-        }
+    
+    try {
+        await signInWithEmailAndPassword(auth, email, password);
         toast({ title: "Login successful!"});
-        
-        if (user.role === 'Admin') {
-            router.push('/admin');
+
+        // Check if it's the admin user. In a real app, you might check a custom claim or a role in Firestore.
+        if (email.toLowerCase() === 'admin@azma.com') {
+             router.push('/admin/dashboard');
         } else {
             router.push('/dashboard');
         }
-    }, 1000)
+    } catch (error: any) {
+        toast({
+            variant: 'destructive',
+            title: "Login failed",
+            description: error.message,
+        });
+    } finally {
+        setIsLoading(false);
+    }
   };
 
   return (

@@ -16,7 +16,6 @@ import { academicTaskTypes } from '@/types/academic-task-types';
 import { academicTaskFormats } from '@/types/academic-task-formats';
 
 import { 
-
   generateContentAction,
 } from '@/app/actions';
 
@@ -51,9 +50,22 @@ import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './ui/collapsible';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger, DropdownMenuPortal } from './ui/dropdown-menu';
 import { Label } from './ui/label';
+import { db } from '@/lib/firebase';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 
+
+type UserData = {
+  uid: string;
+  fullName: string;
+  role: string;
+  email: string;
+  username?: string;
+  photoUrl?: string;
+  isPremium?: boolean;
+}
 
 interface ControlPanelProps {
+  user: UserData | null;
   setContent: (content: DocumentContent) => void;
   setReferences: (references: References) => void;
   styles: StyleOptions;
@@ -64,6 +76,7 @@ interface ControlPanelProps {
 
 
 export function ControlPanel({
+  user,
   setContent,
   setReferences,
   styles,
@@ -119,29 +132,41 @@ export function ControlPanel({
   };
   
   useEffect(() => {
-    try {
-      const storedWorkspace = localStorage.getItem('azma_workspace');
-      if (storedWorkspace) {
-        const parsedWorkspace = JSON.parse(storedWorkspace);
-        // Ensure arrays exist
-        if (!parsedWorkspace.archivedItems) parsedWorkspace.archivedItems = [];
-        if (!parsedWorkspace.sharedDocuments) parsedWorkspace.sharedDocuments = [];
+    async function loadWorkspace() {
+        if (!user) return;
+        const workspaceRef = doc(db, 'workspaces', user.uid);
+        const workspaceSnap = await getDoc(workspaceRef);
 
-        setWorkspace(parsedWorkspace);
-        // By default, expand all projects that have documents
-        setExpandedProjects(parsedWorkspace.projects.filter((p: Project) => p.documents.length > 0).map((p: Project) => p.id));
-      }
-    } catch (error) {
-      console.error("Failed to load workspace from localStorage", error);
+        if (workspaceSnap.exists()) {
+            const workspaceData = workspaceSnap.data() as Workspace;
+            // Ensure all arrays exist
+            workspaceData.projects = workspaceData.projects || [];
+            workspaceData.standaloneDocuments = workspaceData.standaloneDocuments || [];
+            workspaceData.archivedItems = workspaceData.archivedItems || [];
+            workspaceData.sharedDocuments = workspaceData.sharedDocuments || [];
+            
+            setWorkspace(workspaceData);
+            setExpandedProjects(workspaceData.projects.filter(p => p.documents.length > 0).map(p => p.id));
+        } else {
+            // No workspace exists for this user yet, use the initial empty state.
+            setWorkspace({ projects: [], standaloneDocuments: [], archivedItems: [], sharedDocuments: [] });
+        }
     }
-  }, []);
+    loadWorkspace();
+  }, [user]);
 
-  const saveWorkspace = (newWorkspace: Workspace) => {
+  const saveWorkspace = async (newWorkspace: Workspace) => {
+    if (!user) {
+        toast({ variant: 'destructive', title: 'Not signed in', description: 'Cannot save workspace.'});
+        return;
+    }
     try {
         setWorkspace(newWorkspace);
-        localStorage.setItem('azma_workspace', JSON.stringify(newWorkspace));
+        const workspaceRef = doc(db, 'workspaces', user.uid);
+        await setDoc(workspaceRef, newWorkspace, { merge: true });
     } catch (error) {
-        console.error("Failed to save workspace to localStorage", error);
+        console.error("Failed to save workspace to Firestore", error);
+        toast({ variant: 'destructive', title: 'Save failed', description: 'Could not save your workspace.'});
     }
   }
   
@@ -890,12 +915,3 @@ export function ControlPanel({
     </div>
   );
 }
-
-    
-
-    
-
-    
-
-
-    
