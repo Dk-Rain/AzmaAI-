@@ -16,13 +16,12 @@ import {
   TableCell,
   WidthType,
   ISectionOptions,
-  FileChild,
 } from 'docx';
 import type { DocumentContent, References, StyleOptions, ContentBlock } from '@/types';
 import type { DocumentHistoryEntry } from '@/types/admin';
 
 
-async function renderBlockToDocx(block: ContentBlock, styles: StyleOptions) {
+async function renderBlockToDocx(block: ContentBlock, styles: StyleOptions): Promise<(Paragraph | Table)[]> {
   switch (block.type) {
     case 'text':
       return [new Paragraph({ text: block.text, style: 'default' })];
@@ -293,7 +292,7 @@ export async function exportToDocx(
             },
           },
         },
-        children: docChildren as readonly FileChild[],
+        children: docChildren as (Paragraph | Table | PageBreak)[],
       },
     ],
   });
