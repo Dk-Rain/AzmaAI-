@@ -14,7 +14,7 @@ import type { DocumentHistoryEntry } from '@/types/admin';
 import { ControlPanel } from '@/components/control-panel';
 import { DocumentEditor } from '@/components/document-editor';
 import { Button } from '@/components/ui/button';
-import { exportTxtAction, exportCsvAction, scanAndCleanAction, checkPlagiarismAction } from '@/app/actions';
+import { exportTxtAction, exportCsvAction, scanAndCleanAction, checkPlagiarismAction, editSectionAction, regenerateSectionAction } from '@/app/actions';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -67,7 +67,7 @@ export function MainPage() {
     fontFamily: 'Literata',
   });
   const [isExporting, setIsExporting] = useState(false);
-  const [isScanning, setIsScanning] = useState(false);
+  const [isScanning, setIsScanning] = useState(isScanning);
   const [isCheckingPlagiarism, setIsCheckingPlagiarism] = useState(false);
   const [plagiarismResult, setPlagiarismResult] = useState<CheckPlagiarismOutput | null>(null);
   const [user, setUser] = useState<UserData | null>(null);
@@ -93,29 +93,6 @@ export function MainPage() {
     router.push('/login');
   };
   
-  const triggerDownload = (filename: string, content: string, mimeType: string) => {
-     try {
-      const link = document.createElement('a');
-      link.href = `${mimeType},${encodeURIComponent(content)}`;
-      const safeTitle = content.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      toast({
-        title: 'Export Successful',
-        description: 'Your document has been downloaded.',
-      });
-    } catch (e) {
-      toast({
-        variant: 'destructive',
-        title: 'Download Failed',
-        description: 'Could not trigger the file download.',
-      });
-    }
-  }
-
-
   const handleExport = async (format: 'docx' | 'pdf' | 'xls' | 'txt') => {
     setIsExporting(true);
     toast({
