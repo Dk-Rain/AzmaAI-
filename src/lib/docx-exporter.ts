@@ -16,6 +16,7 @@ import {
   TableCell,
   WidthType,
   ISectionOptions,
+  FileChild,
 } from 'docx';
 import type { DocumentContent, References, StyleOptions, ContentBlock } from '@/types';
 import type { DocumentHistoryEntry } from '@/types/admin';
@@ -154,7 +155,7 @@ export async function exportToDocx(
     return sectionChildren;
   }
   
-  const children: (Paragraph | Table | PageBreak)[] = [
+  const docChildren: (Paragraph | Table | PageBreak)[] = [
       // Verification Page
       new Paragraph({
           alignment: AlignmentType.CENTER,
@@ -215,19 +216,19 @@ export async function exportToDocx(
 
   for (const section of (content.sections || [])) {
       const sectionBlocks = await processSection(section);
-      children.push(...sectionBlocks);
+      docChildren.push(...sectionBlocks);
   }
   
   // Conditionally add the references section
   if (!hasReferencesSection && (references || []).length > 0) {
-    children.push(new Paragraph({ text: '' })); // Spacer
-    children.push(new Paragraph({
+    docChildren.push(new Paragraph({ text: '' })); // Spacer
+    docChildren.push(new Paragraph({
         text: 'References',
         heading: HeadingLevel.HEADING_1,
         style: 'h1',
     }));
     references.forEach(ref => {
-        children.push(new Paragraph({
+        docChildren.push(new Paragraph({
             text: ref.referenceText,
             style: 'default',
             bullet: { level: 0 },
@@ -292,7 +293,7 @@ export async function exportToDocx(
             },
           },
         },
-        children: children,
+        children: docChildren as readonly FileChild[],
       },
     ],
   });
