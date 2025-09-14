@@ -8,14 +8,23 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { MountainIcon } from 'lucide-react';
-import { auth } from '@/lib/firebase';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth, db } from '@/lib/firebase';
+import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+
+const GoogleIcon = () => (
+    <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="h-5 w-5">
+        <title>Google</title>
+        <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.85 3.18-1.73 4.1-1.02 1.02-2.62 1.62-4.55 1.62-3.87 0-7-3.13-7-7s3.13-7 7-7c1.93 0 3.68.72 4.95 1.95l2.43-2.43C18.17 1.84 15.48 0 12.48 0 5.6 0 0 5.6 0 12.48s5.6 12.48 12.48 12.48c7.2 0 12.03-4.92 12.03-12.24 0-.78-.08-1.56-.22-2.32H12.48z" />
+    </svg>
+);
 
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
 
@@ -27,13 +36,7 @@ export default function LoginPage() {
     try {
         await signInWithEmailAndPassword(auth, email, password);
         toast({ title: "Login successful!"});
-
-        // Check if it's the admin user. In a real app, you might check a custom claim or a role in Firestore.
-        if (email.toLowerCase() === 'admin@azma.com') {
-             router.push('/admin/dashboard');
-        } else {
-            router.push('/dashboard');
-        }
+        router.push('/dashboard');
     } catch (error: any) {
         toast({
             variant: 'destructive',
@@ -42,6 +45,44 @@ export default function LoginPage() {
         });
     } finally {
         setIsLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setIsGoogleLoading(true);
+    try {
+        const provider = new GoogleAuthProvider();
+        const result = await signInWithPopup(auth, provider);
+        const user = result.user;
+
+        // Check if user exists in Firestore, if not, create them.
+        const userDocRef = doc(db, "users", user.uid);
+        const userDoc = await getDoc(userDocRef);
+
+        if (!userDoc.exists()) {
+             await setDoc(userDocRef, {
+                uid: user.uid,
+                fullName: user.displayName,
+                email: user.email,
+                role: 'Student', // Default role for Google sign-ups
+                photoUrl: user.photoURL,
+                createdAt: new Date().toISOString(),
+            });
+            toast({ title: "Account created successfully!" });
+        } else {
+            toast({ title: "Login successful!" });
+        }
+        
+        router.push('/dashboard');
+
+    } catch (error: any) {
+         toast({
+            variant: 'destructive',
+            title: "Google Sign-In failed",
+            description: error.message,
+        });
+    } finally {
+        setIsGoogleLoading(false);
     }
   };
 
@@ -59,40 +100,55 @@ export default function LoginPage() {
               Enter your email below to login to your account
             </p>
           </div>
-          <form onSubmit={handleLogin} className="grid gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="m@example.com"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-            <div className="grid gap-2">
-                <Label htmlFor="password">Password</Label>
-              <Input 
-                id="password" 
-                type="password" 
-                required 
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+          <div className="grid gap-4">
+            <form onSubmit={handleLogin} className="grid gap-2">
+              <div className="grid gap-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="m@example.com"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                 />
-            </div>
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? 'Logging in...' : 'Login'}
-            </Button>
-            <div className="text-center text-sm">
+              </div>
+              <div className="grid gap-2">
+                  <Label htmlFor="password">Password</Label>
+                <Input 
+                  id="password" 
+                  type="password" 
+                  required 
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  />
+              </div>
+               <div className="flex items-center">
                 <Link
                   href="#"
-                  className="underline"
+                  className="ml-auto inline-block text-sm underline"
                 >
                   Forgot your password?
                 </Link>
+              </div>
+              <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading ? 'Logging in...' : 'Login'}
+              </Button>
+            </form>
+            <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">
+                        Or continue with
+                    </span>
+                </div>
             </div>
-          </form>
+            <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isGoogleLoading}>
+              {isGoogleLoading ? 'Signing in...' : <> <GoogleIcon /> <span className="ml-2">Sign in with Google</span> </>}
+            </Button>
+          </div>
           <div className="mt-4 text-center text-sm">
             Don&apos;t have an account?{' '}
             <Link href="/signup" className="underline">
