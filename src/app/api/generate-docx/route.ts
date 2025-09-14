@@ -14,10 +14,6 @@ export async function POST(req: NextRequest) {
     const { doc, historyEntry } = await buildDocx(content, references, styles);
     const buffer = await Packer.toBuffer(doc);
 
-    const headers = new Headers();
-    headers.set('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-    headers.set('Content-Disposition', 'attachment; filename="generated.docx"');
-    
     // Pass historyEntry back to client to be saved in localStorage
     const responseBody = JSON.stringify({
         file: buffer.toString('base64'),
