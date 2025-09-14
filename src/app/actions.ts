@@ -2,7 +2,7 @@
 'use server';
 
 import { generateAcademicContent } from '@/ai/flows/generate-academic-content';
-
+import { editSection } from '@/ai/flows/edit-section';
 import { paraphraseText } from '@/ai/flows/paraphrase-text';
 import { scanTextSnippet } from '@/ai/flows/scan-text-snippet';
 import { checkPlagiarism } from '@/ai/flows/check-plagiarism';
@@ -108,33 +108,21 @@ export async function regenerateSectionAction(
   instructions: string
 ) {
   try {
-    const topic = document.title;
-    const context = document.sections
-      .filter((s) => s.title !== sectionTitle)
-      .map((s) => `${s.title}: ${s.content.map(b => b.type === 'text' ? b.text.substring(0, 100) : `[${b.type}]`).join(' ')}...`)
-      .join('\n');
+    const result = await editSection({
+      document,
+      sectionTitle,
+      instructions,
+    });
+    
+    // The result of editSection is the entire updated document.
+    // We just need to find the updated section content to return.
+    const newSection = result.sections.find((s) => s.title === sectionTitle);
 
-    const parameters = `You are editing a section titled "${sectionTitle}" within a larger document on "${topic}".
-      
-      The user has provided the following instructions for this section:
-      "${instructions}"
-
-      For context, here are the other sections in the document:
-      ${context}
-      
-      Please provide only the new content for the "${sectionTitle}" section based on the user's instructions. Output just the text content.`;
-
-    // Note: taskType is not directly used here as we are regenerating a small part
-    const result = await generateAcademicContent({ topic, parameters, taskType: 'Assignment' });
-
-    // Assuming the AI returns the regenerated content in the first section
-    const newContent = result.sections[0]?.content;
-
-    if (!newContent) {
-      throw new Error('AI did not return content for the section.');
+    if (!newSection) {
+      throw new Error('AI did not return the edited section in the document.');
     }
 
-    return { data: newContent, error: null };
+    return { data: newSection.content, error: null };
   } catch (error) {
     console.error(error);
     return { data: null, error: 'Failed to regenerate section.' };
@@ -265,7 +253,6 @@ export async function editSectionAction(
   instructions: string
 ) {
   try {
-    const { editSection } = await import('@/ai/flows/edit-section');
     const result = await editSection({
       document,
       sectionTitle,
