@@ -16,7 +16,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { MountainIcon } from 'lucide-react';
 import { auth, db } from '@/lib/firebase';
-import { createUserWithEmailAndPassword, updateProfile, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { createUserWithEmailAndPassword, updateProfile, signInWithPopup, GoogleAuthProvider, sendEmailVerification } from 'firebase/auth';
 import { setDoc, doc, getDoc } from 'firebase/firestore';
 
 const GoogleIcon = () => (
@@ -54,6 +54,7 @@ export default function SignupPage() {
         const user = userCredential.user;
 
         await updateProfile(user, { displayName: fullName });
+        await sendEmailVerification(user);
 
         await setDoc(doc(db, "users", user.uid), {
             uid: user.uid,
@@ -63,8 +64,8 @@ export default function SignupPage() {
             createdAt: new Date().toISOString(),
         });
         
-        toast({ title: "Account created successfully!" });
-        router.push('/dashboard');
+        toast({ title: "Account created successfully!", description: "A verification email has been sent." });
+        router.push('/verify-email');
     } catch (error: any) {
         toast({
             variant: 'destructive',
