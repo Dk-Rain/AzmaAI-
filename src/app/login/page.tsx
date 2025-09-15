@@ -101,7 +101,7 @@ export default function LoginPage() {
             </p>
           </div>
           <div className="grid gap-4">
-            <form onSubmit={handleLogin} className="grid gap-2">
+            <form onSubmit={handleLogin} className="grid gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -123,18 +123,18 @@ export default function LoginPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   />
               </div>
-               <div className="flex items-center">
-                <Link
-                  href="#"
-                  className="ml-auto inline-block text-sm underline"
-                >
-                  Forgot your password?
-                </Link>
-              </div>
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? 'Logging in...' : 'Login'}
               </Button>
             </form>
+             <div className="text-center text-sm">
+                <Link
+                  href="#"
+                  className="underline"
+                >
+                  Forgot your password?
+                </Link>
+              </div>
             <div className="relative">
                 <div className="absolute inset-0 flex items-center">
                     <span className="w-full border-t" />
