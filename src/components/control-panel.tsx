@@ -52,6 +52,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSub, D
 import { Label } from './ui/label';
 import { db } from '@/lib/firebase';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
+import { Progress } from './ui/progress';
+import { useRouter } from 'next/navigation';
 
 
 type UserData = {
@@ -72,6 +74,47 @@ interface ControlPanelProps {
   setStyles: (styles: StyleOptions) => void;
   references: References;
   content: DocumentContent;
+}
+
+const UsageMeter = ({ user }: { user: UserData | null }) => {
+    const router = useRouter();
+    // In a real app, this would come from a backend or a more robust client-side tracking mechanism.
+    const [usage, setUsage] = useState({ words: 250, documents: 1 });
+
+    const isPremium = user?.isPremium || false;
+    const limits = { words: 1000, documents: 3 };
+
+    const wordPercentage = isPremium ? 100 : (usage.words / limits.words) * 100;
+    const docPercentage = isPremium ? 100 : (usage.documents / limits.documents) * 100;
+    
+    if (!user) return null;
+
+    return (
+        <div className="p-4 border-t">
+            <h3 className="text-sm font-semibold mb-2">Daily Usage</h3>
+            <div className="space-y-3">
+                <div className="space-y-1">
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>AI Words</span>
+                        <span>{isPremium ? 'Unlimited' : `${usage.words.toLocaleString()} / ${limits.words.toLocaleString()}`}</span>
+                    </div>
+                    <Progress value={wordPercentage} />
+                </div>
+                 <div className="space-y-1">
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>Documents</span>
+                        <span>{isPremium ? 'Unlimited' : `${usage.documents} / ${limits.documents}`}</span>
+                    </div>
+                    <Progress value={docPercentage} />
+                </div>
+                {!isPremium && (
+                    <Button variant="outline" size="sm" className="w-full" onClick={() => router.push('/dashboard/upgrade')}>
+                        Upgrade for Unlimited Usage
+                    </Button>
+                )}
+            </div>
+        </div>
+    )
 }
 
 
@@ -909,9 +952,14 @@ export function ControlPanel({
         </DialogContent>
       </Dialog>
 
-      <div className="mt-auto p-4 border-t">
-        <Disclaimer />
+      <div className="mt-auto">
+        <UsageMeter user={user} />
+        <div className="p-4 border-t">
+          <Disclaimer />
+        </div>
       </div>
     </div>
   );
 }
+
+    
