@@ -37,6 +37,16 @@ type AppSettings = {
     googleAdsenseClientId?: string;
 };
 
+const initialSettings: AppSettings = {
+    appName: 'AzmaAI',
+    allowRegistrations: true,
+    defaultUserRole: 'Student',
+    maintenanceMode: false,
+    paymentGatewayPublicKey: '',
+    paymentGatewaySecretKey: '',
+    googleAdsenseClientId: '',
+};
+
 const initialPricing: PricingSettings = {
     student: { monthly: 2000, yearly: 8000 },
     professional: { monthly: 2000, yearly: 8000 },
@@ -49,15 +59,7 @@ export default function AdminSettingsPage() {
     const { toast } = useToast();
     const { setTheme, theme } = useTheme();
     const [mounted, setMounted] = useState(false);
-    const [settings, setSettings] = useState<AppSettings>({
-        appName: 'AzmaAI',
-        allowRegistrations: true,
-        defaultUserRole: 'Student',
-        maintenanceMode: false,
-        paymentGatewayPublicKey: '',
-        paymentGatewaySecretKey: '',
-        googleAdsenseClientId: '',
-    });
+    const [settings, setSettings] = useState<AppSettings>(initialSettings);
     const [pricing, setPricing] = useState<PricingSettings>(initialPricing);
     const [isLoading, setIsLoading] = useState(false);
     const [deleteConfirmation, setDeleteConfirmation] = useState('');
@@ -68,7 +70,8 @@ export default function AdminSettingsPage() {
         try {
             const storedSettings = localStorage.getItem('azma_app_settings');
             if (storedSettings) {
-                setSettings(JSON.parse(storedSettings));
+                // Merge stored settings with initial settings to prevent undefined values
+                setSettings(prev => ({...prev, ...JSON.parse(storedSettings)}));
             }
             const storedPricing = localStorage.getItem('azma_pricing_settings');
             if (storedPricing) {
@@ -340,7 +343,7 @@ export default function AdminSettingsPage() {
                     <Input 
                         id="adsense-client-id"
                         placeholder="ca-pub-xxxxxxxxxxxxxxxx"
-                        value={settings.googleAdsenseClientId}
+                        value={settings.googleAdsenseClientId || ''}
                         onChange={(e) => setSettings({...settings, googleAdsenseClientId: e.target.value})}
                     />
                 </div>
