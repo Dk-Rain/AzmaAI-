@@ -18,9 +18,10 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, User, Upload } from 'lucide-react';
-import { auth, db } from '@/lib/firebase';
+import { auth, db, storage } from '@/lib/firebase';
 import { onAuthStateChanged, updateProfile } from 'firebase/auth';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { ref, uploadString, getDownloadURL } from 'firebase/storage';
 
 
 type UserData = {
@@ -82,22 +83,28 @@ export default function ProfilePage() {
     setIsLoading(true);
 
     try {
+        let newPhotoUrl = photoUrl;
+
+        // If a new photo was selected, upload it to Firebase Storage
+        if (photoPreview) {
+            const storageRef = ref(storage, `profile_pictures/${user.uid}/profile.jpg`);
+            // The resized photoPreview is a data URL (e.g., "data:image/jpeg;base64,..."). We need to upload the base64 part.
+            await uploadString(storageRef, photoPreview, 'data_url');
+            newPhotoUrl = await getDownloadURL(storageRef);
+        }
+
         const dataToUpdate: { [key: string]: any } = {
             fullName,
             username,
             phoneNumber,
+            photoUrl: newPhotoUrl,
         };
-
-        const newPhotoUrl = photoPreview || photoUrl;
 
         // Update Firebase Auth profile
         await updateProfile(currentUser, {
             displayName: fullName,
             photoURL: newPhotoUrl,
         });
-
-        // Add photoUrl to the data to be saved in Firestore
-        dataToUpdate.photoUrl = newPhotoUrl;
 
         // Update Firestore document
         const userDocRef = doc(db, 'users', user.uid);
@@ -125,7 +132,7 @@ export default function ProfilePage() {
       toast({
           variant: 'destructive',
           title: 'Update Failed',
-          description: 'Could not save changes. The image might be too large.',
+          description: 'Could not save changes. Please try again.',
       })
     } finally {
       setIsLoading(false);
