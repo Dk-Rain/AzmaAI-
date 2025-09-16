@@ -145,7 +145,7 @@ export function ControlPanel({
   
   const generationForm = useForm<GenerationFormValues>({
     resolver: zodResolver(GenerationSchema),
-    defaultValues: { topic: '', parameters: '', taskType: 'Research Paper', numPages: 1 },
+    defaultValues: { topic: '', parameters: '', taskType: 'Research Paper', numPages: 1, customTemplate: '' },
   });
 
 
@@ -849,6 +849,22 @@ export function ControlPanel({
                                 <FormControl>
                                 <Textarea
                                     placeholder="e.g., Include sections on methodology, results, and discussion."
+                                    {...field}
+                                />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={generationForm.control}
+                            name="customTemplate"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Custom Template (Optional)</FormLabel>
+                                <FormControl>
+                                <Textarea
+                                    placeholder="Define your own structure here, e.g., &#10;- Section 1&#10;- Section 2&#10;  - Sub-section 2.1"
                                     {...field}
                                 />
                                 </FormControl>

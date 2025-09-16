@@ -26,6 +26,7 @@ const GenerateAcademicContentInputSchema = z.object({
     .describe(
       'Specific parameters or instructions for generating the content, such as desired sections, focus areas, or specific arguments to include.'
     ),
+    customTemplate: z.string().optional().describe('A user-provided template for the document structure. If provided, this overrides the standard format for the chosen task type.'),
 });
 export type GenerateAcademicContentInput = z.infer<
   typeof GenerateAcademicContentInputSchema
@@ -148,8 +149,11 @@ const generateAcademicContentPrompt = ai.definePrompt({
 
 **Process:**
 1.  **Research**: Use the \`arxivSearch\` and \`pubmedSearch\` tools to find relevant, real academic sources for the given topic. Synthesize the information from these sources to build your content.
-2.  **Structure Content**: You must determine the most appropriate format for the content. For standard text, use a 'text' block. When data or comparisons are best shown visually, generate a 'table' block. For itemizations, use a 'list' block. If a concept is best explained with a visual aid, create a descriptive prompt for an image and use the 'generateImage' tool.
-3.  **Cite Sources**: Create a "References" section at the end of the document. This section must list the full citations of the articles you found and used from your tool-based research. Format these citations in APA style.
+2.  **Determine Structure**:
+    *   **If a 'Custom Template' is provided by the user, you MUST use it as the primary structure for the document.**
+    *   If no custom template is provided, use the 'Suggested Format' for the chosen 'Task Type'.
+3.  **Structure Content**: You must determine the most appropriate format for the content. For standard text, use a 'text' block. When data or comparisons are best shown visually, generate a 'table' block. For itemizations, use a 'list' block. If a concept is best explained with a visual aid, create a descriptive prompt for an image and use the 'generateImage' tool.
+4.  **Cite Sources**: Create a "References" section at the end of the document. This section must list the full citations of the articles you found and used from your tool-based research. Format these citations in APA style.
 
 Your output must be a single, valid JSON object that strictly adheres to the GenerateAcademicContentOutputSchema.
 
@@ -174,8 +178,8 @@ Your output must be a single, valid JSON object that strictly adheres to the Gen
 *   **Task Type**: {{{taskType}}}
 *   **Topic**: {{{topic}}}
 *   {{#if numPages}}**Number of Pages**: {{{numPages}}}{{/if}}
-*   **Parameters**: {{{parameters}}}
-*   **Suggested Format**: {{{format}}}
+*   {{#if parameters}}**Parameters**: {{{parameters}}}{{/if}}
+*   {{#if customTemplate}}**Custom Template**: {{{customTemplate}}}{{else}}**Suggested Format**: {{{format}}}{{/if}}
 
 Adhere to all instructions and generate a complete, high-quality academic document in the specified JSON format. You MUST include a "References" section populated with the sources you used. Do NOT include an "Abstract" section unless explicitly requested in the parameters.
 `,
@@ -188,7 +192,8 @@ const generateAcademicContentFlow = ai.defineFlow(
     outputSchema: GenerateAcademicContentOutputSchema,
   },
   async input => {
-    const format = academicTaskFormats[input.taskType];
+    // If a custom template is provided, use it. Otherwise, get the default format.
+    const format = input.customTemplate || academicTaskFormats[input.taskType];
     const {output} = await generateAcademicContentPrompt({...input, format});
     return output!;
   }
