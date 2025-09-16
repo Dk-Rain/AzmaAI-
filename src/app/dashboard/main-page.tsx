@@ -35,6 +35,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import type { CheckPlagiarismOutput } from '@/ai/flows/check-plagiarism';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { DisclaimerPopup } from '@/components/disclaimer-popup';
+import DashboardLoading from './loading';
 
 
 const defaultTask: AcademicTaskType = 'Research Paper';
@@ -81,37 +82,56 @@ export function MainPage() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isTemplateMode, setIsTemplateMode] = useState(false);
   const [customTemplate, setCustomTemplate] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
   const router = useRouter();
   
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        // User is signed in.
-        const userDocRef = doc(db, "users", firebaseUser.uid);
-        const userDoc = await getDoc(userDocRef);
+    const checkMaintenanceAndAuth = async (firebaseUser: any) => {
+      // Fetch maintenance status
+      const settingsDocRef = doc(db, 'settings', 'global');
+      const settingsDoc = await getDoc(settingsDocRef);
+      const isMaintenanceMode = settingsDoc.exists() ? settingsDoc.data().appSettings.maintenanceMode : false;
 
-        if (userDoc.exists()) {
-          const userData = userDoc.data();
-          const isPremium = userData.isPremium || false;
-          setUser({
-            uid: firebaseUser.uid,
-            fullName: firebaseUser.displayName || userData.fullName,
-            email: firebaseUser.email || userData.email,
-            role: userData.role,
-            photoUrl: firebaseUser.photoURL || userData.photoUrl,
-            username: userData.username,
-            isPremium,
-          });
-        } else {
-           // This case should ideally not happen if signup is correct
-           toast({ variant: 'destructive', title: 'User data not found.'})
-           router.push('/login');
+      // User is signed in.
+      const userDocRef = doc(db, "users", firebaseUser.uid);
+      const userDoc = await getDoc(userDocRef);
+
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+
+        // Redirect non-admins during maintenance
+        if (isMaintenanceMode && userData.role !== 'Admin') {
+          router.push('/maintenance');
+          return; // Stop further execution
         }
+
+        const isPremium = userData.isPremium || false;
+        setUser({
+          uid: firebaseUser.uid,
+          fullName: firebaseUser.displayName || userData.fullName,
+          email: firebaseUser.email || userData.email,
+          role: userData.role,
+          photoUrl: firebaseUser.photoURL || userData.photoUrl,
+          username: userData.username,
+          isPremium,
+        });
+      } else {
+         // This case should ideally not happen if signup is correct
+         toast({ variant: 'destructive', title: 'User data not found.'})
+         router.push('/login');
+      }
+      setIsLoading(false);
+    }
+    
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        checkMaintenanceAndAuth(firebaseUser);
       } else {
         // User is signed out.
         setUser(null);
         router.push('/login');
+        setIsLoading(false);
       }
     });
 
@@ -280,9 +300,12 @@ export function MainPage() {
       description: data.summary,
     });
   };
+  
+  if (isLoading || !user) {
+    return <DashboardLoading />;
+  }
 
   const isPremium = user?.isPremium || false;
-
   const showEditor = true;
   
   return (
@@ -494,3 +517,5 @@ export function MainPage() {
     </div>
   );
 }
+
+    
