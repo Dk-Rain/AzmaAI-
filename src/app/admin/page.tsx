@@ -14,7 +14,7 @@ import { signInWithEmailAndPassword } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 
 export default function AdminAuthPage() {
-  const [email, setEmail] = useState('admin@azma.com');
+  const [email, setEmail] = useState('admin@azmaai.com.ng');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -64,7 +64,7 @@ export default function AdminAuthPage() {
                     <School className="h-7 w-7 mr-2 text-primary" />
                     <span>AZMA AI</span>
                 </Link>
-                <CardTitle className="text-2xl">Admin Login</CardTitle>
+                <CardTitle className="text-2xl">General Admin Login</CardTitle>
                 <CardDescription>Enter your credentials to access the admin dashboard.</CardDescription>
             </CardHeader>
             <CardContent>
@@ -74,7 +74,7 @@ export default function AdminAuthPage() {
                         <Input
                             id="email"
                             type="email"
-                            placeholder="admin@azma.com"
+                            placeholder="admin@azmaai.com.ng"
                             required
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
@@ -107,4 +107,3 @@ export default function AdminAuthPage() {
     </div>
   );
 }
-
