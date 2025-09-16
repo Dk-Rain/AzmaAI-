@@ -36,6 +36,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
+import { useGoogleLogin } from '@react-oauth/google';
 
 
 export default function SettingsPage() {
@@ -76,12 +77,26 @@ export default function SettingsPage() {
     }
   };
   
-  const handleConnectGoogleDrive = () => {
-    toast({
-        title: 'Feature Coming Soon!',
-        description: 'Google Drive integration is not yet implemented.',
-    });
-  };
+  const handleConnectGoogleDrive = useGoogleLogin({
+    onSuccess: (codeResponse) => {
+        console.log('Google login success. Code:', codeResponse.code);
+        toast({
+            title: 'Google Account Connected!',
+            description: 'The app now has permission. Ready for server-side verification.',
+        });
+        // In a real app, you would send this 'code' to your backend server.
+        // Your server would then exchange it for an access token and refresh token.
+    },
+    onError: (error) => {
+        console.error('Google login error', error);
+        toast({
+            variant: 'destructive',
+            title: 'Google Connection Failed',
+            description: 'Could not get permission from Google.',
+        });
+    },
+    flow: 'auth-code', // This is crucial to get the one-time code for your backend
+  });
 
 
   return (
@@ -227,7 +242,7 @@ export default function SettingsPage() {
                                 Back up your projects and documents to your Google Drive.
                             </p>
                           </div>
-                          <Button variant="outline" onClick={handleConnectGoogleDrive}>
+                          <Button variant="outline" onClick={() => handleConnectGoogleDrive()}>
                              <Cloud className="mr-2 h-4 w-4" />
                              Connect
                           </Button>
@@ -310,5 +325,3 @@ export default function SettingsPage() {
     </div>
   );
 }
-
-    
