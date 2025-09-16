@@ -127,7 +127,7 @@ const generateAcademicContentPrompt = ai.definePrompt({
 **Process:**
 1.  **Research**: Use the \`arxivSearch\` and \`pubmedSearch\` tools to find relevant, real academic sources for the given topic. Synthesize the information from these sources to build your content.
 2.  **Determine Structure**:
-    *   **If a 'Custom Template' is provided by the user, you MUST use it as the primary structure for the document.**
+    *   If a 'Custom Template' is provided by the user, you MUST use it as the primary structure for the document.
     *   If no custom template is provided, use the 'Suggested Format' for the chosen 'Task Type'.
 3.  **Cite Sources**: Create a "References" section at the end of the document. This section must list the full citations of the articles you found and used from your tool-based research. Format these citations in APA style.
 
@@ -136,17 +136,10 @@ Your output must be a single, valid JSON object that strictly adheres to the Gen
 **Content Generation Rules:**
 
 1.  **Page Count**: If the user specifies a number of pages, you must generate content that would realistically fill that many standard pages (approximately 500 words per page).
-2.  **Default to Text**: Your primary output for any content should be a 'text' block: \`{ "type": "text", "text": "..." }\`.
-3.  **Images/Diagrams (Only if requested)**:
-    *   {{#if includeImages}}You MUST include visual diagrams, charts, or illustrations where they would enhance a section.
-    *   Create an 'image_placeholder' block: \`{ "type": "image_placeholder", "prompt": "A descriptive prompt for the image...", "caption": "..." }\`.{{else}}Do NOT include any images, diagrams, or image placeholders.{{/if}}
-4.  **Tables (Only if requested)**:
-    *   {{#if includeTables}}When presenting structured data (e.g., comparisons, statistics), you MUST use a 'table' block.
-    *   Format it as: \`{ "type": "table", "caption": "...", "headers": ["Header 1"], "rows": [["Row 1 Col 1"]] }\`.{{else}}Do NOT include any tables.{{/if}}
-5.  **Lists (Only if requested)**:
-    *   {{#if includeLists}}For sequential steps or itemizations, you MUST use a 'list' block.
-    *   Ordered: \`{ "type": "list", "style": "ordered", "items": ["First step"] }\`.
-    *   Unordered: \`{ "type": "list", "style": "unordered", "items": ["Bullet point"] }\`.{{else}}Do NOT include any lists.{{/if}}
+2.  **Default to Text**: Your primary output for any content should be a 'text' block: \`{ "type": "text", "text": "..." }\`. Only use other block types if explicitly requested.
+3.  **Images/Diagrams (Only if requested)**: {{#if includeImages}}You MUST include visual diagrams, charts, or illustrations where they would enhance a section. Create an 'image_placeholder' block: \`{ "type": "image_placeholder", "prompt": "A descriptive prompt for the image...", "caption": "..." }\`.{{else}}Do NOT include any images, diagrams, or image placeholders.{{/if}}
+4.  **Tables (Only if requested)**: {{#if includeTables}}When presenting structured data (e.g., comparisons, statistics), you MUST use a 'table' block. Format it as: \`{ "type": "table", "caption": "...", "headers": ["Header 1"], "rows": [["Row 1 Col 1"]] }\`.{{else}}Do NOT include any tables.{{/if}}
+5.  **Lists (Only if requested)**: {{#if includeLists}}For sequential steps or itemizations, you MUST use a 'list' block. Ordered: \`{ "type": "list", "style": "ordered", "items": ["First step"] }\`. Unordered: \`{ "type": "list", "style": "unordered", "items": ["Bullet point"] }\`.{{else}}Do NOT include any lists.{{/if}}
 6.  **Title Rules**: All titles (document, section, sub-section) must be concise, between 5 and 10 words.
 
 **User Request:**
