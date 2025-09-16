@@ -63,7 +63,7 @@ export default function ProfilePage() {
                 setUser(fullUserData);
                 setFullName(fullUserData.fullName);
                 setPhoneNumber(fullUserData.phoneNumber || '');
-                setUsername(fullUserData.username || fullUserData.fullName);
+                setUsername(fullUserData.username || fullUserData.fullName || '');
                 setPhotoUrl(fullUserData.photoUrl);
             } else {
                 router.push('/login');
