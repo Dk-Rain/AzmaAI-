@@ -79,7 +79,7 @@ interface ControlPanelProps {
 const UsageMeter = ({ user }: { user: UserData | null }) => {
     const router = useRouter();
     // In a real app, this would come from a backend or a more robust client-side tracking mechanism.
-    const [usage, setUsage] = useState({ words: 250, documents: 1 });
+    const [usage, setUsage] = useState({ words: 0, documents: 0 });
 
     const isPremium = user?.isPremium || false;
     const limits = { words: 1000, documents: 3 };
