@@ -152,7 +152,7 @@ export function TransactionList() {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        <Button onClick={handleExportCsv} variant="outline">
+        <Button onClick={handleExportCsv} variant="outline" disabled={filteredTransactions.length === 0}>
           <FileDown className="mr-2 h-4 w-4" />
           Export CSV
         </Button>
