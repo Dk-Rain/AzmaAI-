@@ -59,7 +59,7 @@ type UserData = {
   email: string;
   username?: string;
   photoUrl?: string;
-  isPremium?: boolean; // Let's assume this field exists
+  isPremium?: boolean;
 }
 
 export function MainPage() {
@@ -399,7 +399,7 @@ export function MainPage() {
                 <div className="flex flex-col space-y-1">
                   <p className="text-sm font-medium leading-none">{user?.fullName}</p>
                   <p className="text-xs leading-none text-muted-foreground">
-                    {user?.role}
+                    {user?.isPremium ? `${user.role} Plan` : 'Free Plan'}
                   </p>
                 </div>
               </DropdownMenuLabel>

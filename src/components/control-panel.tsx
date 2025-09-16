@@ -91,7 +91,7 @@ const UsageMeter = ({ user }: { user: UserData | null }) => {
 
     return (
         <div className="p-4 border-t">
-            <h3 className="text-sm font-semibold mb-2">Daily Usage</h3>
+            <h3 className="text-sm font-semibold mb-2">Daily Usage ({isPremium ? 'Premium Plan' : 'Free Plan'})</h3>
             <div className="space-y-3">
                 <div className="space-y-1">
                     <div className="flex justify-between text-xs text-muted-foreground">
@@ -961,5 +961,3 @@ export function ControlPanel({
     </div>
   );
 }
-
-    

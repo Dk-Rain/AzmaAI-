@@ -26,6 +26,9 @@ import { ArrowLeft, CheckCircle2, Star, XCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import type { PricingSettings } from '@/types/admin';
+import { auth, db } from '@/lib/firebase';
+import { onAuthStateChanged } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
 
 
 type UserData = {
@@ -49,22 +52,30 @@ export default function UpgradePage() {
   const { toast } = useToast();
 
   useEffect(() => {
-    try {
-        const userData = localStorage.getItem('azmaUser');
-        if (userData) {
-            setUser(JSON.parse(userData));
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+        if (firebaseUser) {
+            const userDocRef = doc(db, 'users', firebaseUser.uid);
+            const userDoc = await getDoc(userDocRef);
+            if (userDoc.exists()) {
+                setUser(userDoc.data() as UserData);
+            } else {
+                router.push('/login');
+            }
         } else {
             router.push('/login');
         }
+    });
 
+    try {
         const storedPricing = localStorage.getItem('azma_pricing_settings');
         if (storedPricing) {
             setPricing(JSON.parse(storedPricing));
         }
     } catch (error) {
-        console.error("Failed to parse data from localStorage", error);
-        router.push('/login');
+        console.error("Failed to parse pricing data from localStorage", error);
     }
+    
+    return () => unsubscribe();
   }, [router]);
 
   const handleUpgrade = () => {
@@ -128,7 +139,9 @@ export default function UpgradePage() {
                         </div>
                     </CardContent>
                     <CardFooter className="mt-auto">
-                        <Button variant="outline" className="w-full" disabled>Current Plan</Button>
+                        <Button variant="outline" className="w-full" disabled={!currentPlanRole}>
+                            {currentPlanRole ? 'Your Current Plan' : 'Current Plan'}
+                        </Button>
                     </CardFooter>
                 </Card>
                  <Card className="flex flex-col border-primary shadow-lg relative">
