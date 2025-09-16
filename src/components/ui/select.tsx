@@ -93,8 +93,14 @@ const SelectContent = React.forwardRef<
             "h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]"
         )}
       >
-        <SelectPrimitive.Viewport className={cn("p-1", className)}>
-            {children}
+        <SelectPrimitive.Viewport
+          className={cn(
+            "p-1",
+            position === "popper" &&
+              "h-full min-w-[var(--radix-select-trigger-width)]"
+          )}
+        >
+          {children}
         </SelectPrimitive.Viewport>
         <ScrollBar orientation="vertical" />
       </ScrollArea>
