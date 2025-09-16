@@ -78,14 +78,42 @@ export default function SettingsPage() {
   };
   
   const handleConnectGoogleDrive = useGoogleLogin({
-    onSuccess: (codeResponse) => {
-        console.log('Google login success. Code:', codeResponse.code);
+    onSuccess: async (codeResponse) => {
         toast({
-            title: 'Google Account Connected!',
-            description: 'The app now has permission. Ready for server-side verification.',
+            title: 'Permissions Granted!',
+            description: 'Sending authorization to server...',
         });
-        // In a real app, you would send this 'code' to your backend server.
-        // Your server would then exchange it for an access token and refresh token.
+        
+        // Send the one-time code to our backend API route
+        try {
+            const response = await fetch('/api/google/oauth-callback', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ code: codeResponse.code }),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Server-side token exchange failed.');
+            }
+
+            const data = await response.json();
+            toast({
+                title: 'Google Account Connected!',
+                description: data.message,
+            });
+            // Here you would typically update the UI to show a "connected" state
+            // and enable a "Sync to Drive" button.
+
+        } catch (error: any) {
+             toast({
+                variant: 'destructive',
+                title: 'Connection Failed',
+                description: error.message,
+            });
+        }
     },
     onError: (error) => {
         console.error('Google login error', error);
@@ -96,6 +124,7 @@ export default function SettingsPage() {
         });
     },
     flow: 'auth-code', // This is crucial to get the one-time code for your backend
+    scope: 'https://www.googleapis.com/auth/drive.file', // Request permission to create files
   });
 
 
