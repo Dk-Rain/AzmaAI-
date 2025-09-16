@@ -51,6 +51,7 @@ export default function UpgradePage() {
   const [user, setUser] = useState<UserData | null>(null);
   const [pricing, setPricing] = useState<PricingSettings>(defaultPricing);
   const [isUpgrading, setIsUpgrading] = useState(false);
+  const [isDowngrading, setIsDowngrading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
 
@@ -116,6 +117,39 @@ export default function UpgradePage() {
         }
     }, 1500);
   }
+
+  const handleDowngrade = async () => {
+    if (!user) return;
+    setIsDowngrading(true);
+    toast({
+        title: 'Processing Downgrade...',
+        description: 'Reverting your account to the free plan.'
+    })
+    
+    setTimeout(async () => {
+        try {
+            const userDocRef = doc(db, 'users', user.uid);
+            await updateDoc(userDocRef, { isPremium: false });
+            
+            setUser(prevUser => prevUser ? { ...prevUser, isPremium: false } : null);
+
+            toast({
+                title: 'Downgrade Successful!',
+                description: 'Your account is now on the Free plan.'
+            });
+
+        } catch (error) {
+            console.error("Downgrade failed:", error);
+            toast({
+                variant: 'destructive',
+                title: 'Downgrade Failed',
+                description: 'Could not update your plan. Please try again.'
+            })
+        } finally {
+            setIsDowngrading(false);
+        }
+    }, 1500);
+  }
   
   const handleContactSales = () => {
     window.location.href = "mailto:sales@azma.com?subject=Enterprise%20Plan%20Inquiry";
@@ -170,8 +204,14 @@ export default function UpgradePage() {
                         </div>
                     </CardContent>
                     <CardFooter className="mt-auto">
-                        <Button variant="outline" className="w-full" disabled={!user?.isPremium}>
-                            {user?.isPremium ? 'Downgrade (Not available)' : 'Your Current Plan'}
+                        <Button variant="outline" className="w-full" onClick={handleDowngrade} disabled={!user?.isPremium || isDowngrading}>
+                           {isDowngrading ? (
+                             <><Loader2 className="mr-2 h-4 w-4 animate-spin"/> Downgrading...</>
+                           ) : user?.isPremium ? (
+                             'Downgrade to Free'
+                           ) : (
+                             'Your Current Plan'
+                           )}
                         </Button>
                     </CardFooter>
                 </Card>
