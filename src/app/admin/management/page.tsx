@@ -29,30 +29,32 @@ import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { Shield, UserPlus } from 'lucide-react';
 import { db, auth } from '@/lib/firebase';
-import { collection, getDocs, updateDoc, setDoc, doc } from 'firebase/firestore';
+import { collection, getDocs, updateDoc, setDoc, doc, query, where } from 'firebase/firestore';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 
 
 export default function AdminManagementPage() {
-  const [users, setUsers] = useState<User[]>([]);
+  const [admins, setAdmins] = useState<User[]>([]);
   const { toast } = useToast();
   const [isCreateAdminOpen, setIsCreateAdminOpen] = useState(false);
   const [newAdmin, setNewAdmin] = useState({ fullName: '', email: '', password: '' });
 
-  const fetchUsers = async () => {
+  const fetchAdmins = async () => {
     try {
       const usersCollection = collection(db, 'users');
-      const userSnapshot = await getDocs(usersCollection);
-      const userList = userSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
-      setUsers(userList);
+      const q = query(usersCollection, where("role", "==", "Admin"));
+      const adminSnapshot = await getDocs(q);
+      const adminList = adminSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
+      setAdmins(adminList);
     } catch (error) {
-      console.error("Failed to fetch users from Firestore", error);
+      console.error("Failed to fetch admins from Firestore", error);
+      toast({ variant: 'destructive', title: 'Error', description: 'Could not load administrator accounts.'});
     }
   };
 
   useEffect(() => {
-    fetchUsers();
-  }, []);
+    fetchAdmins();
+  }, [toast]);
   
   const handleCreateAdmin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,7 +64,6 @@ export default function AdminManagementPage() {
     }
 
     try {
-        // We have to create a user in Auth first. This is a temporary auth session.
         const userCredential = await createUserWithEmailAndPassword(auth, newAdmin.email, newAdmin.password);
         const user = userCredential.user;
 
@@ -75,11 +76,9 @@ export default function AdminManagementPage() {
             permissions: { canManageUsers: true, canManageTransactions: false, canManageSettings: false },
         };
 
-        // Now, save this user's data to Firestore
         await setDoc(doc(db, "users", user.uid), newUser);
 
-        const updatedUsers = [...users, newUser];
-        setUsers(updatedUsers);
+        setAdmins(prevAdmins => [...prevAdmins, newUser]);
 
         toast({ title: 'Admin Created', description: `${newUser.fullName} has been added as an admin.`});
         setIsCreateAdminOpen(false);
@@ -91,49 +90,20 @@ export default function AdminManagementPage() {
     }
   };
 
-
-  const handleRoleChange = async (userId: string, newRole: User['role']) => {
-    const userToUpdate = users.find(u => u.id === userId);
-    if (!userToUpdate) return;
-    
-    // Primary admin email from your previous request to prevent role change
-    if (userToUpdate.email === 'admin@azmaai.com.ng') {
-        toast({ variant: 'destructive', title: 'Action Forbidden', description: 'The primary admin role cannot be changed.'});
-        // We need to visually revert the switch if it was optimistically toggled
-        setUsers([...users]);
-        return;
-    }
-
-    try {
-        const userDocRef = doc(db, 'users', userId);
-        const permissions = newRole === 'Admin' ? userToUpdate.permissions || { canManageUsers: false, canManageTransactions: false, canManageSettings: false } : undefined;
-        await updateDoc(userDocRef, { role: newRole, permissions });
-        
-        setUsers(users.map(user => 
-            user.id === userId 
-            ? { ...user, role: newRole, permissions } as User
-            : user
-        ));
-        toast({ title: "Role updated successfully."})
-    } catch(error) {
-        console.error("Role change failed", error);
-        toast({ variant: 'destructive', title: "Error", description: "Failed to update user role."});
-    }
-  };
-
   const handlePermissionChange = async (userId: string, permission: keyof UserPermissions, value: boolean) => {
-    const userToUpdate = users.find(u => u.id === userId);
-    if (!userToUpdate || userToUpdate.role !== 'Admin') return;
+    const adminToUpdate = admins.find(u => u.id === userId);
+    if (!adminToUpdate) return;
     
-    const newPermissions = { ...userToUpdate.permissions, [permission]: value };
+    const newPermissions = { ...(adminToUpdate.permissions || { canManageUsers: false, canManageTransactions: false, canManageSettings: false }), [permission]: value };
 
     try {
       const userDocRef = doc(db, 'users', userId);
       await updateDoc(userDocRef, { permissions: newPermissions });
 
-      setUsers(users.map(user => 
+      setAdmins(admins.map(user => 
         user.id === userId ? { ...user, permissions: newPermissions } as User : user
       ));
+      toast({ title: 'Permissions Updated', description: `Permissions for ${adminToUpdate.fullName} have been saved.`})
 
     } catch (error) {
        console.error("Permission change failed", error);
@@ -148,7 +118,7 @@ export default function AdminManagementPage() {
             <div>
                 <CardTitle className="flex items-center gap-2"><Shield /> Admin Role Management</CardTitle>
                 <CardDescription>
-                Grant admin access and assign specific permissions to users.
+                Assign specific permissions to administrators.
                 </CardDescription>
             </div>
             <Dialog open={isCreateAdminOpen} onOpenChange={setIsCreateAdminOpen}>
@@ -187,64 +157,53 @@ export default function AdminManagementPage() {
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
-        {users.map((user, index) => (
+        {admins.map((user, index) => (
           <div key={user.id}>
-            <div className="flex flex-col md:flex-row gap-4 justify-between">
-                <div className="flex items-center gap-4">
-                    <Avatar className="h-12 w-12">
-                        <AvatarImage src={user.photoUrl || `https://api.dicebear.com/8.x/lorelei/svg?seed=${user.username || user.fullName}`} alt={user.fullName || 'User'}/>
-                        <AvatarFallback>{user.fullName?.[0]}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                        <div className="font-semibold">{user.fullName}</div>
-                        <div className="text-sm text-muted-foreground">{user.email}</div>
-                    </div>
-                </div>
-                 <div className="flex items-center space-x-2">
-                    <Switch
-                        id={`is-admin-${user.id}`}
-                        checked={user.role === 'Admin'}
-                        onCheckedChange={(checked) => handleRoleChange(user.id, checked ? 'Admin' : 'Student')}
-                        disabled={user.email === 'admin@azmaai.com.ng'}
-                    />
-                    <Label htmlFor={`is-admin-${user.id}`} className="font-medium">
-                        Is Admin
-                    </Label>
+            <div className="flex items-center gap-4">
+                <Avatar className="h-12 w-12">
+                    <AvatarImage src={user.photoUrl || `https://api.dicebear.com/8.x/lorelei/svg?seed=${user.username || user.fullName}`} alt={user.fullName || 'User'}/>
+                    <AvatarFallback>{user.fullName?.[0]}</AvatarFallback>
+                </Avatar>
+                <div>
+                    <div className="font-semibold">{user.fullName}</div>
+                    <div className="text-sm text-muted-foreground">{user.email}</div>
                 </div>
             </div>
 
-            {user.role === 'Admin' && (
-              <div className="pl-0 md:pl-16 mt-4 grid gap-4 grid-cols-1 sm:grid-cols-3">
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id={`perm-users-${user.id}`}
-                    checked={user.permissions?.canManageUsers}
-                    onCheckedChange={(checked) => handlePermissionChange(user.id, 'canManageUsers', checked)}
-                  />
-                  <Label htmlFor={`perm-users-${user.id}`}>Manage Users</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id={`perm-transactions-${user.id}`}
-                    checked={user.permissions?.canManageTransactions}
-                    onCheckedChange={(checked) => handlePermissionChange(user.id, 'canManageTransactions', checked)}
-                  />
-                  <Label htmlFor={`perm-transactions-${user.id}`}>Manage Transactions</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id={`perm-settings-${user.id}`}
-                    checked={user.permissions?.canManageSettings}
-                    onCheckedChange={(checked) => handlePermissionChange(user.id, 'canManageSettings', checked)}
-                  />
-                  <Label htmlFor={`perm-settings-${user.id}`}>Manage Settings</Label>
-                </div>
+            <div className="pl-0 md:pl-16 mt-4 grid gap-4 grid-cols-1 sm:grid-cols-3">
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id={`perm-users-${user.id}`}
+                  checked={user.permissions?.canManageUsers}
+                  onCheckedChange={(checked) => handlePermissionChange(user.id, 'canManageUsers', checked)}
+                  disabled={user.email === 'admin@azmaai.com.ng'}
+                />
+                <Label htmlFor={`perm-users-${user.id}`}>Manage Users</Label>
               </div>
-            )}
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id={`perm-transactions-${user.id}`}
+                  checked={user.permissions?.canManageTransactions}
+                  onCheckedChange={(checked) => handlePermissionChange(user.id, 'canManageTransactions', checked)}
+                />
+                <Label htmlFor={`perm-transactions-${user.id}`}>Manage Transactions</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id={`perm-settings-${user.id}`}
+                  checked={user.permissions?.canManageSettings}
+                  onCheckedChange={(checked) => handlePermissionChange(user.id, 'canManageSettings', checked)}
+                />
+                <Label htmlFor={`perm-settings-${user.id}`}>Manage Settings</Label>
+              </div>
+            </div>
 
-            {index < users.length - 1 && <Separator className="mt-6"/>}
+            {index < admins.length - 1 && <Separator className="mt-6"/>}
           </div>
         ))}
+        {admins.length === 0 && (
+          <p className="text-center text-muted-foreground py-8">No administrators found.</p>
+        )}
       </CardContent>
     </Card>
   );
