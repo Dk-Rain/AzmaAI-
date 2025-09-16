@@ -43,10 +43,68 @@ export default function SettingsPage() {
   const { setTheme, theme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const { toast } = useToast();
+  const [pushNotificationStatus, setPushNotificationStatus] = useState<NotificationPermission>('default');
+  const [isPushEnabled, setIsPushEnabled] = useState(false);
+
 
   useEffect(() => {
     setMounted(true);
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      setPushNotificationStatus(Notification.permission);
+      setIsPushEnabled(Notification.permission === 'granted');
+    }
   }, []);
+
+  const handlePushToggle = async (checked: boolean) => {
+    if (typeof window === 'undefined' || !('Notification' in window)) {
+      toast({
+        variant: 'destructive',
+        title: 'Unsupported Browser',
+        description: 'Push notifications are not supported in this browser.',
+      });
+      return;
+    }
+    
+    if (checked) {
+      if (pushNotificationStatus === 'granted') {
+        setIsPushEnabled(true);
+        toast({ title: 'Push notifications are already enabled.' });
+        return;
+      }
+
+      if (pushNotificationStatus === 'denied') {
+        toast({
+          variant: 'destructive',
+          title: 'Permission Denied',
+          description: 'You have previously blocked notifications. Please enable them in your browser settings.',
+        });
+        return;
+      }
+
+      // Request permission
+      const permission = await Notification.requestPermission();
+      setPushNotificationStatus(permission);
+
+      if (permission === 'granted') {
+        setIsPushEnabled(true);
+        toast({ title: 'Push Notifications Enabled!', description: "You'll be notified of important updates." });
+        // In a real app, you would now get the subscription and send it to your server.
+        // e.g., navigator.serviceWorker.ready.then(reg => reg.pushManager.getSubscription().then(sub => ...));
+      } else {
+        setIsPushEnabled(false);
+        toast({
+          variant: 'destructive',
+          title: 'Permission Not Granted',
+          description: 'You will not receive push notifications.',
+        });
+      }
+    } else {
+      // Logic for disabling push notifications (e.g., telling the server to remove the subscription)
+      setIsPushEnabled(false);
+      toast({ title: 'Push Notifications Disabled', description: 'You can re-enable them anytime.' });
+    }
+  };
+
 
   const handleArchiveAll = () => {
     // In a real app, you would have logic to archive all chats.
@@ -193,7 +251,11 @@ export default function SettingsPage() {
                           </div>
                           <div className="flex items-center space-x-2">
                              <Smartphone className="h-5 w-5 text-muted-foreground"/>
-                             <Switch id="responses-push" defaultChecked />
+                             <Switch
+                                id="responses-push"
+                                checked={isPushEnabled}
+                                onCheckedChange={handlePushToggle}
+                              />
                           </div>
                         </div>
                         <Separator />
