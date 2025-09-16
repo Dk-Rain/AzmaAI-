@@ -149,6 +149,11 @@ export function MainPage() {
   };
   
   const handleExport = async (format: 'docx' | 'pdf' | 'xls' | 'txt') => {
+    if (!user) {
+        toast({ variant: 'destructive', title: 'Not Logged In', description: 'You must be logged in to export.'});
+        return;
+    }
+
     setIsExporting(true);
     toast({
       title: 'Exporting Document',
@@ -205,23 +210,15 @@ export function MainPage() {
 
     if (format === 'docx') {
       try {
-        const { data, error } = await exportDocxAction(content, references, styles);
+        const { data, error } = await exportDocxAction(content, references, styles, user.uid);
         setIsExporting(false);
 
         if (error || !data) {
           throw new Error(error || 'Failed to generate document');
         }
         
-        const { file, historyEntry } = data;
+        const { file } = data;
         
-        // Save the history entry to localStorage
-        if (historyEntry) {
-            const storedHistory = localStorage.getItem('azma_document_history') || '[]';
-            const history: DocumentHistoryEntry[] = JSON.parse(storedHistory);
-            history.push(historyEntry);
-            localStorage.setItem('azma_document_history', JSON.stringify(history));
-        }
-
         const blob = new Blob([Buffer.from(file, 'base64')], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -234,7 +231,7 @@ export function MainPage() {
 
         return toast({
           title: 'Export Successful',
-          description: 'Your document has been downloaded.',
+          description: 'Your document has been downloaded and a verification record has been saved.',
         });
 
       } catch (error) {

@@ -9,44 +9,13 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { School, Search, CheckCircle, XCircle, FileClock, BadgeCheck, Ticket, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import type { DocumentHistoryEntry, PromoCode, User } from '@/types/admin';
+import type { DocumentHistoryEntry, PromoCode } from '@/types/admin';
+import type { User } from '@/types/admin';
 import { AnimatePresence, motion } from 'framer-motion';
+import { db, auth } from '@/lib/firebase';
+import { collection, doc, getDoc, updateDoc, increment, arrayUnion } from 'firebase/firestore';
+import { onAuthStateChanged } from 'firebase/auth';
 
-const FAKE_DOC_HISTORY: DocumentHistoryEntry[] = [{
-    docId: 'AZMA-DOC-DEMO-12345',
-    title: 'Sample Document for Demo',
-    generatedAt: new Date().toISOString(),
-    generatedBy: 'Demo System',
-}];
-
-const FAKE_PROMO_CODES: PromoCode[] = [
-    {
-        id: 'promo-demo-1',
-        code: 'DEMO2024',
-        type: 'percentage',
-        value: 25,
-        usageLimit: 10,
-        usedCount: 0,
-        usagePerUser: 1,
-        redeemedBy: [],
-        expiresAt: null,
-        createdAt: new Date().toISOString(),
-        isActive: true,
-    },
-    {
-        id: 'promo-demo-2',
-        code: 'SAVE500',
-        type: 'fixed',
-        value: 500,
-        usageLimit: 20,
-        usedCount: 0,
-        usagePerUser: 1,
-        redeemedBy: [],
-        expiresAt: null,
-        createdAt: new Date().toISOString(),
-        isActive: true,
-    }
-];
 
 export default function SealVerifyPage() {
     const [step, setStep] = useState(1); // 1: Doc ID, 2: Promo, 3: Result
@@ -56,14 +25,29 @@ export default function SealVerifyPage() {
     
     const [verifiedDoc, setVerifiedDoc] = useState<DocumentHistoryEntry | null>(null);
     const [appliedPromo, setAppliedPromo] = useState<PromoCode | null>(null);
+    const [currentUser, setCurrentUser] = useState<User | null>(null);
 
     const [error, setError] = useState<string | null>(null);
 
     const { toast } = useToast();
 
-    // The useEffect for setting up localStorage data is removed as we are now using hardcoded defaults.
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+            if (firebaseUser) {
+                const userDocRef = doc(db, 'users', firebaseUser.uid);
+                const userDoc = await getDoc(userDocRef);
+                if (userDoc.exists()) {
+                    setCurrentUser({ id: userDoc.id, ...userDoc.data() } as User);
+                }
+            } else {
+                setCurrentUser(null);
+            }
+        });
+        return () => unsubscribe();
+    }, []);
 
-    const handleVerifyDoc = () => {
+
+    const handleVerifyDoc = async () => {
         if (!docId) {
             setError('Document ID is required.');
             return;
@@ -71,28 +55,26 @@ export default function SealVerifyPage() {
         setIsLoading(true);
         setError(null);
 
-        setTimeout(() => {
-            try {
-                const docHistory: DocumentHistoryEntry[] = JSON.parse(localStorage.getItem('azma_document_history') || '[]');
-                const allDocs = [...docHistory, ...FAKE_DOC_HISTORY];
-                const foundDoc = allDocs.find(d => d.docId === docId);
+        try {
+            const docRef = doc(db, 'document_history', docId);
+            const docSnap = await getDoc(docRef);
 
-                if (foundDoc) {
-                    setVerifiedDoc(foundDoc);
-                    setStep(2);
-                    toast({ title: 'Document Verified!', description: 'The document is authentic.' });
-                } else {
-                    setError(`No document with the ID "${docId}" was found.`);
-                }
-            } catch (e) {
-                setError('An error occurred during verification.');
-            } finally {
-                setIsLoading(false);
+            if (docSnap.exists()) {
+                setVerifiedDoc(docSnap.data() as DocumentHistoryEntry);
+                setStep(2);
+                toast({ title: 'Document Verified!', description: 'The document is authentic.' });
+            } else {
+                setError(`No document with the ID "${docId}" was found.`);
             }
-        }, 500);
+        } catch (e) {
+            console.error(e);
+            setError('An error occurred during verification.');
+        } finally {
+            setIsLoading(false);
+        }
     };
 
-    const handleApplyPromo = () => {
+    const handleApplyPromo = async () => {
         if (!promoCode) {
             // User can skip this step
             setStep(3);
@@ -102,53 +84,47 @@ export default function SealVerifyPage() {
         setIsLoading(true);
         setError(null);
         
-        setTimeout(() => {
-            try {
-                let allPromoCodes: PromoCode[] = JSON.parse(localStorage.getItem('azma_promo_codes') || '[]');
-                allPromoCodes = [...allPromoCodes, ...FAKE_PROMO_CODES];
-                const currentUser: User | null = JSON.parse(localStorage.getItem('azmaUser') || 'null');
-
-                if (!currentUser) {
-                    setError('You must be logged in to use a promo code.');
-                    setIsLoading(false);
-                    return;
-                }
-
-                const promoIndex = allPromoCodes.findIndex(p => p.code.toLowerCase() === promoCode.toLowerCase());
-                if (promoIndex === -1) {
-                    setError('This promo code is invalid.');
-                    setIsLoading(false);
-                    return;
-                }
-
-                const promo = allPromoCodes[promoIndex];
-                if (!promo.isActive) { setError('This promo code is not active.'); setIsLoading(false); return; }
-                if (promo.expiresAt && new Date(promo.expiresAt) < new Date()) { setError('This promo code has expired.'); setIsLoading(false); return; }
-                if (promo.usedCount >= promo.usageLimit) { setError('This promo code has reached its usage limit.'); setIsLoading(false); return; }
-
-                const userUses = promo.redeemedBy.filter(email => email === currentUser.email).length;
-                if (userUses >= promo.usagePerUser) { setError('You have already used this promo code the maximum number of times.'); setIsLoading(false); return; }
-
-                // All checks passed. Update the real storage if it's not a fake code.
-                if (!FAKE_PROMO_CODES.some(p => p.id === promo.id)) {
-                    let realPromoCodes: PromoCode[] = JSON.parse(localStorage.getItem('azma_promo_codes') || '[]');
-                    const realPromoIndex = realPromoCodes.findIndex(p => p.id === promo.id);
-                    if (realPromoIndex > -1) {
-                        realPromoCodes[realPromoIndex].usedCount += 1;
-                        realPromoCodes[realPromoIndex].redeemedBy.push(currentUser.email);
-                        localStorage.setItem('azma_promo_codes', JSON.stringify(realPromoCodes));
-                    }
-                }
-                
-                setAppliedPromo(promo);
-                setStep(3);
-                toast({ title: 'Promo Code Applied!', description: 'Your discount has been successfully recorded.' });
-            } catch (e) {
-                setError('An unexpected error occurred while applying the code.');
-            } finally {
+        try {
+            if (!currentUser) {
+                setError('You must be logged in to use a promo code.');
                 setIsLoading(false);
+                return;
             }
-        }, 500);
+
+            const promoDocRef = doc(db, 'promoCodes', promoCode.toUpperCase());
+            const promoDocSnap = await getDoc(promoDocRef);
+
+            if (!promoDocSnap.exists()) {
+                setError('This promo code is invalid.');
+                setIsLoading(false);
+                return;
+            }
+
+            const promo = { id: promoDocSnap.id, ...promoDocSnap.data() } as PromoCode;
+
+            if (!promo.isActive) { setError('This promo code is not active.'); setIsLoading(false); return; }
+            if (promo.expiresAt && new Date(promo.expiresAt) < new Date()) { setError('This promo code has expired.'); setIsLoading(false); return; }
+            if (promo.usedCount >= promo.usageLimit) { setError('This promo code has reached its usage limit.'); setIsLoading(false); return; }
+
+            const userUses = promo.redeemedBy.filter(email => email === currentUser.email).length;
+            if (userUses >= promo.usagePerUser) { setError('You have already used this promo code the maximum number of times.'); setIsLoading(false); return; }
+
+            // All checks passed. Update the promo code in Firestore.
+            await updateDoc(promoDocRef, {
+                usedCount: increment(1),
+                redeemedBy: arrayUnion(currentUser.email)
+            });
+            
+            setAppliedPromo(promo);
+            setStep(3);
+            toast({ title: 'Promo Code Applied!', description: 'Your discount has been successfully recorded.' });
+
+        } catch (e) {
+            console.error(e);
+            setError('An unexpected error occurred while applying the code.');
+        } finally {
+            setIsLoading(false);
+        }
     };
     
     const startOver = () => {

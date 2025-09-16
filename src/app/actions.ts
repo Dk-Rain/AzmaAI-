@@ -221,13 +221,14 @@ export async function verifyReferencesAction(referencesToVerify: string) {
 export async function exportDocxAction(
   content: DocumentContent,
   references: References,
-  styles: StyleOptions
+  styles: StyleOptions,
+  userId: string
 ) {
   try {
-    const { doc, historyEntry } = await buildDocx(content, references, styles);
+    const { doc } = await buildDocx(content, references, styles, userId);
     const buffer = await Packer.toBuffer(doc);
     const base64 = buffer.toString('base64');
-    return { data: { file: base64, historyEntry }, error: null };
+    return { data: { file: base64 }, error: null };
   } catch (error) {
     console.error(error);
     const message = error instanceof Error ? error.message : 'An unknown error occurred';

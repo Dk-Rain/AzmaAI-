@@ -19,6 +19,8 @@ import {
 } from 'docx';
 import type { DocumentContent, References, StyleOptions, ContentBlock } from '@/types';
 import type { DocumentHistoryEntry } from '@/types/admin';
+import { db } from './firebase';
+import { doc, setDoc } from 'firebase/firestore';
 
 
 async function renderBlockToDocx(block: ContentBlock, styles: StyleOptions): Promise<(Paragraph | Table)[]> {
@@ -95,7 +97,8 @@ async function renderBlockToDocx(block: ContentBlock, styles: StyleOptions): Pro
 export async function exportToDocx(
   content: DocumentContent,
   references: References,
-  styles: StyleOptions
+  styles: StyleOptions,
+  userId: string,
 ) {
   if (!content) {
     throw new Error('Content is not defined');
@@ -111,9 +114,18 @@ export async function exportToDocx(
     docId: uniqueId,
     title: content.title,
     generatedAt: new Date().toISOString(),
-    // In a real app, you'd get the user ID from the session
-    generatedBy: 'current_user', 
+    generatedBy: userId,
   };
+
+  // Save history to Firestore
+  try {
+      const historyDocRef = doc(db, 'document_history', uniqueId);
+      await setDoc(historyDocRef, historyEntry);
+  } catch (error) {
+      console.error("Failed to save document history to Firestore:", error);
+      // We can decide if this should be a critical error or not.
+      // For now, we'll just log it and continue with document generation.
+  }
   
   const processSection = async (section: DocumentContent['sections'][0]) => {
     const sectionChildren: (Paragraph | Table)[] = [];
@@ -288,5 +300,5 @@ export async function exportToDocx(
     ],
   });
 
-  return { doc, historyEntry };
+  return { doc, historyEntry: null }; // We no longer return the history entry to be saved in localStorage
 }
