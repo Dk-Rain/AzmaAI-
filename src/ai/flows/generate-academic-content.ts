@@ -27,6 +27,9 @@ const GenerateAcademicContentInputSchema = z.object({
       'Specific parameters or instructions for generating the content, such as desired sections, focus areas, or specific arguments to include.'
     ),
     customTemplate: z.string().optional().describe('A user-provided template for the document structure. If provided, this overrides the standard format for the chosen task type.'),
+    includeImages: z.boolean().optional().describe('Whether to include images/diagrams in the output.'),
+    includeTables: z.boolean().optional().describe('Whether to include tables in the output.'),
+    includeLists: z.boolean().optional().describe('Whether to include lists in the output.'),
 });
 export type GenerateAcademicContentInput = z.infer<
   typeof GenerateAcademicContentInputSchema
@@ -101,7 +104,7 @@ const pubmedSearchTool = ai.defineTool(
             
             const results = Object.values(summaryData.result).filter((r: any) => r.uid).map((r: any) => {
                 const doi = r.articleids.find((a: any) => a.idtype === 'doi')?.value || 'N/A';
-                return `Title: ${r.title}\nAuthors: ${r.authors.map((a: any) => a.name).join(', ')}\nPublished: ${r.pubdate}\nDOI: ${doi}\nJournal: ${r.fulljournalname}`;
+                return `Title: ${r.title}\nAuthors: ${r.authors.map((a: any) => a.name).join(', ')}\nPublished: ${r.pubdate}\nJournal: ${r.fulljournalname}`;
             }).join('\n\n---\n\n');
 
             return `PubMed Search Results for "${query}":\n${results}`;
@@ -126,25 +129,24 @@ const generateAcademicContentPrompt = ai.definePrompt({
 2.  **Determine Structure**:
     *   **If a 'Custom Template' is provided by the user, you MUST use it as the primary structure for the document.**
     *   If no custom template is provided, use the 'Suggested Format' for the chosen 'Task Type'.
-3.  **Structure Content**: You must determine the most appropriate format for the content. For standard text, use a 'text' block. When data or comparisons are best shown visually, generate a 'table' block. For itemizations, use a 'list' block. If a concept is best explained with a visual aid, create an 'image_placeholder' block instead of generating the image directly.
-4.  **Cite Sources**: Create a "References" section at the end of the document. This section must list the full citations of the articles you found and used from your tool-based research. Format these citations in APA style.
+3.  **Cite Sources**: Create a "References" section at the end of the document. This section must list the full citations of the articles you found and used from your tool-based research. Format these citations in APA style.
 
 Your output must be a single, valid JSON object that strictly adheres to the GenerateAcademicContentOutputSchema.
 
 **Content Generation Rules:**
 
 1.  **Page Count**: If the user specifies a number of pages, you must generate content that would realistically fill that many standard pages (approximately 500 words per page).
-2.  **Text**: For all narrative, explanatory, or argumentative content, use a text block: \`{ "type": "text", "text": "..." }\`.
-3.  **Images/Diagrams**:
-    *   When a visual diagram, chart, or illustration would enhance a section, do not describe it in text.
-    *   Instead, create an 'image_placeholder' block. This block must contain a 'prompt' field with a clear, descriptive prompt for that image (e.g., "A flowchart showing the steps of photosynthesis," "A bar chart comparing the populations of New York, London, and Tokyo").
-    *   The placeholder block format is: \`{ "type": "image_placeholder", "prompt": "...", "caption": "..." }\`.
-4.  **Tables**:
-    *   When presenting structured data (e.g., comparisons, statistics, classifications), use a table block.
-    *   Format it as: \`{ "type": "table", "caption": "...", "headers": ["Header 1", "Header 2"], "rows": [["Row 1 Col 1", "Row 1 Col 2"], ["Row 2 Col 1", "Row 2 Col 2"]] }\`.
-5.  **Lists**:
-    *   For sequential steps, use an ordered list. Format it as: \`{ "type": "list", "style": "ordered", "items": ["First step", "Second step"] }\`.
-    *   For non-sequential items, use an unordered list. Format it as: \`{ "type": "list", "style": "unordered", "items": ["Bullet point 1", "Bullet point 2"] }\`.
+2.  **Default to Text**: Your primary output for any content should be a 'text' block: \`{ "type": "text", "text": "..." }\`.
+3.  **Images/Diagrams (Only if requested)**:
+    *   {{#if includeImages}}You MUST include visual diagrams, charts, or illustrations where they would enhance a section.
+    *   Create an 'image_placeholder' block: \`{ "type": "image_placeholder", "prompt": "A descriptive prompt for the image...", "caption": "..." }\`.{{else}}Do NOT include any images, diagrams, or image placeholders.{{/if}}
+4.  **Tables (Only if requested)**:
+    *   {{#if includeTables}}When presenting structured data (e.g., comparisons, statistics), you MUST use a 'table' block.
+    *   Format it as: \`{ "type": "table", "caption": "...", "headers": ["Header 1"], "rows": [["Row 1 Col 1"]] }\`.{{else}}Do NOT include any tables.{{/if}}
+5.  **Lists (Only if requested)**:
+    *   {{#if includeLists}}For sequential steps or itemizations, you MUST use a 'list' block.
+    *   Ordered: \`{ "type": "list", "style": "ordered", "items": ["First step"] }\`.
+    *   Unordered: \`{ "type": "list", "style": "unordered", "items": ["Bullet point"] }\`.{{else}}Do NOT include any lists.{{/if}}
 6.  **Title Rules**: All titles (document, section, sub-section) must be concise, between 5 and 10 words.
 
 **User Request:**
@@ -154,6 +156,9 @@ Your output must be a single, valid JSON object that strictly adheres to the Gen
 *   {{#if numPages}}**Number of Pages**: {{{numPages}}}{{/if}}
 *   {{#if parameters}}**Parameters**: {{{parameters}}}{{/if}}
 *   {{#if customTemplate}}**Custom Template**: {{{customTemplate}}}{{else}}**Suggested Format**: {{{format}}}{{/if}}
+*   **Include Images/Diagrams**: {{#if includeImages}}Yes{{else}}No{{/if}}
+*   **Include Tables**: {{#if includeTables}}Yes{{else}}No{{/if}}
+*   **Include Lists**: {{#if includeLists}}Yes{{else}}No{{/if}}
 
 Adhere to all instructions and generate a complete, high-quality academic document in the specified JSON format. You MUST include a "References" section populated with the sources you used. Do NOT include an "Abstract" section unless explicitly requested in the parameters.
 `,

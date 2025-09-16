@@ -19,6 +19,9 @@ type GenerationFormValuesWithTemplate = {
     numPages?: number | undefined;
     parameters?: string | undefined;
     customTemplate?: string | undefined;
+    includeImages?: boolean;
+    includeTables?: boolean;
+    includeLists?: boolean;
 };
 
 

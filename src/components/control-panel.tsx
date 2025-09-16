@@ -23,6 +23,7 @@ import { Button } from '@/components/ui/button';
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -54,6 +55,7 @@ import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { Progress } from './ui/progress';
 import { useRouter } from 'next/navigation';
 import { Switch } from './ui/switch';
+import { Checkbox } from './ui/checkbox';
 
 
 type UserData = {
@@ -165,7 +167,15 @@ export function ControlPanel({
   
   const generationForm = useForm<GenerationFormValues>({
     resolver: zodResolver(GenerationSchema),
-    defaultValues: { topic: '', parameters: '', taskType: 'Research Paper', numPages: 1 },
+    defaultValues: {
+        topic: '',
+        parameters: '',
+        taskType: 'Research Paper',
+        numPages: 1,
+        includeImages: false,
+        includeTables: false,
+        includeLists: false,
+    },
   });
 
 
@@ -886,6 +896,48 @@ export function ControlPanel({
                             </FormItem>
                             )}
                         />
+                        <div className="space-y-2">
+                            <Label>Content Options</Label>
+                            <div className="flex flex-wrap gap-x-4 gap-y-2">
+                                <FormField
+                                    control={generationForm.control}
+                                    name="includeImages"
+                                    render={({ field }) => (
+                                        <FormItem className="flex flex-row items-start space-x-2 space-y-0">
+                                            <FormControl>
+                                                <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                                            </FormControl>
+                                            <FormLabel className="font-normal">Include Images/Diagrams</FormLabel>
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={generationForm.control}
+                                    name="includeTables"
+                                    render={({ field }) => (
+                                        <FormItem className="flex flex-row items-start space-x-2 space-y-0">
+                                            <FormControl>
+                                                <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                                            </FormControl>
+                                            <FormLabel className="font-normal">Include Tables</FormLabel>
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={generationForm.control}
+                                    name="includeLists"
+                                    render={({ field }) => (
+                                        <FormItem className="flex flex-row items-start space-x-2 space-y-0">
+                                            <FormControl>
+                                                <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                                            </FormControl>
+                                            <FormLabel className="font-normal">Include Lists</FormLabel>
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
+                        </div>
+
                          <div className="flex items-center space-x-2">
                             <Switch id="custom-template-switch" checked={isTemplateMode} onCheckedChange={setIsTemplateMode} />
                             <Label htmlFor="custom-template-switch">Use Custom Template</Label>

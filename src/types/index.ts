@@ -94,6 +94,9 @@ export const GenerationSchema = z.object({
   topic: z.string().min(1, 'Topic is required.'),
   numPages: z.coerce.number().optional(),
   parameters: z.string().optional(),
+  includeImages: z.boolean().optional(),
+  includeTables: z.boolean().optional(),
+  includeLists: z.boolean().optional(),
 });
 
 export type GenerationFormValues = z.infer<typeof GenerationSchema>;
