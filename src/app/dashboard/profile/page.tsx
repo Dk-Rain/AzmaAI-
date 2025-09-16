@@ -82,23 +82,22 @@ export default function ProfilePage() {
     setIsLoading(true);
 
     try {
-        const dataToUpdate: Partial<UserData> = {
+        const dataToUpdate: { [key: string]: any } = {
             fullName,
             username,
             phoneNumber,
         };
 
-        // In a real app with file storage, you'd upload the photo and get a URL.
-        // For this demo, we'll use the base64 data URI, but it's not ideal for production.
-        if (photoPreview) {
-            dataToUpdate.photoUrl = photoPreview;
-        }
+        const newPhotoUrl = photoPreview || photoUrl;
 
         // Update Firebase Auth profile
         await updateProfile(currentUser, {
             displayName: fullName,
-            photoURL: dataToUpdate.photoUrl || photoUrl,
+            photoURL: newPhotoUrl,
         });
+
+        // Add photoUrl to the data to be saved in Firestore
+        dataToUpdate.photoUrl = newPhotoUrl;
 
         // Update Firestore document
         const userDocRef = doc(db, 'users', user.uid);
@@ -106,7 +105,10 @@ export default function ProfilePage() {
         
         const updatedUser: UserData = {
           ...user,
-          ...dataToUpdate
+          fullName,
+          username,
+          phoneNumber,
+          photoUrl: newPhotoUrl
         };
 
         setUser(updatedUser);
