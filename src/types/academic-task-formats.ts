@@ -1,6 +1,7 @@
 import type { AcademicTaskType } from './academic-task-types';
 
 export const academicTaskFormats: Record<AcademicTaskType, string> = {
+  Custom: ``,
   Assignment: `
 - Title Page
 - Introduction

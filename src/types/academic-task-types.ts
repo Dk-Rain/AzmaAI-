@@ -1,5 +1,6 @@
 
 export const academicTaskTypes = [
+    "Custom",
     "Assignment",
     "Term Paper",
     "Project Work",
