@@ -339,5 +339,4 @@ export default function UpgradePage() {
       </div>
     </div>
   );
-
-    
+}
