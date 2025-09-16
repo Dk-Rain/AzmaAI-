@@ -29,6 +29,14 @@ const portfolioChartConfig = {
     Professor: { label: 'Professors', color: "hsl(var(--chart-3))"},
 } satisfies ChartConfig;
 
+const revenueChartConfig = {
+  revenue: { label: "Revenue", color: "hsl(var(--chart-1))" },
+} satisfies ChartConfig;
+
+const subscriptionChartConfig = {
+  subscriptions: { label: "Subscriptions", color: "hsl(var(--chart-2))" },
+} satisfies ChartConfig;
+
 export default function AdminDashboard() {
   const [totalRevenue, setTotalRevenue] = useState(0);
   const [totalSubscriptions, setTotalSubscriptions] = useState(0);
@@ -99,14 +107,6 @@ export default function AdminDashboard() {
 
     fetchData();
   }, []);
-
-  const revenueChartConfig = {
-    revenue: { label: "Revenue", color: "hsl(var(--chart-1))" },
-  } satisfies ChartConfig;
-
-  const subscriptionChartConfig = {
-    subscriptions: { label: "Subscriptions", color: "hsl(var(--chart-2))" },
-  } satisfies ChartConfig;
 
 
   if (isLoading) {
