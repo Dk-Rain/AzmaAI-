@@ -25,7 +25,7 @@ import { Switch } from '@/components/ui/switch';
 import { ArrowLeft, CheckCircle2, Loader2, Star, XCircle, CalendarClock } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import type { PricingSettings } from '@/types/admin';
+import type { PricingSettings, Transaction } from '@/types/admin';
 import { auth, db } from '@/lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
@@ -33,6 +33,8 @@ import { doc, getDoc, updateDoc } from 'firebase/firestore';
 
 type UserData = {
   uid: string;
+  fullName: string;
+  email: string;
   role: string;
   isPremium?: boolean;
   subscriptionEndDate?: string;
@@ -101,7 +103,12 @@ export default function UpgradePage() {
             const userDoc = await getDoc(userDocRef);
             if (userDoc.exists()) {
                 const userData = userDoc.data();
-                setUser({ uid: firebaseUser.uid, ...userData } as UserData);
+                setUser({ 
+                    uid: firebaseUser.uid, 
+                    fullName: firebaseUser.displayName || userData.fullName,
+                    email: firebaseUser.email || userData.email,
+                    ...userData 
+                } as UserData);
             } else {
                 router.push('/login');
             }
@@ -123,7 +130,14 @@ export default function UpgradePage() {
   }, [router]);
 
   const handleUpgrade = async () => {
-    if (!user) return;
+    if (!user || !user.role) return;
+    const currentPlanRole = user.role.toLowerCase() as keyof PricingSettings;
+    const currentPlanPriceInfo = pricing[currentPlanRole];
+    if (!currentPlanPriceInfo) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Cannot find pricing for your role.'});
+        return;
+    }
+
     setIsUpgrading(true);
     toast({
         title: 'Processing Upgrade...',
@@ -152,6 +166,24 @@ export default function UpgradePage() {
             
             // Update local user state to reflect the change immediately
             setUser(prevUser => prevUser ? { ...prevUser, ...dataToUpdate } : null);
+
+            // Create a new transaction record
+            const newTransaction: Transaction = {
+                id: `txn_${Date.now()}`,
+                invoiceId: `INV${Date.now().toString().slice(-6)}`,
+                userFullName: user.fullName,
+                userEmail: user.email,
+                amount: isYearly ? currentPlanPriceInfo.yearly : currentPlanPriceInfo.monthly,
+                status: 'Success',
+                date: new Date().toISOString(),
+                plan: getPlanName(user.role),
+            };
+
+            const storedTransactions = localStorage.getItem('azma_transactions') || '[]';
+            const transactions: Transaction[] = JSON.parse(storedTransactions);
+            transactions.unshift(newTransaction); // Add to the top of the list
+            localStorage.setItem('azma_transactions', JSON.stringify(transactions));
+
 
             toast({
                 title: 'Upgrade Successful!',
