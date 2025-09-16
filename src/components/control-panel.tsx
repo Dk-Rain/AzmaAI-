@@ -72,6 +72,8 @@ const UsageMeter = ({ user }: { user: UserData | null }) => {
     const router = useRouter();
     const [usage, setUsage] = useState({ words: 0, documents: 0 });
     const [isOpen, setIsOpen] = useState(false);
+    const [adsenseClientId, setAdsenseClientId] = useState<string | null>(null);
+
 
     const isPremium = user?.isPremium || false;
     const limits = { words: 1000, documents: 3 };
@@ -79,6 +81,20 @@ const UsageMeter = ({ user }: { user: UserData | null }) => {
     const wordPercentage = isPremium ? 100 : (usage.words / limits.words) * 100;
     const docPercentage = isPremium ? 100 : (usage.documents / limits.documents) * 100;
     
+    useEffect(() => {
+        try {
+            const storedSettings = localStorage.getItem('azma_app_settings');
+            if(storedSettings) {
+                const settings = JSON.parse(storedSettings);
+                if (settings.googleAdsenseClientId) {
+                    setAdsenseClientId(settings.googleAdsenseClientId);
+                }
+            }
+        } catch (error) {
+            console.error("Failed to load ad settings", error);
+        }
+    }, []);
+
     if (!user) return null;
 
     if (!isOpen) {
@@ -115,9 +131,19 @@ const UsageMeter = ({ user }: { user: UserData | null }) => {
                     <Progress value={docPercentage} />
                 </div>
                 {!isPremium && (
+                    <>
                     <Button variant="outline" size="sm" className="w-full" onClick={() => router.push('/dashboard/upgrade')}>
                         Upgrade for Unlimited Usage
                     </Button>
+                    {adsenseClientId && (
+                         <div className="mt-2 p-4 bg-muted/50 rounded-lg text-center">
+                            <p className="text-xs text-muted-foreground">Advertisement</p>
+                            <div className="w-full h-24 bg-muted flex items-center justify-center rounded-md">
+                                Ad placeholder
+                            </div>
+                        </div>
+                    )}
+                    </>
                 )}
             </div>
         </div>
