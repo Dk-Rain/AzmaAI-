@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { 
     PenSquare, Loader2, Check, AlertCircle, Sparkles, 
-    Trash2, Search, Library, PlusCircle, FolderPlus, MountainIcon, Folder, File, GripVertical, ChevronDown, MoreHorizontal, Edit, FolderInput, PenLine, Archive, Share2
+    Trash2, Search, Library, PlusCircle, FolderPlus, MountainIcon, Folder, File, GripVertical, ChevronDown, MoreHorizontal, Edit, FolderInput, PenLine, Archive, Share2, Gauge
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { DocumentContent, References, StyleOptions, FontType, Workspace, Project, DocumentItem } from '@/types';
@@ -66,20 +66,10 @@ type UserData = {
   isPremium?: boolean;
 }
 
-interface ControlPanelProps {
-  user: UserData | null;
-  setContent: (content: DocumentContent) => void;
-  setReferences: (references: References) => void;
-  styles: StyleOptions;
-  setStyles: (styles: StyleOptions) => void;
-  references: References;
-  content: DocumentContent;
-}
-
 const UsageMeter = ({ user }: { user: UserData | null }) => {
     const router = useRouter();
-    // In a real app, this would come from a backend or a more robust client-side tracking mechanism.
     const [usage, setUsage] = useState({ words: 0, documents: 0 });
+    const [isOpen, setIsOpen] = useState(false);
 
     const isPremium = user?.isPremium || false;
     const limits = { words: 1000, documents: 3 };
@@ -89,9 +79,24 @@ const UsageMeter = ({ user }: { user: UserData | null }) => {
     
     if (!user) return null;
 
+    if (!isOpen) {
+        return (
+            <div className="flex justify-end p-4 border-t">
+                <Button variant="ghost" size="icon" onClick={() => setIsOpen(true)} title="Show daily usage">
+                    <Gauge className="h-5 w-5 text-muted-foreground" />
+                </Button>
+            </div>
+        );
+    }
+
     return (
         <div className="p-4 border-t">
-            <h3 className="text-sm font-semibold mb-2">Daily Usage ({isPremium ? 'Premium Plan' : 'Free Plan'})</h3>
+            <div className="flex justify-between items-center mb-2">
+                <h3 className="text-sm font-semibold">Daily Usage ({isPremium ? 'Premium Plan' : 'Free Plan'})</h3>
+                <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)} className="h-7 w-7">
+                    <X className="h-4 w-4" />
+                </Button>
+            </div>
             <div className="space-y-3">
                 <div className="space-y-1">
                     <div className="flex justify-between text-xs text-muted-foreground">
@@ -114,8 +119,8 @@ const UsageMeter = ({ user }: { user: UserData | null }) => {
                 )}
             </div>
         </div>
-    )
-}
+    );
+};
 
 
 export function ControlPanel({
