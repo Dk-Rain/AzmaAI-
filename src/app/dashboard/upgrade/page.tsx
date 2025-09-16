@@ -22,16 +22,17 @@ import {
 } from '@/components/ui/table';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { ArrowLeft, CheckCircle2, Star, XCircle } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Loader2, Star, XCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import type { PricingSettings } from '@/types/admin';
 import { auth, db } from '@/lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 
 
 type UserData = {
+  uid: string;
   role: string;
   isPremium?: boolean;
 };
@@ -49,6 +50,7 @@ export default function UpgradePage() {
   const [isYearly, setIsYearly] = useState(false);
   const [user, setUser] = useState<UserData | null>(null);
   const [pricing, setPricing] = useState<PricingSettings>(defaultPricing);
+  const [isUpgrading, setIsUpgrading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
 
@@ -58,7 +60,8 @@ export default function UpgradePage() {
             const userDocRef = doc(db, 'users', firebaseUser.uid);
             const userDoc = await getDoc(userDocRef);
             if (userDoc.exists()) {
-                setUser(userDoc.data() as UserData);
+                const userData = userDoc.data();
+                setUser({ uid: firebaseUser.uid, ...userData } as UserData);
             } else {
                 router.push('/login');
             }
@@ -79,13 +82,39 @@ export default function UpgradePage() {
     return () => unsubscribe();
   }, [router]);
 
-  const handleUpgrade = () => {
+  const handleUpgrade = async () => {
+    if (!user) return;
+    setIsUpgrading(true);
     toast({
-        title: 'Redirecting to checkout...',
-        description: 'You will be redirected to complete your payment.'
+        title: 'Processing Upgrade...',
+        description: 'Please wait while we confirm your payment.'
     })
-    // In a real app, you would redirect to a payment gateway like Stripe or Paystack.
-    // After successful payment, a webhook would update the user's document in Firestore to set `isPremium: true`.
+    
+    // Simulate API call to payment gateway and DB update
+    setTimeout(async () => {
+        try {
+            const userDocRef = doc(db, 'users', user.uid);
+            await updateDoc(userDocRef, { isPremium: true });
+            
+            // Update local user state to reflect the change immediately
+            setUser(prevUser => prevUser ? { ...prevUser, isPremium: true } : null);
+
+            toast({
+                title: 'Upgrade Successful!',
+                description: 'Welcome to your new plan.'
+            });
+
+        } catch (error) {
+            console.error("Upgrade failed:", error);
+            toast({
+                variant: 'destructive',
+                title: 'Upgrade Failed',
+                description: 'Could not update your plan. Please try again.'
+            })
+        } finally {
+            setIsUpgrading(false);
+        }
+    }, 1500);
   }
   
   const handleContactSales = () => {
@@ -142,7 +171,7 @@ export default function UpgradePage() {
                     </CardContent>
                     <CardFooter className="mt-auto">
                         <Button variant="outline" className="w-full" disabled={!user?.isPremium}>
-                            {user?.isPremium ? 'Downgrade' : 'Your Current Plan'}
+                            {user?.isPremium ? 'Downgrade (Not available)' : 'Your Current Plan'}
                         </Button>
                     </CardFooter>
                 </Card>
@@ -172,8 +201,14 @@ export default function UpgradePage() {
                         </div>
                     </CardContent>
                     <CardFooter className="mt-auto">
-                        <Button className="w-full" onClick={handleUpgrade} disabled={user?.isPremium}>
-                          {user?.isPremium ? 'Your Current Plan' : 'Upgrade'}
+                        <Button className="w-full" onClick={handleUpgrade} disabled={user?.isPremium || isUpgrading}>
+                          {isUpgrading ? (
+                              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Upgrading...</>
+                          ) : user?.isPremium ? (
+                              'Your Current Plan'
+                          ) : (
+                              'Upgrade'
+                          )}
                         </Button>
                     </CardFooter>
                 </Card>
@@ -304,4 +339,5 @@ export default function UpgradePage() {
       </div>
     </div>
   );
-}
+
+    
