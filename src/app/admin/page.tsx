@@ -14,7 +14,7 @@ import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 
 export default function AdminAuthPage() {
-  const [email, setEmail] = useState('admin@azma.com');
+  const [email, setEmail] = useState('admin@azmaai.com.ng');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -35,17 +35,6 @@ export default function AdminAuthPage() {
 
         if (userDoc.exists() && userDoc.data().role === 'Admin') {
             toast({ title: "Admin login successful!"});
-            // Store user data locally for quick UI updates, but don't trust it for security.
-            const userData = userDoc.data();
-            const localUser = {
-                fullName: user.displayName || userData.fullName,
-                role: userData.role,
-                username: userData.username,
-                photoUrl: user.photoURL || userData.photoUrl
-            }
-            // This is just for UI convenience, the dashboard-layout will re-verify role with DB
-            localStorage.setItem('azmaUser', JSON.stringify(localUser));
-
             router.push('/admin/dashboard');
         } else {
             // Not an admin or user doc doesn't exist
@@ -118,3 +107,4 @@ export default function AdminAuthPage() {
     </div>
   );
 }
+
