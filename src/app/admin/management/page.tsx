@@ -46,6 +46,7 @@ export default function AdminManagementPage() {
             { id: '1', fullName: 'John Doe', email: 'john@azma.com', role: 'Student', createdAt: new Date().toISOString() },
             { id: '2', fullName: 'Jane Smith', email: 'jane@azma.com', role: 'Professor', createdAt: new Date().toISOString() },
             { id: '3', fullName: 'Admin User', email: 'admin@azma.com', role: 'Admin', createdAt: new Date().toISOString(), permissions: { canManageUsers: true, canManageTransactions: true, canManageSettings: true } },
+            { id: '4', fullName: 'Dike Paul', email: 'dike.paul@sfarettech.com.ng', role: 'Admin', createdAt: new Date().toISOString(), permissions: { canManageUsers: true, canManageTransactions: false, canManageSettings: false } },
         ];
         setUsers(defaultUsers);
         localStorage.setItem('azma_all_users', JSON.stringify(defaultUsers));
