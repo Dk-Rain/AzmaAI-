@@ -91,6 +91,7 @@ export default function SealVerifyPage() {
                 return;
             }
 
+            // Note: Promo codes are often case-insensitive, so we check the uppercase version.
             const promoDocRef = doc(db, 'promoCodes', promoCode.toUpperCase());
             const promoDocSnap = await getDoc(promoDocRef);
 
@@ -236,5 +237,4 @@ export default function SealVerifyPage() {
             </main>
         </div>
     );
-
-    
+}
