@@ -130,8 +130,6 @@ export default function AdminSettingsPage() {
     };
 
     const handleClearData = () => {
-        // This functionality is now less relevant as most data is in Firestore.
-        // It could be adapted to be a more powerful "reset" tool in the future.
         try {
             localStorage.removeItem('azma_workspace');
             localStorage.removeItem('azma_document_history');
@@ -375,7 +373,7 @@ export default function AdminSettingsPage() {
             <CardHeader>
                 <CardTitle>Data Management</CardTitle>
                 <CardDescription className="text-destructive">
-                Warning: These are destructive actions and cannot be undone.
+                This section is for local browser data only. It does not affect the production database.
                 </CardDescription>
             </CardHeader>
             <CardContent>
@@ -390,7 +388,7 @@ export default function AdminSettingsPage() {
                         <AlertDialogHeader>
                             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                             <AlertDialogDescription>
-                                This action will clear any workspace data (projects, documents) saved in this browser's local storage. It will not affect database records. This is useful for clearing cached data.
+                                This action will clear any workspace data (projects, documents, history) saved in this browser's local storage. It will not affect database records. This is a non-destructive action for the database and is primarily for local debugging.
                             </AlertDialogDescription>
                         </AlertDialogHeader>
                         <div className="pt-2">
@@ -409,7 +407,7 @@ export default function AdminSettingsPage() {
                                 onClick={handleClearData} 
                                 disabled={deleteConfirmation !== 'delete'}
                             >
-                                Delete All Local Data
+                                Clear Local Data
                             </AlertDialogAction>
                         </AlertDialogFooter>
                     </AlertDialogContent>
