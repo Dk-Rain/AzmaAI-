@@ -27,32 +27,53 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import type { Workspace, ArchivedItem } from '@/types';
+import type { Workspace, ArchivedItem, DocumentItem, Project } from '@/types';
+import { auth, db } from '@/lib/firebase';
+import { onAuthStateChanged } from 'firebase/auth';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 
 export default function ArchivedChatsPage() {
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [userId, setUserId] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
-    try {
-      const storedWorkspace = localStorage.getItem('azma_workspace');
-      if (storedWorkspace) {
-        const parsed = JSON.parse(storedWorkspace);
-        if (!parsed.archivedItems) {
-            parsed.archivedItems = [];
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+        if (user) {
+            setUserId(user.uid);
+            loadWorkspace(user.uid);
+        } else {
+            // Handle user not logged in case
+            setWorkspace({ projects: [], standaloneDocuments: [], archivedItems: [], sharedDocuments: [] });
         }
-        setWorkspace(parsed);
-      }
-    } catch (error) {
-      console.error("Failed to load workspace from localStorage", error);
-    }
+    });
+    return () => unsubscribe();
   }, []);
 
-  const saveWorkspace = (newWorkspace: Workspace) => {
+  const loadWorkspace = async (uid: string) => {
+    const workspaceRef = doc(db, 'workspaces', uid);
+    const workspaceSnap = await getDoc(workspaceRef);
+    if (workspaceSnap.exists()) {
+        const ws = workspaceSnap.data() as Workspace;
+        // Ensure archivedItems exists
+        ws.archivedItems = ws.archivedItems || [];
+        setWorkspace(ws);
+    } else {
+        setWorkspace({ projects: [], standaloneDocuments: [], archivedItems: [], sharedDocuments: [] });
+    }
+  };
+
+
+  const saveWorkspace = async (newWorkspace: Workspace) => {
+    if (!userId) {
+        toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to make changes.' });
+        return;
+    }
     setWorkspace(newWorkspace);
-    localStorage.setItem('azma_workspace', JSON.stringify(newWorkspace));
+    const workspaceRef = doc(db, 'workspaces', userId);
+    await setDoc(workspaceRef, newWorkspace, { merge: true });
   };
 
 
@@ -78,17 +99,17 @@ export default function ArchivedChatsPage() {
 
     // Add back to active items
     if (itemToUnarchive.itemType === 'project') {
-        const { itemType, ...project } = itemToUnarchive;
-        newWorkspace.projects = [project, ...newWorkspace.projects];
+        const { itemType, ...project } = itemToUnarchive as ArchivedItem & {itemType: 'project'};
+        newWorkspace.projects = [project as Project, ...(newWorkspace.projects || [])];
     } else {
-        const { itemType, ...document } = itemToUnarchive;
-        newWorkspace.standaloneDocuments = [document, ...newWorkspace.standaloneDocuments];
+        const { itemType, ...document } = itemToUnarchive as ArchivedItem & {itemType: 'document'};
+        newWorkspace.standaloneDocuments = [document as DocumentItem, ...(newWorkspace.standaloneDocuments || [])];
     }
 
     saveWorkspace(newWorkspace);
     toast({
       title: 'Item Unarchived',
-      description: 'The item has been restored to your active projects.',
+      description: 'The item has been restored.',
     });
   };
   
@@ -116,7 +137,7 @@ export default function ArchivedChatsPage() {
               <span className="sr-only">Back to Settings</span>
             </Button>
           </Link>
-          <h1 className="text-xl font-semibold">Archived Chats</h1>
+          <h1 className="text-xl font-semibold">Archived Items</h1>
         </header>
         <main className="grid flex-1 items-start gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
           <div className="mx-auto grid w-full max-w-2xl gap-4">
@@ -124,7 +145,7 @@ export default function ArchivedChatsPage() {
               <CardHeader>
                 <CardTitle>Manage Archives</CardTitle>
                 <CardDescription>
-                  Restore or permanently delete your archived projects.
+                  Restore or permanently delete your archived projects and documents.
                 </CardDescription>
                 <div className="relative pt-2">
                     <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -149,7 +170,7 @@ export default function ArchivedChatsPage() {
                             <p className="text-sm text-muted-foreground">Archived on: {new Date(item.id).toLocaleDateString()}</p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100">
+                        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                           <Button variant="outline" size="sm" onClick={() => unarchiveItem(item.id)}>
                             <ArchiveRestore className="h-4 w-4 mr-2" />
                             Restore
@@ -167,7 +188,7 @@ export default function ArchivedChatsPage() {
                                 <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                                 <AlertDialogDescription>
                                   This action cannot be undone. This will permanently delete the
-                                  item from our servers.
+                                  item.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
@@ -182,8 +203,8 @@ export default function ArchivedChatsPage() {
                   ) : (
                     <div className="text-center text-sm text-muted-foreground p-8">
                       <Library className="mx-auto h-10 w-10 mb-2" />
-                      <p className="font-semibold">No Archived Projects</p>
-                      <p>Your archived conversations will appear here.</p>
+                      <p className="font-semibold">No Archived Items</p>
+                      <p>Your archived projects and documents will appear here.</p>
                     </div>
                   )}
                 </ScrollArea>
@@ -200,5 +221,3 @@ export default function ArchivedChatsPage() {
     </div>
   );
 }
-
-    
