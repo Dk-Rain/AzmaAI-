@@ -3,7 +3,6 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,9 +16,14 @@ import {
 } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, User, Upload } from 'lucide-react';
+import { User, Upload } from 'lucide-react';
+import { auth, db, storage } from '@/lib/firebase';
+import { onAuthStateChanged, updateProfile } from 'firebase/auth';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { ref, uploadString, getDownloadURL } from 'firebase/storage';
 
 type UserData = {
+  uid: string;
   fullName: string;
   email: string;
   role: string;
@@ -31,6 +35,7 @@ type UserData = {
 export default function AdminProfilePage() {
   const [user, setUser] = useState<UserData | null>(null);
   const [fullName, setFullName] = useState('');
+  const [photoUrl, setPhotoUrl] = useState<string | undefined>(undefined);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
@@ -39,51 +44,85 @@ export default function AdminProfilePage() {
 
 
   useEffect(() => {
-    try {
-      const userData = localStorage.getItem('azmaUser');
-      if (userData) {
-        const parsedData: UserData = JSON.parse(userData);
-        if (parsedData.role !== 'Admin') {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+        if (firebaseUser) {
+            const userDocRef = doc(db, 'users', firebaseUser.uid);
+            const userDoc = await getDoc(userDocRef);
+            if (userDoc.exists()) {
+                const userData = userDoc.data() as Omit<UserData, 'uid'>;
+                if (userData.role !== 'Admin') {
+                    toast({ variant: 'destructive', title: 'Access Denied'});
+                    router.push('/admin');
+                    return;
+                }
+                const fullUserData: UserData = {
+                    uid: firebaseUser.uid,
+                    ...userData,
+                    fullName: firebaseUser.displayName || userData.fullName,
+                    photoUrl: firebaseUser.photoURL || userData.photoUrl,
+                };
+                setUser(fullUserData);
+                setFullName(fullUserData.fullName);
+                setPhotoUrl(fullUserData.photoUrl);
+            } else {
+                router.push('/admin');
+            }
+        } else {
             router.push('/admin');
-            return;
         }
-        setUser(parsedData);
-        setFullName(parsedData.fullName);
-      } else {
-        router.push('/admin');
-      }
-    } catch (error) {
-      console.error("Failed to parse user data from localStorage", error);
-      router.push('/admin');
-    }
-  }, [router]);
+    });
 
-  const handleProfileUpdate = (e: React.FormEvent) => {
+    return () => unsubscribe();
+  }, [router, toast]);
+
+  const handleProfileUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    const currentUser = auth.currentUser;
+    if (!user || !currentUser) return;
     setIsLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      try {
-        const updatedUser: UserData = { ...user, fullName, photoUrl: photoPreview || user.photoUrl };
-        localStorage.setItem('azmaUser', JSON.stringify(updatedUser));
+    try {
+        let newPhotoUrl = photoUrl;
+
+        if (photoPreview) {
+            const storageRef = ref(storage, `profile_pictures/${user.uid}/profile.jpg`);
+            await uploadString(storageRef, photoPreview, 'data_url');
+            newPhotoUrl = await getDownloadURL(storageRef);
+        }
+
+        const dataToUpdate: { [key: string]: any } = {
+            fullName,
+            photoUrl: newPhotoUrl,
+        };
+
+        await updateProfile(currentUser, {
+            displayName: fullName,
+            photoURL: newPhotoUrl,
+        });
+
+        const userDocRef = doc(db, 'users', user.uid);
+        await updateDoc(userDocRef, dataToUpdate);
+        
+        const updatedUser: UserData = { ...user, fullName, photoUrl: newPhotoUrl };
         setUser(updatedUser);
-        setPhotoPreview(null); // Clear preview after save
+        setPhotoUrl(updatedUser.photoUrl);
+        setPhotoPreview(null);
+        
         toast({
           title: 'Profile Updated',
           description: 'Your information has been saved.',
         });
-      } catch (error) {
-        toast({
-            variant: 'destructive',
-            title: 'Update Failed',
-            description: 'Could not save changes.',
-        })
-      } finally {
-        setIsLoading(false);
-      }
-    }, 1000);
+
+    } catch (error) {
+      console.error(error);
+      toast({
+          variant: 'destructive',
+          title: 'Update Failed',
+          description: 'Could not save changes. Please try again.',
+      })
+    } finally {
+      setIsLoading(false);
+    }
   };
   
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -114,7 +153,7 @@ export default function AdminProfilePage() {
                  <div className="flex items-center gap-4">
                     <div className="relative">
                         <Avatar className="h-20 w-20">
-                            <AvatarImage src={photoPreview || user.photoUrl || `https://api.dicebear.com/8.x/lorelei/svg?seed=${user.username || user.fullName}`} />
+                            <AvatarImage src={photoPreview || photoUrl || `https://api.dicebear.com/8.x/lorelei/svg?seed=${user.username || user.fullName}`} />
                             <AvatarFallback>{user.fullName?.[0]}</AvatarFallback>
                         </Avatar>
                         <Button

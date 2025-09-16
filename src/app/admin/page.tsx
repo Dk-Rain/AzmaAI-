@@ -1,3 +1,4 @@
+
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
@@ -8,6 +9,9 @@ import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { School } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { auth, db } from '@/lib/firebase';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
 
 export default function AdminAuthPage() {
   const [email, setEmail] = useState('admin@azma.com');
@@ -21,28 +25,35 @@ export default function AdminAuthPage() {
     e.preventDefault();
     setIsLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
-        setIsLoading(false);
-        if (email.toLowerCase() !== 'admin@azma.com') {
-            return toast({
+    try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+
+        // Check if user has 'Admin' role in Firestore
+        const userDocRef = doc(db, 'users', user.uid);
+        const userDoc = await getDoc(userDocRef);
+
+        if (userDoc.exists() && userDoc.data().role === 'Admin') {
+            toast({ title: "Admin login successful!"});
+            router.push('/admin/dashboard');
+        } else {
+            // Not an admin or user doc doesn't exist
+            await auth.signOut(); // Sign out the user
+            toast({
                 variant: 'destructive',
-                title: "Authentication Failed",
-                description: 'This login form is for administrators only.'
+                title: 'Authentication Failed',
+                description: 'You do not have administrative privileges.'
             });
         }
-        
-        const adminUser = { fullName: 'Admin User', email: email, role: 'Admin' };
-
-        try {
-          localStorage.setItem('azmaUser', JSON.stringify(adminUser));
-        } catch (error) {
-           console.error("Could not save user to localStorage", error);
-        }
-        
-        toast({ title: "Admin login successful!"});
-        router.push('/admin/dashboard');
-    }, 1000)
+    } catch (error: any) {
+        toast({
+            variant: 'destructive',
+            title: 'Authentication Failed',
+            description: 'Invalid email or password.'
+        });
+    } finally {
+        setIsLoading(false);
+    }
   };
 
   return (
