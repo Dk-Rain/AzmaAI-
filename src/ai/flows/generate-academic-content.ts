@@ -111,32 +111,6 @@ const pubmedSearchTool = ai.defineTool(
     }
 );
 
-const generateImageTool = ai.defineTool(
-    {
-        name: 'generateImage',
-        description: 'Generates an image from a text prompt. Use this to create diagrams, charts, or illustrations that visually explain a concept.',
-        inputSchema: z.object({
-            prompt: z.string().describe('A detailed, descriptive prompt for the image to be generated.'),
-        }),
-        outputSchema: z.object({
-            url: z.string().url().describe('The data URI of the generated image.'),
-        }),
-    },
-    async ({ prompt }) => {
-        const { media } = await ai.generate({
-            model: 'googleai/imagen-4.0-fast-generate-001',
-            prompt: `academic illustration, clean vector style, infographic, ${prompt}`,
-            config: {
-                responseMimeType: 'image/png',
-            },
-        });
-        if (!media) {
-            throw new Error('Image generation failed to return media.');
-        }
-        return { url: media.url };
-    }
-);
-
 
 const generateAcademicContentPrompt = ai.definePrompt({
   name: 'generateAcademicContentPrompt',
@@ -144,7 +118,7 @@ const generateAcademicContentPrompt = ai.definePrompt({
     format: z.string().describe('The suggested structure or format for the document.')
   })},
   output: {schema: GenerateAcademicContentOutputSchema},
-  tools: [arxivSearchTool, pubmedSearchTool, generateImageTool],
+  tools: [arxivSearchTool, pubmedSearchTool],
   prompt: `You are an expert academic content generator. Your primary task is to generate a comprehensive, well-structured academic document based on the user's request.
 
 **Process:**
@@ -152,7 +126,7 @@ const generateAcademicContentPrompt = ai.definePrompt({
 2.  **Determine Structure**:
     *   **If a 'Custom Template' is provided by the user, you MUST use it as the primary structure for the document.**
     *   If no custom template is provided, use the 'Suggested Format' for the chosen 'Task Type'.
-3.  **Structure Content**: You must determine the most appropriate format for the content. For standard text, use a 'text' block. When data or comparisons are best shown visually, generate a 'table' block. For itemizations, use a 'list' block. If a concept is best explained with a visual aid, create a descriptive prompt for an image and use the 'generateImage' tool.
+3.  **Structure Content**: You must determine the most appropriate format for the content. For standard text, use a 'text' block. When data or comparisons are best shown visually, generate a 'table' block. For itemizations, use a 'list' block. If a concept is best explained with a visual aid, create an 'image_placeholder' block instead of generating the image directly.
 4.  **Cite Sources**: Create a "References" section at the end of the document. This section must list the full citations of the articles you found and used from your tool-based research. Format these citations in APA style.
 
 Your output must be a single, valid JSON object that strictly adheres to the GenerateAcademicContentOutputSchema.
@@ -163,8 +137,8 @@ Your output must be a single, valid JSON object that strictly adheres to the Gen
 2.  **Text**: For all narrative, explanatory, or argumentative content, use a text block: \`{ "type": "text", "text": "..." }\`.
 3.  **Images/Diagrams**:
     *   When a visual diagram, chart, or illustration would enhance a section, do not describe it in text.
-    *   Instead, call the \`generateImage\` tool with a clear, descriptive prompt for that image (e.g., "A flowchart showing the steps of photosynthesis," "A bar chart comparing the populations of New York, London, and Tokyo").
-    *   The tool will return an image URL. You must place this URL into an image block: \`{ "type": "image", "url": "...", "caption": "..." }\`.
+    *   Instead, create an 'image_placeholder' block. This block must contain a 'prompt' field with a clear, descriptive prompt for that image (e.g., "A flowchart showing the steps of photosynthesis," "A bar chart comparing the populations of New York, London, and Tokyo").
+    *   The placeholder block format is: \`{ "type": "image_placeholder", "prompt": "...", "caption": "..." }\`.
 4.  **Tables**:
     *   When presenting structured data (e.g., comparisons, statistics, classifications), use a table block.
     *   Format it as: \`{ "type": "table", "caption": "...", "headers": ["Header 1", "Header 2"], "rows": [["Row 1 Col 1", "Row 1 Col 2"], ["Row 2 Col 1", "Row 2 Col 2"]] }\`.

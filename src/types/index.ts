@@ -1,5 +1,4 @@
 
-
 import type { ManageReferencesOutput } from '@/ai/flows/manage-references';
 import { z } from 'zod';
 import { academicTaskTypes } from './academic-task-types';
@@ -12,6 +11,12 @@ export const TextBlockSchema = z.object({
 export const ImageBlockSchema = z.object({
     type: z.literal('image'),
     url: z.string().url().describe('The URL of the generated image.'),
+    caption: z.string().optional().describe('A caption for the image.'),
+});
+
+export const ImagePlaceholderBlockSchema = z.object({
+    type: z.literal('image_placeholder'),
+    prompt: z.string().describe('The prompt for the image to be generated.'),
     caption: z.string().optional().describe('A caption for the image.'),
 });
 
@@ -28,7 +33,7 @@ export const ListBlockSchema = z.object({
     items: z.array(z.string()).describe('The items in the list.'),
 });
 
-export const ContentBlockSchema = z.union([TextBlockSchema, ImageBlockSchema, TableBlockSchema, ListBlockSchema]);
+export const ContentBlockSchema = z.union([TextBlockSchema, ImageBlockSchema, TableBlockSchema, ListBlockSchema, ImagePlaceholderBlockSchema]);
 
 
 export const SubSectionSchema = z.object({
@@ -56,6 +61,7 @@ export type SubSection = NonNullable<Section['subSections']>[0];
 
 export type TextBlock = z.infer<typeof TextBlockSchema>;
 export type ImageBlock = z.infer<typeof ImageBlockSchema>;
+export type ImagePlaceholderBlock = z.infer<typeof ImagePlaceholderBlockSchema>;
 export type TableBlock = z.infer<typeof TableBlockSchema>;
 export type ListBlock = z.infer<typeof ListBlockSchema>;
 export type ContentBlock = z.infer<typeof ContentBlockSchema>;

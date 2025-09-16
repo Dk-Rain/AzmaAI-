@@ -7,6 +7,7 @@ import { paraphraseText } from '@/ai/flows/paraphrase-text';
 import { scanTextSnippet } from '@/ai/flows/scan-text-snippet';
 import { checkPlagiarism } from '@/ai/flows/check-plagiarism';
 import { verifyReferences } from '@/ai/flows/verify-references';
+import { generateImageForSection } from '@/ai/flows/generate-image-for-section';
 import { exportToDocx as buildDocx } from '@/lib/docx-exporter';
 import { Packer } from 'docx';
 import type { DocumentContent, References, StyleOptions, Section, ContentBlock } from '@/types';
@@ -272,4 +273,14 @@ export async function editSectionAction(
     console.error(error);
     return { data: null, error: 'Failed to edit section.' };
   }
+}
+
+export async function generateImageForSectionAction(prompt: string) {
+    try {
+        const result = await generateImageForSection({ prompt });
+        return { data: result.url, error: null };
+    } catch (error) {
+        console.error(error);
+        return { data: null, error: 'Failed to generate image.' };
+    }
 }

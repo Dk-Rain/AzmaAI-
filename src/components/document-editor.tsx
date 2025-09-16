@@ -6,7 +6,7 @@ import type { DocumentContent, Section, StyleOptions, ContentBlock } from '@/typ
 import { Button } from './ui/button';
 import { Loader2, PenLine, ScanSearch, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { editSectionAction, paraphraseTextAction, scanTextSnippetAction, verifyReferencesAction } from '@/app/actions';
+import { editSectionAction, paraphraseTextAction, scanTextSnippetAction, verifyReferencesAction, generateImageForSectionAction } from '@/app/actions';
 import { cn } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Textarea } from './ui/textarea';
@@ -70,6 +70,56 @@ export function DocumentEditor({
       };
     }
   }, [editorRef]);
+
+  // Effect to automatically generate images for placeholders
+  useEffect(() => {
+    content.sections.forEach((section, sectionIndex) => {
+      section.content.forEach((block, blockIndex) => {
+        if (block.type === 'image_placeholder' && block.prompt) {
+          // Found a placeholder, let's generate an image for it.
+          handleAutoImageGeneration(block.prompt, block.caption, sectionIndex, blockIndex);
+        }
+      });
+      // Also check subsections
+      section.subSections?.forEach((subSection, subSectionIndex) => {
+          subSection.content.forEach((block, blockIndex) => {
+               if (block.type === 'image_placeholder' && block.prompt) {
+                  handleAutoImageGeneration(block.prompt, block.caption, sectionIndex, blockIndex, subSectionIndex);
+               }
+          });
+      });
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [content]);
+
+  const handleAutoImageGeneration = async (prompt: string, caption: string | undefined, sectionIndex: number, blockIndex: number, subSectionIndex?: number) => {
+      const { data, error } = await generateImageForSectionAction(prompt);
+
+      if (error || !data) {
+          console.error("Failed to auto-generate image:", error);
+          // Optional: update the block to show an error state
+      } else {
+          // Replace the placeholder with the actual image block
+          const newImageBlock = { type: 'image' as const, url: data, caption };
+          
+          setContent(prevContent => {
+              const newSections = [...prevContent.sections];
+              if (subSectionIndex !== undefined && newSections[sectionIndex].subSections) {
+                  const newSubSections = [...newSections[sectionIndex].subSections!];
+                  const newContent = [...newSubSections[subSectionIndex].content];
+                  newContent[blockIndex] = newImageBlock;
+                  newSubSections[subSectionIndex] = { ...newSubSections[subSectionIndex], content: newContent };
+                  newSections[sectionIndex] = { ...newSections[sectionIndex], subSections: newSubSections };
+              } else {
+                  const newContent = [...newSections[sectionIndex].content];
+                  newContent[blockIndex] = newImageBlock;
+                  newSections[sectionIndex] = { ...newSections[sectionIndex], content: newContent };
+              }
+              return { ...prevContent, sections: newSections };
+          });
+      }
+  };
+
 
   const handleParaphrase = async () => {
     if (!selection) return;
@@ -323,6 +373,13 @@ export function DocumentEditor({
                     dangerouslySetInnerHTML={{ __html: block.text }}
                 />
             );
+        case 'image_placeholder':
+             return (
+                <div key={blockIndex} className="my-4 text-center p-8 border-2 border-dashed rounded-lg flex flex-col items-center justify-center bg-muted/50">
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mb-2" />
+                    <p className="text-sm text-muted-foreground">Generating image: "{block.prompt}"</p>
+                </div>
+             );
         case 'image':
             return (
                 <div key={blockIndex} className="my-4 text-center">
@@ -369,7 +426,8 @@ export function DocumentEditor({
                 </ListTag>
             );
         default:
-            return null;
+            const exhaustiveCheck: never = block;
+            return [new Paragraph({ text: `[Unsupported Block]`, style: 'default' })];
     }
   };
 
