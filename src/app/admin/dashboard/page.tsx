@@ -1,6 +1,8 @@
 
 'use client';
-import { Card, CardContent } from "@/components/ui/card";
+
+import { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Bar, BarChart, Line, LineChart, Pie, PieChart, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from "recharts";
 import {
   ChartContainer,
@@ -8,53 +10,129 @@ import {
   ChartTooltipContent,
   type ChartConfig
 } from "@/components/ui/chart";
+import { db } from '@/lib/firebase';
+import { collection, getDocs } from 'firebase/firestore';
+import type { User, Transaction } from '@/types/admin';
+import { Skeleton } from '@/components/ui/skeleton';
 
+interface MonthlyData {
+  month: string;
+  revenue: number;
+  subscriptions: number;
+}
 
 export default function AdminDashboard() {
-  // Sample investment/financial data
-  const revenueData = [
-    { month: "Jan", revenue: 12000, expenses: 8000 },
-    { month: "Feb", revenue: 15000, expenses: 9500 },
-    { month: "Mar", revenue: 18000, expenses: 11000 },
-    { month: "Apr", revenue: 20000, expenses: 12000 },
-    { month: "May", revenue: 22000, expenses: 15000 },
-  ];
+  const [totalRevenue, setTotalRevenue] = useState(0);
+  const [totalSubscriptions, setTotalSubscriptions] = useState(0);
+  const [totalUsers, setTotalUsers] = useState(0);
+  const [monthlyChartData, setMonthlyChartData] = useState<MonthlyData[]>([]);
+  const [userRoleData, setUserRoleData] = useState<{ name: string; value: number; fill: string; }[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const subscriptionData = [
-    { month: "Jan", subscriptions: 1200 },
-    { month: "Feb", subscriptions: 1450 },
-    { month: "Mar", subscriptions: 1800 },
-    { month: "Apr", subscriptions: 2100 },
-    { month: "May", subscriptions: 2350 },
-  ];
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        // Fetch users and transactions in parallel
+        const [userSnapshot, transactionSnapshot] = await Promise.all([
+          getDocs(collection(db, 'users')),
+          getDocs(collection(db, 'transactions'))
+        ]);
 
-  const portfolioData = [
-    { name: "Students", value: 50, fill: "var(--color-students)" },
-    { name: "Teachers", value: 25, fill: "var(--color-teachers)" },
-    { name: "Researchers", value: 15, fill: "var(--color-researchers)" },
-    { name: "Professionals", value: 10, fill: "var(--color-professionals)" },
-  ];
+        // Process Users
+        const users = userSnapshot.docs.map(doc => doc.data() as User);
+        setTotalUsers(users.length);
+
+        const rolesCount: { [key: string]: number } = {};
+        users.forEach(user => {
+          if (user.role && user.role !== 'Admin') {
+            rolesCount[user.role] = (rolesCount[user.role] || 0) + 1;
+          }
+        });
+
+        const roleColors: { [key: string]: string } = {
+            Student: "var(--color-students)",
+            Teacher: "var(--color-teachers)",
+            Researcher: "var(--color-researchers)",
+            Professional: "var(--color-professionals)",
+            Professor: "var(--color-professor)",
+        };
+
+        setUserRoleData(Object.entries(rolesCount).map(([name, value], index) => ({
+          name,
+          value,
+          fill: roleColors[name] || `hsl(var(--chart-${index + 1}))`
+        })));
+
+
+        // Process Transactions
+        const transactions = transactionSnapshot.docs
+            .map(doc => doc.data() as Transaction)
+            .filter(t => t.status === 'Success');
+        
+        const revenue = transactions.reduce((acc, t) => acc + t.amount, 0);
+        setTotalRevenue(revenue);
+        setTotalSubscriptions(transactions.length);
+
+        const monthlyTotals: { [key: string]: { revenue: number, subscriptions: number } } = {};
+        transactions.forEach(t => {
+          const month = new Date(t.date).toLocaleString('default', { month: 'short', year: '2-digit' });
+          if (!monthlyTotals[month]) {
+            monthlyTotals[month] = { revenue: 0, subscriptions: 0 };
+          }
+          monthlyTotals[month].revenue += t.amount;
+          monthlyTotals[month].subscriptions += 1;
+        });
+        
+        const sortedMonthlyData = Object.entries(monthlyTotals).map(([month, totals]) => ({ month, ...totals }))
+            .sort((a, b) => new Date(`1 ${a.month}`).getTime() - new Date(`1 ${b.month}`).getTime());
+
+
+        setMonthlyChartData(sortedMonthlyData);
+
+      } catch (error) {
+        console.error("Failed to fetch dashboard data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   const revenueChartConfig = {
-    revenue: {
-      label: "Revenue",
-      color: "hsl(var(--chart-1))",
-    },
+    revenue: { label: "Revenue", color: "hsl(var(--chart-1))" },
   } satisfies ChartConfig;
 
   const subscriptionChartConfig = {
-    subscriptions: {
-      label: "Subscriptions",
-      color: "hsl(var(--chart-2))",
-    },
+    subscriptions: { label: "Subscriptions", color: "hsl(var(--chart-2))" },
   } satisfies ChartConfig;
 
   const portfolioChartConfig = {
-      students: { label: 'Students', color: "hsl(var(--chart-1))"},
-      teachers: { label: 'Teachers', color: "hsl(var(--chart-2))"},
-      researchers: { label: 'Researchers', color: "hsl(var(--chart-4))"},
-      professionals: { label: 'Professionals', color: "hsl(var(--chart-5))"},
+      Student: { label: 'Students', color: "hsl(var(--chart-1))"},
+      Teacher: { label: 'Teachers', color: "hsl(var(--chart-2))"},
+      Researcher: { label: 'Researchers', color: "hsl(var(--chart-4))"},
+      Professional: { label: 'Professionals', color: "hsl(var(--chart-5))"},
+      Professor: { label: 'Professors', color: "hsl(var(--chart-3))"},
   } satisfies ChartConfig;
+
+  if (isLoading) {
+    return (
+        <div className="p-6 grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+            <Card className="col-span-1 lg:col-span-3">
+                <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4 p-6">
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                    <Skeleton className="h-12 w-full" />
+                </CardContent>
+            </Card>
+            <Card><CardContent className="p-4"><Skeleton className="h-[300px] w-full" /></CardContent></Card>
+            <Card><CardContent className="p-4"><Skeleton className="h-[300px] w-full" /></CardContent></Card>
+            <Card><CardContent className="p-4"><Skeleton className="h-[300px] w-full" /></CardContent></Card>
+        </div>
+    );
+  }
 
 
   return (
@@ -64,33 +142,34 @@ export default function AdminDashboard() {
         <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4 p-6 text-center">
           <div>
             <p className="text-sm text-muted-foreground">Revenue</p>
-            <h2 className="text-2xl font-bold">₦45,231.89</h2>
+            <h2 className="text-2xl font-bold">₦{totalRevenue.toLocaleString()}</h2>
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Subscriptions</p>
-            <h2 className="text-2xl font-bold">+2,350</h2>
+            <h2 className="text-2xl font-bold">+{totalSubscriptions.toLocaleString()}</h2>
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Total Users</p>
+            <h2 className="text-2xl font-bold">{totalUsers.toLocaleString()}</h2>
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Sales</p>
-            <h2 className="text-2xl font-bold">+12,234</h2>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Active Users</p>
-            <h2 className="text-2xl font-bold">+573</h2>
+            <h2 className="text-2xl font-bold">+{totalSubscriptions.toLocaleString()}</h2>
           </div>
         </CardContent>
       </Card>
 
       {/* Revenue Chart */}
       <Card>
+        <CardHeader>
+            <CardTitle>Revenue</CardTitle>
+        </CardHeader>
         <CardContent className="p-4">
-          <h3 className="font-semibold mb-2">Revenue</h3>
            <ChartContainer config={revenueChartConfig} className="min-h-[250px] w-full">
-            <BarChart data={revenueData} accessibilityLayer>
-              <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} />
-              <YAxis tickLine={false} axisLine={false} tickMargin={8} />
+            <BarChart data={monthlyChartData} accessibilityLayer>
+              <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} fontSize={12} />
+              <YAxis tickLine={false} axisLine={false} tickMargin={8} fontSize={12} tickFormatter={(value) => `₦${Number(value) / 1000}k`} />
               <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
-              <Legend />
               <Bar dataKey="revenue" fill="var(--color-revenue)" radius={4} />
             </BarChart>
           </ChartContainer>
@@ -99,14 +178,15 @@ export default function AdminDashboard() {
 
       {/* Subscription Growth Line Chart */}
       <Card>
+        <CardHeader>
+            <CardTitle>Subscriptions</CardTitle>
+        </CardHeader>
         <CardContent className="p-4">
-          <h3 className="font-semibold mb-2">Subscriptions</h3>
           <ChartContainer config={subscriptionChartConfig} className="min-h-[250px] w-full">
-            <LineChart data={subscriptionData} accessibilityLayer>
-              <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} />
-              <YAxis tickLine={false} axisLine={false} tickMargin={8} />
+            <LineChart data={monthlyChartData} accessibilityLayer>
+              <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} fontSize={12} />
+              <YAxis tickLine={false} axisLine={false} tickMargin={8} fontSize={12} />
               <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
-              <Legend />
               <Line type="monotone" dataKey="subscriptions" stroke="var(--color-subscriptions)" strokeWidth={2} dot={false} />
             </LineChart>
           </ChartContainer>
@@ -115,13 +195,21 @@ export default function AdminDashboard() {
 
       {/* User Role Allocation Pie Chart */}
       <Card>
-        <CardContent className="p-4">
-          <h3 className="font-semibold mb-2">User Role Allocation</h3>
-           <ChartContainer config={portfolioChartConfig} className="min-h-[250px] w-full">
+        <CardHeader>
+            <CardTitle>User Role Allocation</CardTitle>
+        </CardHeader>
+        <CardContent className="p-4 flex items-center justify-center">
+           <ChartContainer config={portfolioChartConfig} className="min-h-[250px] w-full max-w-[300px]">
             <PieChart>
               <ChartTooltip content={<ChartTooltipContent nameKey="value" hideLabel />} />
-              <Pie data={portfolioData} dataKey="value" nameKey="name" outerRadius={90}/>
-              <Legend />
+              <Pie data={userRoleData} dataKey="value" nameKey="name" outerRadius={90} labelLine={false} label={({
+                  percent,
+                  name,
+                }) => `${name}: ${(percent * 100).toFixed(0)}%`}>
+                    {userRoleData.map((entry) => (
+                        <Cell key={`cell-${entry.name}`} fill={entry.fill} />
+                    ))}
+              </Pie>
             </PieChart>
           </ChartContainer>
         </CardContent>
