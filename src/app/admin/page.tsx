@@ -14,7 +14,7 @@ import { signInWithEmailAndPassword } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 
 export default function AdminAuthPage() {
-  const [email, setEmail] = useState('admin@azmaai.com.ng');
+  const [email, setEmail] = useState('admin@azma.com');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -74,7 +74,7 @@ export default function AdminAuthPage() {
                         <Input
                             id="email"
                             type="email"
-                            placeholder="admin@azmaai.com.ng"
+                            placeholder="admin@azma.com"
                             required
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
@@ -107,3 +107,4 @@ export default function AdminAuthPage() {
     </div>
   );
 }
+
