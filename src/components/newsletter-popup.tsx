@@ -9,6 +9,9 @@ import { Megaphone, X, Gift, Info, AlertTriangle, Wrench } from 'lucide-react';
 import { Badge } from './ui/badge';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
+import { db } from '@/lib/firebase';
+import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
+
 
 const fallbackAnnouncement: Announcement = {
   id: 'fallback-1',
@@ -26,27 +29,27 @@ export function NewsletterPopup() {
   const [status, setStatus] = useState<'hidden' | 'open' | 'minimized'>('hidden');
 
   useEffect(() => {
-    try {
-      const storedAnnouncements = localStorage.getItem('azma_announcements');
-      if (storedAnnouncements) {
-        const allAnnouncements: Announcement[] = JSON.parse(storedAnnouncements);
-        if (allAnnouncements.length > 0) {
-          // Get the most recent one
-          setAnnouncement(allAnnouncements[0]);
-          setStatus('open');
-          return;
-        }
-      }
-      // If no announcements are found, use the fallback for demonstration
-      setAnnouncement(fallbackAnnouncement);
-      setStatus('open');
+    const fetchLatestAnnouncement = async () => {
+        try {
+            const announcementsCollection = collection(db, 'announcements');
+            const q = query(announcementsCollection, orderBy("createdAt", "desc"), limit(1));
+            const announcementSnapshot = await getDocs(q);
 
-    } catch (error) {
-      console.error("Failed to load announcements from localStorage", error);
-      // Fallback in case of error too
-      setAnnouncement(fallbackAnnouncement);
-      setStatus('open');
-    }
+            if (!announcementSnapshot.empty) {
+                const latestAnnouncement = announcementSnapshot.docs[0].data() as Announcement;
+                latestAnnouncement.id = announcementSnapshot.docs[0].id;
+                setAnnouncement(latestAnnouncement);
+            } else {
+                setAnnouncement(fallbackAnnouncement);
+            }
+            setStatus('open');
+        } catch (error) {
+            console.error("Failed to load announcements from Firestore", error);
+            setAnnouncement(fallbackAnnouncement);
+            setStatus('open');
+        }
+    };
+    fetchLatestAnnouncement();
   }, []);
 
   useEffect(() => {
@@ -120,3 +123,5 @@ export function NewsletterPopup() {
     </div>
   );
 }
+
+    

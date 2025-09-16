@@ -55,6 +55,9 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Megaphone, PlusCircle, Send, Info, Gift, AlertTriangle, Wrench, Upload, X, MoreHorizontal, Edit, Trash2 } from 'lucide-react';
 import Image from 'next/image';
+import { db } from '@/lib/firebase';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
+
 
 const audienceOptions = ['All Users', 'Students', 'Professors', 'Teachers', 'Researchers', 'Professionals'];
 const typeOptions = ['Info', 'Promotion', 'Warning', 'Update'];
@@ -75,22 +78,23 @@ export default function AnnouncementsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
-  useEffect(() => {
+  const fetchAnnouncements = async () => {
     try {
-      const storedAnnouncements = localStorage.getItem('azma_announcements');
-      if (storedAnnouncements) {
-        setAnnouncements(JSON.parse(storedAnnouncements));
-      }
+      const announcementsCollection = collection(db, 'announcements');
+      const q = query(announcementsCollection, orderBy("createdAt", "desc"));
+      const announcementSnapshot = await getDocs(q);
+      const announcementList = announcementSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Announcement));
+      setAnnouncements(announcementList);
     } catch (error) {
-      console.error("Failed to load announcements from localStorage", error);
+      console.error("Failed to fetch announcements from Firestore", error);
+      toast({ variant: 'destructive', title: 'Error', description: 'Could not load announcements.'});
     }
-  }, []);
-
-  const saveAnnouncements = (newAnnouncements: Announcement[]) => {
-    newAnnouncements.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    setAnnouncements(newAnnouncements);
-    localStorage.setItem('azma_announcements', JSON.stringify(newAnnouncements));
   };
+
+  useEffect(() => {
+    fetchAnnouncements();
+  }, [toast]);
+
 
   const handleOpenDialog = (announcement: Announcement | null = null) => {
     if (announcement) {
@@ -109,7 +113,7 @@ export default function AnnouncementsPage() {
     setIsDialogOpen(true);
   }
 
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title || !formData.message) {
       toast({ variant: 'destructive', title: "Missing fields", description: "Title and message are required." });
@@ -117,34 +121,46 @@ export default function AnnouncementsPage() {
     }
 
     if (editingId) {
-        // Update existing announcement
-        const updatedAnnouncements = announcements.map(ann => 
-            ann.id === editingId ? { ...ann, ...formData, id: editingId } : ann
-        );
-        saveAnnouncements(updatedAnnouncements);
-        toast({ title: 'Announcement Updated!', description: `"${formData.title}" has been saved.` });
+        // Update existing announcement in Firestore
+        try {
+            const announcementDocRef = doc(db, 'announcements', editingId);
+            await updateDoc(announcementDocRef, formData);
+            toast({ title: 'Announcement Updated!', description: `"${formData.title}" has been saved.` });
+        } catch (error) {
+            console.error("Update failed", error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Failed to update announcement.'});
+        }
     } else {
-        // Create new announcement
-        const newAnnouncement: Announcement = {
-            id: new Date().toISOString(),
-            ...formData,
-            createdAt: new Date().toISOString(),
-            status: 'Sent',
-        };
-        const updatedAnnouncements = [newAnnouncement, ...announcements];
-        saveAnnouncements(updatedAnnouncements);
-        toast({ title: 'Announcement Sent!', description: `"${newAnnouncement.title}" has been published.` });
+        // Create new announcement in Firestore
+        try {
+            const newAnnouncement = {
+                ...formData,
+                createdAt: new Date().toISOString(),
+                status: 'Sent',
+            };
+            await addDoc(collection(db, 'announcements'), newAnnouncement);
+            toast({ title: 'Announcement Sent!', description: `"${newAnnouncement.title}" has been published.` });
+        } catch (error) {
+             console.error("Create failed", error);
+             toast({ variant: 'destructive', title: 'Error', description: 'Failed to create announcement.'});
+        }
     }
-
+    
+    fetchAnnouncements(); // Refresh the list from DB
     setIsDialogOpen(false);
     setEditingId(null);
     setFormData(initialFormState);
   };
   
-  const handleDelete = (id: string) => {
-    const updatedAnnouncements = announcements.filter(ann => ann.id !== id);
-    saveAnnouncements(updatedAnnouncements);
-    toast({ variant: 'destructive', title: 'Announcement Deleted' });
+  const handleDelete = async (id: string) => {
+    try {
+        await deleteDoc(doc(db, "announcements", id));
+        fetchAnnouncements(); // Refresh list
+        toast({ variant: 'destructive', title: 'Announcement Deleted' });
+    } catch (error) {
+        console.error("Delete failed", error);
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not delete the announcement.'});
+    }
   }
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -356,3 +372,5 @@ export default function AnnouncementsPage() {
     </Card>
   );
 }
+
+    
