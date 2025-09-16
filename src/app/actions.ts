@@ -10,7 +10,16 @@ import { verifyReferences } from '@/ai/flows/verify-references';
 import { exportToDocx as buildDocx } from '@/lib/docx-exporter';
 import { Packer } from 'docx';
 import type { DocumentContent, References, StyleOptions, Section, ContentBlock } from '@/types';
-import type { GenerationFormValues } from '@/types';
+
+
+type GenerationFormValuesWithTemplate = {
+    taskType: "Research Paper" | "Assignment" | "Term Paper" | "Project Work" | "Essay Writing" | "Thesis" | "Dissertation" | "Coursework" | "Group Project" | "Book/Article Review" | "Annotated Bibliography" | "Literature Review" | "Field Work Report" | "Seminar Paper" | "Internship Report" | "Position Paper" | "Concept Note / Proposal Writing" | "Abstract Writing" | "Business Plan / Feasibility Study" | "Academic Debate Preparation" | "Mock/ Exam Questions setup" | "Custom";
+    topic: string;
+    numPages?: number | undefined;
+    parameters?: string | undefined;
+    customTemplate?: string | undefined;
+};
+
 
 function formatAsText(content: DocumentContent, references: References): string {
     let text = `Title: ${content.title}\n\n`;
@@ -83,7 +92,7 @@ function formatAsCsv(content: DocumentContent, references: References): string {
 }
 
 
-export async function generateContentAction(values: GenerationFormValues) {
+export async function generateContentAction(values: GenerationFormValuesWithTemplate) {
   try {
     const generatedContent = await generateAcademicContent(values);
     

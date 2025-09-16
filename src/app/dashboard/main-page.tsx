@@ -16,6 +16,7 @@ import { doc, getDoc } from 'firebase/firestore';
 
 import { ControlPanel } from '@/components/control-panel';
 import { DocumentEditor } from '@/components/document-editor';
+import { TemplateEditor } from '@/components/template-editor';
 import { Button } from '@/components/ui/button';
 import { exportTxtAction, exportCsvAction, scanAndCleanAction, checkPlagiarismAction, editSectionAction } from '@/app/actions';
 import {
@@ -78,6 +79,8 @@ export function MainPage() {
   const [plagiarismResult, setPlagiarismResult] = useState<CheckPlagiarismOutput | null>(null);
   const [user, setUser] = useState<UserData | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isTemplateMode, setIsTemplateMode] = useState(false);
+  const [customTemplate, setCustomTemplate] = useState('');
   const { toast } = useToast();
   const router = useRouter();
   
@@ -296,6 +299,10 @@ export function MainPage() {
           setStyles={setStyles}
           references={references}
           content={content}
+          customTemplate={customTemplate}
+          setCustomTemplate={setCustomTemplate}
+          isTemplateMode={isTemplateMode}
+          setIsTemplateMode={setIsTemplateMode}
         />
       </aside>
 
@@ -323,13 +330,17 @@ export function MainPage() {
                     setStyles={setStyles}
                     references={references}
                     content={content}
+                    customTemplate={customTemplate}
+                    setCustomTemplate={setCustomTemplate}
+                    isTemplateMode={isTemplateMode}
+                    setIsTemplateMode={setIsTemplateMode}
                 />
             </SheetContent>
           </Sheet>
 
           <div className="flex-1">
             <h1 className="text-lg font-semibold md:text-xl truncate" title={content.title}>
-              {content.title}
+              {isTemplateMode ? "Custom Template Editor" : content.title}
             </h1>
           </div>
 
@@ -429,11 +440,11 @@ export function MainPage() {
         </header>
         {showEditor && <div className="flex-1 overflow-auto p-4 md:p-8 print:p-0 print:overflow-visible relative">
           {isScanning && <ScanningAnimation />}
-          <DocumentEditor
-            content={content}
-            setContent={setContent}
-            styles={styles}
-          />
+           {isTemplateMode ? (
+            <TemplateEditor value={customTemplate} onChange={setCustomTemplate} />
+          ) : (
+            <DocumentEditor content={content} setContent={setContent} styles={styles} />
+          )}
            <Dialog>
             <TooltipProvider>
                 <Tooltip>

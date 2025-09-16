@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { 
     PenSquare, Loader2, Check, AlertCircle, Sparkles, 
-    Trash2, Search, Library, PlusCircle, FolderPlus, MountainIcon, Folder, File, GripVertical, ChevronDown, MoreHorizontal, Edit, FolderInput, PenLine, Archive, Share2, Gauge, X
+    Trash2, Search, Library, PlusCircle, FolderPlus, MountainIcon, Folder, File, GripVertical, ChevronDown, MoreHorizontal, Edit, FolderInput, PenLine, Archive, Share2, Gauge, X, FileText
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { DocumentContent, References, StyleOptions, FontType, Workspace, Project, DocumentItem } from '@/types';
@@ -53,6 +53,7 @@ import { db } from '@/lib/firebase';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { Progress } from './ui/progress';
 import { useRouter } from 'next/navigation';
+import { Switch } from './ui/switch';
 
 
 type UserData = {
@@ -122,6 +123,21 @@ const UsageMeter = ({ user }: { user: UserData | null }) => {
 };
 
 
+interface ControlPanelProps {
+    user: UserData | null;
+    setContent: React.Dispatch<React.SetStateAction<DocumentContent>>;
+    setReferences: React.Dispatch<React.SetStateAction<References>>;
+    styles: StyleOptions;
+    setStyles: React.Dispatch<React.SetStateAction<StyleOptions>>;
+    references: References;
+    content: DocumentContent;
+    customTemplate: string;
+    setCustomTemplate: React.Dispatch<React.SetStateAction<string>>;
+    isTemplateMode: boolean;
+    setIsTemplateMode: React.Dispatch<React.SetStateAction<boolean>>;
+}
+
+
 export function ControlPanel({
   user,
   setContent,
@@ -129,7 +145,11 @@ export function ControlPanel({
   styles,
   setStyles,
   references,
-  content
+  content,
+  customTemplate,
+  setCustomTemplate,
+  isTemplateMode,
+  setIsTemplateMode
 }: ControlPanelProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [workspace, setWorkspace] = useState<Workspace>({ projects: [], standaloneDocuments: [], archivedItems: [], sharedDocuments: [] });
@@ -145,7 +165,7 @@ export function ControlPanel({
   
   const generationForm = useForm<GenerationFormValues>({
     resolver: zodResolver(GenerationSchema),
-    defaultValues: { topic: '', parameters: '', taskType: 'Research Paper', numPages: 1, customTemplate: '' },
+    defaultValues: { topic: '', parameters: '', taskType: 'Research Paper', numPages: 1 },
   });
 
 
@@ -159,6 +179,11 @@ export function ControlPanel({
                            content.title.includes("New Research Paper Title") || 
                            content.title.includes("New Assignment Title") || 
                            content.title.includes('New ');
+                           
+    if (newTaskType === 'Custom') {
+        setContent({ title: 'New Custom Document', sections: [] });
+        return;
+    }
                            
     const format = academicTaskFormats[newTaskType];
     const sections = format
@@ -509,7 +534,12 @@ export function ControlPanel({
       description: 'The AI is crafting your document. This may take a moment.',
     });
 
-    const { data, error } = await generateContentAction(values);
+    const valuesToSubmit = {
+        ...values,
+        customTemplate: isTemplateMode ? customTemplate : undefined,
+    }
+
+    const { data, error } = await generateContentAction(valuesToSubmit);
 
     setIsGenerating(false);
 
@@ -856,22 +886,10 @@ export function ControlPanel({
                             </FormItem>
                             )}
                         />
-                        <FormField
-                            control={generationForm.control}
-                            name="customTemplate"
-                            render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Custom Template (Optional)</FormLabel>
-                                <FormControl>
-                                <Textarea
-                                    placeholder="Define your own structure here, e.g., &#10;- Section 1&#10;- Section 2&#10;  - Sub-section 2.1"
-                                    {...field}
-                                />
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                            )}
-                        />
+                         <div className="flex items-center space-x-2">
+                            <Switch id="custom-template-switch" checked={isTemplateMode} onCheckedChange={setIsTemplateMode} />
+                            <Label htmlFor="custom-template-switch">Use Custom Template</Label>
+                        </div>
                         <Button type="submit" disabled={isGenerating} className="w-full">
                             {isGenerating ? (
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
