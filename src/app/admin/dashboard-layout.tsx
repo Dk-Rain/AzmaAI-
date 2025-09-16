@@ -30,8 +30,13 @@ import { usePathname, useRouter } from 'next/navigation';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import AdminLoading from './loading';
+import { auth, db } from '@/lib/firebase';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
+
 
 type UserData = {
+    uid: string;
     fullName: string;
     role: string;
     username?: string;
@@ -50,29 +55,50 @@ export default function DashboardLayout({
   const { toast } = useToast();
 
   useEffect(() => {
-    const userData = localStorage.getItem('azmaUser');
-    if (userData) {
-      const parsedUser: UserData = JSON.parse(userData);
-      if (parsedUser.role !== 'Admin') {
-        toast({
-            variant: 'destructive',
-            title: 'Access Denied',
-            description: 'You do not have permission to view this page.'
-        });
-        router.push('/admin');
-      } else {
-        setUser(parsedUser);
-      }
-    } else {
-      router.push('/admin');
-    }
-    setIsLoading(false);
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+        if (firebaseUser) {
+            const userDocRef = doc(db, 'users', firebaseUser.uid);
+            const userDoc = await getDoc(userDocRef);
+
+            if (userDoc.exists() && userDoc.data().role === 'Admin') {
+                const userData = userDoc.data();
+                setUser({
+                    uid: firebaseUser.uid,
+                    fullName: firebaseUser.displayName || userData.fullName,
+                    role: userData.role,
+                    username: userData.username,
+                    photoUrl: firebaseUser.photoURL || userData.photoUrl,
+                });
+            } else {
+                toast({
+                    variant: 'destructive',
+                    title: 'Access Denied',
+                    description: 'You do not have permission to view this page.'
+                });
+                await signOut(auth);
+                router.push('/admin');
+            }
+        } else {
+            router.push('/admin');
+        }
+        setIsLoading(false);
+    });
+
+    return () => unsubscribe();
   }, [router, toast]);
 
-  const handleLogout = () => {
-    localStorage.removeItem('azmaUser');
-    toast({ title: 'Logged out successfully.' });
-    router.push('/admin');
+  const handleLogout = async () => {
+    try {
+        await signOut(auth);
+        toast({ title: 'Logged out successfully.' });
+        router.push('/admin');
+    } catch (error) {
+        toast({
+            variant: 'destructive',
+            title: 'Logout Failed',
+            description: 'There was an error logging you out.',
+        });
+    }
   };
 
   const isActive = (path: string) => pathname === path;
