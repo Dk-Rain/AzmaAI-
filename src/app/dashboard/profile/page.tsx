@@ -18,8 +18,13 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, User, Upload } from 'lucide-react';
+import { auth, db } from '@/lib/firebase';
+import { onAuthStateChanged, updateProfile } from 'firebase/auth';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
+
 
 type UserData = {
+  uid: string;
   fullName: string;
   email: string;
   role: string;
@@ -42,51 +47,87 @@ export default function ProfilePage() {
 
 
   useEffect(() => {
-    try {
-      const userData = localStorage.getItem('azmaUser');
-      if (userData) {
-        const parsedData: UserData = JSON.parse(userData);
-        setUser(parsedData);
-        setFullName(parsedData.fullName);
-        setPhoneNumber(parsedData.phoneNumber || '');
-        setUsername(parsedData.username || parsedData.fullName);
-        setPhotoUrl(parsedData.photoUrl);
-      } else {
-        router.push('/login');
-      }
-    } catch (error) {
-      console.error("Failed to parse user data from localStorage", error);
-      router.push('/login');
-    }
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+        if (firebaseUser) {
+            const userDocRef = doc(db, 'users', firebaseUser.uid);
+            const userDoc = await getDoc(userDocRef);
+            if (userDoc.exists()) {
+                const userData = userDoc.data() as Omit<UserData, 'uid'>;
+                const fullUserData: UserData = {
+                    uid: firebaseUser.uid,
+                    ...userData,
+                    fullName: firebaseUser.displayName || userData.fullName,
+                    photoUrl: firebaseUser.photoURL || userData.photoUrl,
+                };
+                setUser(fullUserData);
+                setFullName(fullUserData.fullName);
+                setPhoneNumber(fullUserData.phoneNumber || '');
+                setUsername(fullUserData.username || fullUserData.fullName);
+                setPhotoUrl(fullUserData.photoUrl);
+            } else {
+                router.push('/login');
+            }
+        } else {
+            router.push('/login');
+        }
+    });
+
+    return () => unsubscribe();
   }, [router]);
 
-  const handleProfileUpdate = (e: React.FormEvent) => {
+  const handleProfileUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    const currentUser = auth.currentUser;
+    if (!user || !currentUser) return;
     setIsLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      try {
-        const updatedUser: UserData = { ...user, fullName, phoneNumber, username, photoUrl: photoPreview || photoUrl };
-        localStorage.setItem('azmaUser', JSON.stringify(updatedUser));
+    try {
+        const dataToUpdate: Partial<UserData> = {
+            fullName,
+            username,
+            phoneNumber,
+        };
+
+        // In a real app with file storage, you'd upload the photo and get a URL.
+        // For this demo, we'll use the base64 data URI, but it's not ideal for production.
+        if (photoPreview) {
+            dataToUpdate.photoUrl = photoPreview;
+        }
+
+        // Update Firebase Auth profile
+        await updateProfile(currentUser, {
+            displayName: fullName,
+            photoURL: dataToUpdate.photoUrl || photoUrl,
+        });
+
+        // Update Firestore document
+        const userDocRef = doc(db, 'users', user.uid);
+        await updateDoc(userDocRef, dataToUpdate);
+        
+        const updatedUser: UserData = {
+          ...user,
+          ...dataToUpdate
+        };
+
         setUser(updatedUser);
         setPhotoUrl(updatedUser.photoUrl);
-        setPhotoPreview(null); // Clear preview after save
+        setPhotoPreview(null);
+        
         toast({
           title: 'Profile Updated',
           description: 'Your information has been saved.',
         });
-      } catch (error) {
-        toast({
-            variant: 'destructive',
-            title: 'Update Failed',
-            description: 'Could not save changes.',
-        })
-      } finally {
-        setIsLoading(false);
-      }
-    }, 1000);
+
+    } catch (error) {
+      console.error(error);
+      toast({
+          variant: 'destructive',
+          title: 'Update Failed',
+          description: 'Could not save changes.',
+      })
+    } finally {
+      setIsLoading(false);
+    }
   };
   
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
