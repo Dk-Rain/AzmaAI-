@@ -135,6 +135,16 @@ export default function ProfilePage() {
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // Check file size (10MB limit)
+      if (file.size > 10 * 1024 * 1024) {
+        toast({
+          variant: 'destructive',
+          title: 'File Too Large',
+          description: 'Please select an image smaller than 10MB.',
+        });
+        return;
+      }
+      
       const reader = new FileReader();
       
       reader.onload = (event) => {
