@@ -83,6 +83,7 @@ async function renderBlockToDocx(block: ContentBlock, styles: StyleOptions): Pro
       return [table, new Paragraph({ text: block.caption || '', alignment: AlignmentType.CENTER, style: 'default' })];
 
     default:
+      // This will cause a compile-time error if a new block type is added but not handled here.
       const exhaustiveCheck: never = block;
       return [new Paragraph({ text: `[Unsupported Block]`, style: 'default' })];
   }

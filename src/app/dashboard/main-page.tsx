@@ -201,9 +201,13 @@ export function MainPage() {
         
         const { file, historyEntry } = await response.json();
         
-        // This part needs to be updated to save to Firestore.
-        // For now, we are letting it fail silently as it writes to localStorage.
-        // A dedicated action would be needed to write to a user-specific history collection.
+        // Save the history entry to localStorage
+        if (historyEntry) {
+            const storedHistory = localStorage.getItem('azma_document_history') || '[]';
+            const history: DocumentHistoryEntry[] = JSON.parse(storedHistory);
+            history.push(historyEntry);
+            localStorage.setItem('azma_document_history', JSON.stringify(history));
+        }
 
         const blob = new Blob([Buffer.from(file, 'base64')], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
         const url = window.URL.createObjectURL(blob);
