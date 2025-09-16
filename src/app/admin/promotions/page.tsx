@@ -56,6 +56,8 @@ import { Ticket, PlusCircle, MoreHorizontal, Edit, Trash2, RefreshCw } from 'luc
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from 'date-fns';
+import { db } from '@/lib/firebase';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
 
 
 const initialFormState: Omit<PromoCode, 'id' | 'createdAt' | 'usedCount' | 'redeemedBy'> = {
@@ -75,21 +77,23 @@ export default function PromotionsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const { toast } = useToast();
 
-  useEffect(() => {
+  const fetchPromoCodes = async () => {
     try {
-      const storedCodes = localStorage.getItem('azma_promo_codes');
-      if (storedCodes) {
-        setPromoCodes(JSON.parse(storedCodes));
-      }
+        const promoCodesCollection = collection(db, 'promoCodes');
+        const q = query(promoCodesCollection, orderBy("createdAt", "desc"));
+        const promoCodeSnapshot = await getDocs(q);
+        const promoCodeList = promoCodeSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PromoCode));
+        setPromoCodes(promoCodeList);
     } catch (error) {
-      console.error("Failed to load promo codes from localStorage", error);
+        console.error("Failed to fetch promo codes from Firestore", error);
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not load promo codes.'});
     }
-  }, []);
-
-  const savePromoCodes = (newCodes: PromoCode[]) => {
-    setPromoCodes(newCodes);
-    localStorage.setItem('azma_promo_codes', JSON.stringify(newCodes));
   };
+
+  useEffect(() => {
+    fetchPromoCodes();
+  }, [toast]);
+
 
   const generateRandomCode = () => {
     const code = Math.random().toString(36).substring(2, 10).toUpperCase();
@@ -115,7 +119,7 @@ export default function PromotionsPage() {
     setIsDialogOpen(true);
   }
 
-  const handleFormSubmit = (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.code || !formData.value) {
       toast({ variant: 'destructive', title: "Missing fields", description: "Code and value are required." });
@@ -123,30 +127,43 @@ export default function PromotionsPage() {
     }
 
     if (editingId) {
-        const updatedCodes = promoCodes.map(p => 
-            p.id === editingId ? { ...p, ...formData, id: editingId } : p
-        );
-        savePromoCodes(updatedCodes);
-        toast({ title: 'Promo Code Updated!' });
+        try {
+            const promoDocRef = doc(db, 'promoCodes', editingId);
+            await updateDoc(promoDocRef, formData);
+            toast({ title: 'Promo Code Updated!' });
+        } catch (error) {
+            console.error("Update failed:", error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Failed to update promo code.'});
+        }
     } else {
-        const newCode: PromoCode = {
-            id: new Date().toISOString(),
-            ...formData,
-            usedCount: 0,
-            redeemedBy: [],
-            createdAt: new Date().toISOString(),
-        };
-        savePromoCodes([newCode, ...promoCodes]);
-        toast({ title: 'Promo Code Created!' });
+        try {
+            const newCode: Omit<PromoCode, 'id'> = {
+                ...formData,
+                usedCount: 0,
+                redeemedBy: [],
+                createdAt: new Date().toISOString(),
+            };
+            await addDoc(collection(db, 'promoCodes'), newCode);
+            toast({ title: 'Promo Code Created!' });
+        } catch (error) {
+            console.error("Create failed:", error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Failed to create promo code.'});
+        }
     }
 
+    fetchPromoCodes();
     setIsDialogOpen(false);
   };
   
-  const handleDelete = (id: string) => {
-    const updatedCodes = promoCodes.filter(p => p.id !== id);
-    savePromoCodes(updatedCodes);
-    toast({ variant: 'destructive', title: 'Promo Code Deleted' });
+  const handleDelete = async (id: string) => {
+    try {
+        await deleteDoc(doc(db, "promoCodes", id));
+        fetchPromoCodes();
+        toast({ variant: 'destructive', title: 'Promo Code Deleted' });
+    } catch (error) {
+        console.error("Delete failed:", error);
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not delete the promo code.'});
+    }
   }
 
   const getStatusBadge = (promo: PromoCode) => {
