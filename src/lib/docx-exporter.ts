@@ -52,6 +52,9 @@ async function renderBlockToDocx(block: ContentBlock, styles: StyleOptions): Pro
         console.error('Failed to fetch image for DOCX:', error);
         return [new Paragraph({ text: `[Image could not be loaded: ${block.url}]`, style: 'default' })];
       }
+    
+    case 'image_placeholder':
+        return [new Paragraph({ text: `[Image placeholder: "${block.prompt}"]`, style: 'default' })];
 
     case 'list':
       return block.items.map(item => new Paragraph({
@@ -89,15 +92,6 @@ async function renderBlockToDocx(block: ContentBlock, styles: StyleOptions): Pro
   }
 }
 
-// This function runs on the server, but we're simulating client-side localStorage interaction for the demo.
-// In a real app, this would write to a database.
-const saveDocumentToHistory = (entry: DocumentHistoryEntry) => {
-    // This is a placeholder for server-side logic.
-    // In a real scenario, you'd use a server-side API call to store this.
-    // For the demo, we will rely on the client action to save it.
-}
-
-
 export async function exportToDocx(
   content: DocumentContent,
   references: References,
@@ -121,10 +115,6 @@ export async function exportToDocx(
     generatedBy: 'current_user', 
   };
   
-  // In a real app, this would be an async call to a database service.
-  saveDocumentToHistory(historyEntry);
-
-
   const processSection = async (section: DocumentContent['sections'][0]) => {
     const sectionChildren: (Paragraph | Table)[] = [];
     

@@ -224,13 +224,14 @@ export async function exportDocxAction(
   styles: StyleOptions
 ) {
   try {
-    const { doc } = await buildDocx(content, references, styles);
+    const { doc, historyEntry } = await buildDocx(content, references, styles);
     const buffer = await Packer.toBuffer(doc);
     const base64 = buffer.toString('base64');
-    return { data: base64, error: null };
+    return { data: { file: base64, historyEntry }, error: null };
   } catch (error) {
     console.error(error);
-    return { data: null, error: 'Failed to export document.' };
+    const message = error instanceof Error ? error.message : 'An unknown error occurred';
+    return { data: null, error: `Failed to export document. Details: ${message}` };
   }
 }
 

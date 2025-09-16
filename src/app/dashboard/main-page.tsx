@@ -18,7 +18,7 @@ import { ControlPanel } from '@/components/control-panel';
 import { DocumentEditor } from '@/components/document-editor';
 import { TemplateEditor } from '@/components/template-editor';
 import { Button } from '@/components/ui/button';
-import { exportTxtAction, exportCsvAction, scanAndCleanAction, checkPlagiarismAction, editSectionAction } from '@/app/actions';
+import { exportDocxAction, exportTxtAction, exportCsvAction, scanAndCleanAction, checkPlagiarismAction, editSectionAction } from '@/app/actions';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -185,21 +185,14 @@ export function MainPage() {
 
     if (format === 'docx') {
       try {
-        const response = await fetch('/api/generate-docx', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ content, references, styles }),
-        });
-
+        const { data, error } = await exportDocxAction(content, references, styles);
         setIsExporting(false);
 
-        if (!response.ok) {
-          throw new Error('Failed to fetch document');
+        if (error || !data) {
+          throw new Error(error || 'Failed to generate document');
         }
         
-        const { file, historyEntry } = await response.json();
+        const { file, historyEntry } = data;
         
         // Save the history entry to localStorage
         if (historyEntry) {
@@ -227,10 +220,11 @@ export function MainPage() {
       } catch (error) {
         setIsExporting(false);
         console.error('Download error:', error);
+        const message = error instanceof Error ? error.message : 'An unknown error occurred';
         return toast({
           variant: 'destructive',
           title: 'Export Failed',
-          description: 'An unknown error occurred while generating the docx file.',
+          description: message,
         });
       }
     }
