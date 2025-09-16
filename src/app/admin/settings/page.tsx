@@ -23,9 +23,12 @@ import {
 import { Switch } from "@/components/ui/switch"
 import { useToast } from "@/hooks/use-toast"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Trash2, KeyRound, Building, Brush, Tag, Megaphone } from "lucide-react";
+import { Trash2, KeyRound, Building, Brush, Tag, Megaphone, Loader2 } from "lucide-react";
 import { useTheme } from "next-themes";
 import type { PricingSettings } from '@/types/admin';
+import { db } from '@/lib/firebase';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+
 
 type AppSettings = {
     appName: string;
@@ -61,26 +64,33 @@ export default function AdminSettingsPage() {
     const [mounted, setMounted] = useState(false);
     const [settings, setSettings] = useState<AppSettings>(initialSettings);
     const [pricing, setPricing] = useState<PricingSettings>(initialPricing);
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isSaving, setIsSaving] = useState(false);
     const [deleteConfirmation, setDeleteConfirmation] = useState('');
 
 
     useEffect(() => {
         setMounted(true);
-        try {
-            const storedSettings = localStorage.getItem('azma_app_settings');
-            if (storedSettings) {
-                // Merge stored settings with initial settings to prevent undefined values
-                setSettings(prev => ({...prev, ...JSON.parse(storedSettings)}));
+        const fetchSettings = async () => {
+            setIsLoading(true);
+            try {
+                const settingsDocRef = doc(db, 'settings', 'global');
+                const settingsDoc = await getDoc(settingsDocRef);
+                if (settingsDoc.exists()) {
+                    const data = settingsDoc.data();
+                    setSettings(prev => ({...prev, ...data.appSettings}));
+                    setPricing(prev => ({...prev, ...data.pricingSettings}));
+                }
+            } catch (error) {
+                console.error("Failed to fetch settings from Firestore:", error);
+                toast({ variant: 'destructive', title: 'Error', description: 'Could not load settings from the database.'})
+            } finally {
+                setIsLoading(false);
             }
-            const storedPricing = localStorage.getItem('azma_pricing_settings');
-            if (storedPricing) {
-                setPricing(JSON.parse(storedPricing));
-            }
-        } catch (error) {
-            console.error('Failed to load settings from localStorage', error);
-        }
-    }, []);
+        };
+
+        fetchSettings();
+    }, [toast]);
     
     const handlePricingChange = (role: keyof PricingSettings, cycle: 'monthly' | 'yearly', value: string) => {
         const numericValue = parseInt(value, 10) || 0;
@@ -94,39 +104,41 @@ export default function AdminSettingsPage() {
     };
 
 
-    const handleSave = () => {
-        setIsLoading(true);
-        // Simulate saving to backend/localStorage
-        setTimeout(() => {
-            try {
-                localStorage.setItem('azma_app_settings', JSON.stringify(settings));
-                localStorage.setItem('azma_pricing_settings', JSON.stringify(pricing));
-                toast({
-                    title: 'Settings Saved',
-                    description: 'Your changes have been successfully saved.',
-                });
-            } catch (error) {
-                toast({
-                    variant: 'destructive',
-                    title: 'Save Failed',
-                    description: 'Could not save settings to localStorage.',
-                })
-            } finally {
-                setIsLoading(false);
-            }
-        }, 1000);
+    const handleSave = async () => {
+        setIsSaving(true);
+        try {
+            const settingsDocRef = doc(db, 'settings', 'global');
+            await setDoc(settingsDocRef, {
+                appSettings: settings,
+                pricingSettings: pricing,
+            }, { merge: true });
+
+            toast({
+                title: 'Settings Saved',
+                description: 'Your changes have been successfully saved to the database.',
+            });
+        } catch (error) {
+            console.error("Failed to save settings to Firestore:", error);
+            toast({
+                variant: 'destructive',
+                title: 'Save Failed',
+                description: 'Could not save settings to the database.',
+            })
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const handleClearData = () => {
+        // This functionality is now less relevant as most data is in Firestore.
+        // It could be adapted to be a more powerful "reset" tool in the future.
         try {
-            localStorage.removeItem('azma_all_users');
-            localStorage.removeItem('azmaUser');
             localStorage.removeItem('azma_workspace');
-            localStorage.removeItem('azma_pricing_settings');
+            localStorage.removeItem('azma_document_history');
             toast({
                 variant: 'destructive',
-                title: 'All User Data Cleared',
-                description: 'Please reload the page for changes to take full effect.',
+                title: 'Local Data Cleared',
+                description: 'Local workspace and history has been cleared from this browser.',
             });
         } catch (error) {
              toast({
@@ -138,6 +150,15 @@ export default function AdminSettingsPage() {
             setDeleteConfirmation('');
         }
     }
+    
+    if (isLoading) {
+        return (
+            <div className="flex justify-center items-center h-48">
+                <Loader2 className="h-8 w-8 animate-spin" />
+            </div>
+        );
+    }
+
 
   return (
     <div className="grid gap-6">
@@ -362,15 +383,14 @@ export default function AdminSettingsPage() {
                     <AlertDialogTrigger asChild>
                         <Button variant="destructive">
                             <Trash2 className="mr-2 h-4 w-4" />
-                            Clear All User Data
+                            Clear Local User Data
                         </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                         <AlertDialogHeader>
                             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                             <AlertDialogDescription>
-                                This will permanently delete all user accounts and their associated data from local storage.
-                                This is useful for resetting the application demo.
+                                This action will clear any workspace data (projects, documents) saved in this browser's local storage. It will not affect database records. This is useful for clearing cached data.
                             </AlertDialogDescription>
                         </AlertDialogHeader>
                         <div className="pt-2">
@@ -389,7 +409,7 @@ export default function AdminSettingsPage() {
                                 onClick={handleClearData} 
                                 disabled={deleteConfirmation !== 'delete'}
                             >
-                                Delete All Data
+                                Delete All Local Data
                             </AlertDialogAction>
                         </AlertDialogFooter>
                     </AlertDialogContent>
@@ -398,8 +418,9 @@ export default function AdminSettingsPage() {
         </Card>
         
         <div className="flex justify-end">
-            <Button onClick={handleSave} disabled={isLoading}>
-                {isLoading ? 'Saving...' : 'Save All Settings'}
+            <Button onClick={handleSave} disabled={isSaving}>
+                {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
+                {isSaving ? 'Saving...' : 'Save All Settings'}
             </Button>
         </div>
     </div>

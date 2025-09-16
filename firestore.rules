@@ -1,56 +1,73 @@
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    function isAdmin() {
-      return exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin';
+    // Helper function to check if a user is an admin
+    function isAdmin(userId) {
+      return exists(/databases/$(database)/documents/users/$(userId)) &&
+             get(/databases/$(database)/documents/users/$(userId)).data.role == 'Admin';
     }
 
+    // Rules for the 'users' collection
     match /users/{userId} {
-      // Users can read their own data. Admins can read any user's data.
-      allow read: if request.auth.uid == userId || isAdmin();
-      
-      // Users can update their own data. Admins can update any user's data.
-      allow update: if request.auth.uid == userId || isAdmin();
+      // Any authenticated user can read their own data.
+      // Admins can read any user's data.
+      allow read: if request.auth.uid == userId || isAdmin(request.auth.uid);
 
-      // Only admins can delete users.
-      allow delete: if isAdmin();
+      // A user can create their own user document upon signup.
+      // Admins can create new user documents.
+      allow create: if request.auth.uid == userId || isAdmin(request.auth.uid);
 
-      // Anyone can create a user document (for signup).
-      allow create: if request.auth.uid == userId;
-    }
+      // A user can update their own data.
+      // Admins can update any user's data.
+      allow update: if request.auth.uid == userId || isAdmin(request.auth.uid);
 
-    match /transactions/{transactionId} {
-      // Only admins can read all transactions.
-      allow read: if isAdmin();
-      
-      // Authenticated users can create their own transactions (e.g., on upgrade). Admins can also create.
-      allow create: if request.auth.uid != null || isAdmin();
-
-      // Only admins can update or delete transactions.
-      allow update, delete: if isAdmin();
+      // Only admins can delete user accounts from the database.
+      allow delete: if isAdmin(request.auth.uid);
     }
     
+    // Rules for the 'workspaces' collection
+    match /workspaces/{userId} {
+        // A user can read and write to their own workspace.
+        // Admins can read and write to any user's workspace for support/management.
+        allow read, write: if request.auth.uid == userId || isAdmin(request.auth.uid);
+    }
+
+    // Rules for the 'transactions' collection
+    match /transactions/{transactionId} {
+        // Authenticated users can create their own transactions (e.g., when subscribing).
+        allow create: if request.auth != null;
+        
+        // Only admins can read, update, or delete transaction records.
+        allow read, update, delete: if isAdmin(request.auth.uid);
+    }
+    
+    // Rules for the 'announcements' collection
     match /announcements/{announcementId} {
         // Anyone can read announcements (for the popup).
         allow read: if true;
         
         // Only admins can create, update, or delete announcements.
-        allow write: if isAdmin();
+        allow write: if isAdmin(request.auth.uid);
     }
 
-    match /promoCodes/{promoCodeId} {
+    // Rules for the 'promoCodes' collection
+    match /promoCodes/{promoId} {
         // Authenticated users can read promo codes to verify them.
         allow read: if request.auth != null;
 
         // Only admins can create, update, or delete promo codes.
-        allow write: if isAdmin();
+        allow write: if isAdmin(request.auth.uid);
     }
     
-    match /workspaces/{userId} {
-      allow read, write: if request.auth.uid == userId;
+    // Rules for the 'settings' collection
+    match /settings/{settingId} {
+        // Allow anyone to read the settings document (e.g. for pricing info on client)
+        allow read: if true;
+        // Only admins can write to the settings document
+        allow write: if isAdmin(request.auth.uid);
     }
   }
 }
+
+    
