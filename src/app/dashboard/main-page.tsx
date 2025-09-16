@@ -89,7 +89,6 @@ export function MainPage() {
 
         if (userDoc.exists()) {
           const userData = userDoc.data();
-          // isPremium is a boolean field in the user's document.
           const isPremium = userData.isPremium || false;
           setUser({
             uid: firebaseUser.uid,

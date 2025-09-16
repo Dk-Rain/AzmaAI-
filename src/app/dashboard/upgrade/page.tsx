@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/table';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { ArrowLeft, CheckCircle2, Loader2, Star, XCircle } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Loader2, Star, XCircle, CalendarClock } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import type { PricingSettings } from '@/types/admin';
@@ -35,6 +35,7 @@ type UserData = {
   uid: string;
   role: string;
   isPremium?: boolean;
+  subscriptionEndDate?: string;
 };
 
 const defaultPricing: PricingSettings = {
@@ -44,6 +45,44 @@ const defaultPricing: PricingSettings = {
     professor: { monthly: 8000, yearly: 20000 },
     teacher: { monthly: 5000, yearly: 15000 },
 };
+
+const SubscriptionStatusCard = ({ user }: { user: UserData | null }) => {
+    if (!user?.isPremium || !user.subscriptionEndDate) {
+        return null;
+    }
+
+    const endDate = new Date(user.subscriptionEndDate);
+    const now = new Date();
+    const daysRemaining = Math.max(0, Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+
+    return (
+        <Card className="mb-8 bg-primary/5 border-primary">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-primary">
+                    <CalendarClock /> Your Active Subscription
+                </CardTitle>
+            </CardHeader>
+            <CardContent className="grid md:grid-cols-3 gap-4 text-center">
+                 <div>
+                    <p className="text-sm text-muted-foreground">Current Plan</p>
+                    <h3 className="text-lg font-bold">{getPlanName(user.role)}</h3>
+                </div>
+                <div>
+                    <p className="text-sm text-muted-foreground">Days Remaining</p>
+                    <h3 className="text-lg font-bold">{daysRemaining}</h3>
+                </div>
+                <div>
+                    <p className="text-sm text-muted-foreground">Next Renewal Date</p>
+                    <h3 className="text-lg font-bold">{endDate.toLocaleDateString()}</h3>
+                </div>
+            </CardContent>
+        </Card>
+    );
+};
+
+const getPlanName = (role: string) => {
+    return `${role.charAt(0).toUpperCase() + role.slice(1)} Plan`;
+}
 
 
 export default function UpgradePage() {
@@ -95,10 +134,24 @@ export default function UpgradePage() {
     setTimeout(async () => {
         try {
             const userDocRef = doc(db, 'users', user.uid);
-            await updateDoc(userDocRef, { isPremium: true });
+
+            const now = new Date();
+            const subscriptionEndDate = new Date(now);
+            if (isYearly) {
+                subscriptionEndDate.setFullYear(subscriptionEndDate.getFullYear() + 1);
+            } else {
+                subscriptionEndDate.setDate(subscriptionEndDate.getDate() + 30);
+            }
+
+            const dataToUpdate = {
+                isPremium: true,
+                subscriptionEndDate: subscriptionEndDate.toISOString(),
+            }
+
+            await updateDoc(userDocRef, dataToUpdate);
             
             // Update local user state to reflect the change immediately
-            setUser(prevUser => prevUser ? { ...prevUser, isPremium: true } : null);
+            setUser(prevUser => prevUser ? { ...prevUser, ...dataToUpdate } : null);
 
             toast({
                 title: 'Upgrade Successful!',
@@ -129,9 +182,15 @@ export default function UpgradePage() {
     setTimeout(async () => {
         try {
             const userDocRef = doc(db, 'users', user.uid);
-            await updateDoc(userDocRef, { isPremium: false });
+            // Firestore does not have a direct way to delete fields from the client-side SDK.
+            // Setting them to null or undefined works for this case.
+            const dataToUpdate = { 
+                isPremium: false,
+                subscriptionEndDate: null 
+            };
+            await updateDoc(userDocRef, dataToUpdate);
             
-            setUser(prevUser => prevUser ? { ...prevUser, isPremium: false } : null);
+            setUser(prevUser => prevUser ? { ...prevUser, isPremium: false, subscriptionEndDate: undefined } : null);
 
             toast({
                 title: 'Downgrade Successful!',
@@ -154,10 +213,6 @@ export default function UpgradePage() {
   const handleContactSales = () => {
     window.location.href = "mailto:sales@azma.com?subject=Enterprise%20Plan%20Inquiry";
   };
-
-  const getPlanName = (role: string) => {
-    return `${role.charAt(0).toUpperCase() + role.slice(1)} Plan`;
-  }
   
   const currentPlanRole = user?.role ? user.role.toLowerCase() as keyof PricingSettings : null;
   const currentPlanPriceInfo = currentPlanRole ? pricing[currentPlanRole] : null;
@@ -186,6 +241,9 @@ export default function UpgradePage() {
                 />
                 <Label htmlFor="billing-cycle">Yearly</Label>
             </div>
+
+            <SubscriptionStatusCard user={user} />
+
             <div className="grid gap-8 md:grid-cols-3">
                 <Card className="flex flex-col">
                     <CardHeader>
