@@ -1,66 +1,56 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper function to check if a user is an admin
     function isAdmin() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin';
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin';
     }
 
-    // Rules for the 'users' collection
     match /users/{userId} {
-      // Any authenticated user can create their own user document (on signup)
-      allow create: if request.auth != null && request.auth.uid == userId;
+      // Users can read their own data. Admins can read any user's data.
+      allow read: if request.auth.uid == userId || isAdmin();
+      
+      // Users can update their own data. Admins can update any user's data.
+      allow update: if request.auth.uid == userId || isAdmin();
 
-      // Users can only read their own document
-      // Admins can read any user document
-      allow get: if request.auth != null && (request.auth.uid == userId || isAdmin());
-
-      // Users can only update their own document
-      // Admins can update any user document
-      allow update: if request.auth != null && (request.auth.uid == userId || isAdmin());
-
-      // Only admins can delete user documents
+      // Only admins can delete users.
       allow delete: if isAdmin();
-    }
-    
-    // Rules for the 'workspaces' collection
-    match /workspaces/{userId} {
-        // A user can create, read, update, and delete their own workspace document
-        allow read, write: if request.auth != null && request.auth.uid == userId;
-    }
-    
-    // Rules for the 'transactions' collection
-    match /transactions/{transactionId} {
-        // Any authenticated user can create a transaction (e.g., when they subscribe)
-        allow create: if request.auth != null;
-        
-        // Only admins can view the full list of transactions
-        allow list, get: if isAdmin();
-        
-        // Transactions should generally be immutable, so updates and deletes are disallowed for everyone.
-        // You could allow admins to update if necessary, e.g., to change a status manually.
-        allow update, delete: if false; 
-    }
-    
-    // Rules for the 'announcements' collection
-    match /announcements/{announcementId} {
-        // Anyone can read announcements (for the popup)
-        allow get, list: if true;
-        
-        // Only admins can create, update, or delete announcements
-        allow write: if isAdmin();
-    }
-    
-    // Rules for the 'promoCodes' collection
-    match /promoCodes/{promoCodeId} {
-        // Authenticated users can read promo codes to verify them
-        allow get, list: if request.auth != null;
 
-        // Only admins can create, update, or delete promo codes
+      // Anyone can create a user document (for signup).
+      allow create: if request.auth.uid == userId;
+    }
+
+    match /transactions/{transactionId} {
+      // Only admins can read all transactions.
+      allow read: if isAdmin();
+      
+      // Authenticated users can create their own transactions (e.g., on upgrade). Admins can also create.
+      allow create: if request.auth.uid != null || isAdmin();
+
+      // Only admins can update or delete transactions.
+      allow update, delete: if isAdmin();
+    }
+    
+    match /announcements/{announcementId} {
+        // Anyone can read announcements (for the popup).
+        allow read: if true;
+        
+        // Only admins can create, update, or delete announcements.
         allow write: if isAdmin();
+    }
+
+    match /promoCodes/{promoCodeId} {
+        // Authenticated users can read promo codes to verify them.
+        allow read: if request.auth != null;
+
+        // Only admins can create, update, or delete promo codes.
+        allow write: if isAdmin();
+    }
+    
+    match /workspaces/{userId} {
+      allow read, write: if request.auth.uid == userId;
     }
   }
 }
