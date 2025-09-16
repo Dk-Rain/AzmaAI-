@@ -28,7 +28,7 @@ import { useToast } from '@/hooks/use-toast';
 import type { PricingSettings, Transaction } from '@/types/admin';
 import { auth, db } from '@/lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, addDoc } from 'firebase/firestore';
 
 
 type UserData = {
@@ -167,9 +167,8 @@ export default function UpgradePage() {
             // Update local user state to reflect the change immediately
             setUser(prevUser => prevUser ? { ...prevUser, ...dataToUpdate } : null);
 
-            // Create a new transaction record
-            const newTransaction: Transaction = {
-                id: `txn_${Date.now()}`,
+            // Create a new transaction record in Firestore
+            const newTransaction: Omit<Transaction, 'id'> = {
                 invoiceId: `INV${Date.now().toString().slice(-6)}`,
                 userFullName: user.fullName,
                 userEmail: user.email,
@@ -179,10 +178,8 @@ export default function UpgradePage() {
                 plan: getPlanName(user.role),
             };
 
-            const storedTransactions = localStorage.getItem('azma_transactions') || '[]';
-            const transactions: Transaction[] = JSON.parse(storedTransactions);
-            transactions.unshift(newTransaction); // Add to the top of the list
-            localStorage.setItem('azma_transactions', JSON.stringify(transactions));
+            const transactionsCollection = collection(db, 'transactions');
+            await addDoc(transactionsCollection, newTransaction);
 
 
             toast({

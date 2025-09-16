@@ -23,6 +23,8 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { db } from '@/lib/firebase';
+import { collection, getDocs } from 'firebase/firestore';
 
 export function TransactionList() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -32,22 +34,23 @@ export function TransactionList() {
   const { toast } = useToast();
 
   useEffect(() => {
-    try {
-      const storedTransactions = localStorage.getItem('azma_transactions');
-      let loadedTransactions: Transaction[] = [];
+    const fetchTransactions = async () => {
+        try {
+            const transactionsCollection = collection(db, 'transactions');
+            const transactionSnapshot = await getDocs(transactionsCollection);
+            const loadedTransactions = transactionSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Transaction));
+            
+            // Sort transactions by date, newest first
+            loadedTransactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            setTransactions(loadedTransactions);
 
-      if (storedTransactions) {
-        loadedTransactions = JSON.parse(storedTransactions);
-      }
-
-      // Sort transactions by date, newest first
-      loadedTransactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-      setTransactions(loadedTransactions);
-
-    } catch (error) {
-      console.error("Failed to load transactions from localStorage", error);
-    }
-  }, []);
+        } catch (error) {
+            console.error("Failed to load transactions from Firestore", error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not fetch transaction data.'})
+        }
+    };
+    fetchTransactions();
+  }, [toast]);
 
   const filteredTransactions = useMemo(() => {
     if (!searchQuery) {
