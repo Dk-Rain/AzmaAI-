@@ -23,7 +23,7 @@ import {
 import { Switch } from "@/components/ui/switch"
 import { useToast } from "@/hooks/use-toast"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Trash2, KeyRound, Building, Brush, Tag } from "lucide-react";
+import { Trash2, KeyRound, Building, Brush, Tag, Megaphone } from "lucide-react";
 import { useTheme } from "next-themes";
 import type { PricingSettings } from '@/types/admin';
 
@@ -34,6 +34,7 @@ type AppSettings = {
     maintenanceMode: boolean;
     paymentGatewayPublicKey: string;
     paymentGatewaySecretKey: string;
+    googleAdsenseClientId?: string;
 };
 
 const initialPricing: PricingSettings = {
@@ -55,6 +56,7 @@ export default function AdminSettingsPage() {
         maintenanceMode: false,
         paymentGatewayPublicKey: '',
         paymentGatewaySecretKey: '',
+        googleAdsenseClientId: '',
     });
     const [pricing, setPricing] = useState<PricingSettings>(initialPricing);
     const [isLoading, setIsLoading] = useState(false);
@@ -324,6 +326,26 @@ export default function AdminSettingsPage() {
                 </div>
             </CardContent>
         </Card>
+
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2"><Megaphone /> Advertising</CardTitle>
+                <CardDescription>
+                    Configure monetization settings for free-plan users.
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <div className="grid gap-2">
+                    <Label htmlFor="adsense-client-id">Google AdSense Client ID</Label>
+                    <Input 
+                        id="adsense-client-id"
+                        placeholder="ca-pub-xxxxxxxxxxxxxxxx"
+                        value={settings.googleAdsenseClientId}
+                        onChange={(e) => setSettings({...settings, googleAdsenseClientId: e.target.value})}
+                    />
+                </div>
+            </CardContent>
+        </Card>
         
         <Card>
             <CardHeader>
@@ -380,3 +402,5 @@ export default function AdminSettingsPage() {
     </div>
   )
 }
+
+    
