@@ -33,6 +33,7 @@ import { ScanningAnimation } from '@/components/scanning-animation';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import type { CheckPlagiarismOutput } from '@/ai/flows/check-plagiarism';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { DisclaimerPopup } from '@/components/disclaimer-popup';
 
 
 const defaultTask: AcademicTaskType = 'Research Paper';
@@ -285,6 +286,7 @@ export function MainPage() {
   
   return (
     <div className="flex h-screen w-full bg-muted/30 print:block">
+      <DisclaimerPopup />
       <aside className="hidden md:flex w-[450px] border-r bg-background flex-col print:hidden">
          <ControlPanel
           user={user}

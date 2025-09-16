@@ -40,7 +40,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Slider } from '@/components/ui/slider';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { Disclaimer } from './disclaimer';
 import { Separator } from './ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { AcademicTaskType } from '@/types/academic-task-types';
@@ -959,9 +958,6 @@ export function ControlPanel({
 
       <div className="mt-auto">
         <UsageMeter user={user} />
-        <div className="p-4 border-t">
-          <Disclaimer />
-        </div>
       </div>
     </div>
   );
