@@ -33,6 +33,7 @@ import { doc, getDoc } from 'firebase/firestore';
 
 type UserData = {
   role: string;
+  isPremium?: boolean;
 };
 
 const defaultPricing: PricingSettings = {
@@ -84,6 +85,7 @@ export default function UpgradePage() {
         description: 'You will be redirected to complete your payment.'
     })
     // In a real app, you would redirect to a payment gateway like Stripe or Paystack.
+    // After successful payment, a webhook would update the user's document in Firestore to set `isPremium: true`.
   }
   
   const handleContactSales = () => {
@@ -95,7 +97,7 @@ export default function UpgradePage() {
   }
   
   const currentPlanRole = user?.role ? user.role.toLowerCase() as keyof PricingSettings : null;
-  const currentPlan = currentPlanRole ? pricing[currentPlanRole] : null;
+  const currentPlanPriceInfo = currentPlanRole ? pricing[currentPlanRole] : null;
 
 
   return (
@@ -139,8 +141,8 @@ export default function UpgradePage() {
                         </div>
                     </CardContent>
                     <CardFooter className="mt-auto">
-                        <Button variant="outline" className="w-full" disabled={!currentPlanRole}>
-                            {currentPlanRole ? 'Your Current Plan' : 'Current Plan'}
+                        <Button variant="outline" className="w-full" disabled={!user?.isPremium}>
+                            {user?.isPremium ? 'Downgrade' : 'Your Current Plan'}
                         </Button>
                     </CardFooter>
                 </Card>
@@ -155,7 +157,7 @@ export default function UpgradePage() {
                         <CardTitle>{currentPlanRole ? getPlanName(currentPlanRole) : 'AZMA Premium'}</CardTitle>
                         <CardDescription>Premium Subscription for {user?.role}</CardDescription>
                         <div className="text-4xl font-bold">
-                           ₦{currentPlan ? (isYearly ? currentPlan.yearly.toLocaleString() : currentPlan.monthly.toLocaleString()) : '...'}
+                           ₦{currentPlanPriceInfo ? (isYearly ? currentPlanPriceInfo.yearly.toLocaleString() : currentPlanPriceInfo.monthly.toLocaleString()) : '...'}
                            <span className="text-sm font-normal text-muted-foreground">/ {isYearly ? 'year' : 'month'}</span>
                         </div>
                     </CardHeader>
@@ -170,7 +172,9 @@ export default function UpgradePage() {
                         </div>
                     </CardContent>
                     <CardFooter className="mt-auto">
-                        <Button className="w-full" onClick={handleUpgrade}>Upgrade</Button>
+                        <Button className="w-full" onClick={handleUpgrade} disabled={user?.isPremium}>
+                          {user?.isPremium ? 'Your Current Plan' : 'Upgrade'}
+                        </Button>
                     </CardFooter>
                 </Card>
                 <Card className="flex flex-col">

@@ -61,6 +61,7 @@ export default function SignupPage() {
             fullName,
             email,
             role,
+            isPremium: false, // All new users start on a Free plan
             createdAt: new Date().toISOString(),
         });
         
@@ -93,6 +94,7 @@ export default function SignupPage() {
                 fullName: user.displayName,
                 email: user.email,
                 role: 'Student', // Default role for new Google sign-ins
+                isPremium: false, // New Google sign-ins also start on Free plan
                 photoUrl: user.photoURL,
                 createdAt: new Date().toISOString(),
             });

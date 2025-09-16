@@ -89,7 +89,8 @@ export function MainPage() {
 
         if (userDoc.exists()) {
           const userData = userDoc.data();
-          const isPremium = ['Student', 'Researcher', 'Professor', 'Professional', 'Teacher'].includes(userData.role);
+          // isPremium is a boolean field in the user's document.
+          const isPremium = userData.isPremium || false;
           setUser({
             uid: firebaseUser.uid,
             fullName: firebaseUser.displayName || userData.fullName,
@@ -399,7 +400,7 @@ export function MainPage() {
                 <div className="flex flex-col space-y-1">
                   <p className="text-sm font-medium leading-none">{user?.fullName}</p>
                   <p className="text-xs leading-none text-muted-foreground">
-                    {user?.isPremium ? `${user.role} Plan` : 'Free Plan'}
+                    {user ? (user.isPremium ? `${user.role} Plan` : 'Free Plan') : '...'}
                   </p>
                 </div>
               </DropdownMenuLabel>
