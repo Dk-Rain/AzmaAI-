@@ -28,6 +28,10 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { Shield, UserPlus } from 'lucide-react';
+import { db, auth } from '@/lib/firebase';
+import { collection, getDocs, updateDoc, setDoc, doc } from 'firebase/firestore';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+
 
 export default function AdminManagementPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -35,85 +39,106 @@ export default function AdminManagementPage() {
   const [isCreateAdminOpen, setIsCreateAdminOpen] = useState(false);
   const [newAdmin, setNewAdmin] = useState({ fullName: '', email: '', password: '' });
 
+  const fetchUsers = async () => {
+    try {
+      const usersCollection = collection(db, 'users');
+      const userSnapshot = await getDocs(usersCollection);
+      const userList = userSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
+      setUsers(userList);
+    } catch (error) {
+      console.error("Failed to fetch users from Firestore", error);
+    }
+  };
 
   useEffect(() => {
-    try {
-      const storedUsers = localStorage.getItem('azma_all_users');
-      if (storedUsers) {
-        setUsers(JSON.parse(storedUsers));
-      } else {
-        const defaultUsers: User[] = [
-            { id: '1', fullName: 'John Doe', email: 'john@azma.com', role: 'Student', createdAt: new Date().toISOString() },
-            { id: '2', fullName: 'Jane Smith', email: 'jane@azma.com', role: 'Professor', createdAt: new Date().toISOString() },
-            { id: '3', fullName: 'Admin User', email: 'admin@azmaai.com.ng', role: 'Admin', createdAt: new Date().toISOString(), permissions: { canManageUsers: true, canManageTransactions: true, canManageSettings: true } },
-            { id: '4', fullName: 'Dike Paul', email: 'dike.paul@sfarettech.com.ng', role: 'Admin', createdAt: new Date().toISOString(), permissions: { canManageUsers: true, canManageTransactions: false, canManageSettings: false } },
-        ];
-        setUsers(defaultUsers);
-        localStorage.setItem('azma_all_users', JSON.stringify(defaultUsers));
-      }
-    } catch (error) {
-      console.error("Failed to load users from localStorage", error);
-    }
+    fetchUsers();
   }, []);
-
-  const saveUsers = (newUsers: User[]) => {
-    setUsers(newUsers);
-    localStorage.setItem('azma_all_users', JSON.stringify(newUsers));
-  }
   
-  const handleCreateAdmin = (e: React.FormEvent) => {
+  const handleCreateAdmin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newAdmin.fullName || !newAdmin.email) {
+    if (!newAdmin.fullName || !newAdmin.email || !newAdmin.password) {
         toast({ variant: 'destructive', title: "Missing fields", description: "Please fill out all fields."});
         return;
     }
 
-    const newUser: User = {
-        id: new Date().toISOString(),
-        fullName: newAdmin.fullName,
-        email: newAdmin.email,
-        role: 'Admin',
-        createdAt: new Date().toISOString(),
-        permissions: { canManageUsers: false, canManageTransactions: false, canManageSettings: false },
-    };
+    try {
+        // We have to create a user in Auth first. This is a temporary auth session.
+        const userCredential = await createUserWithEmailAndPassword(auth, newAdmin.email, newAdmin.password);
+        const user = userCredential.user;
 
-    const updatedUsers = [...users, newUser];
-    saveUsers(updatedUsers);
-    toast({ title: 'Admin Created', description: `${newUser.fullName} has been added as an admin.`});
-    setIsCreateAdminOpen(false);
-    setNewAdmin({ fullName: '', email: '', password: '' });
+        const newUser: User = {
+            id: user.uid,
+            fullName: newAdmin.fullName,
+            email: newAdmin.email,
+            role: 'Admin',
+            createdAt: new Date().toISOString(),
+            permissions: { canManageUsers: true, canManageTransactions: false, canManageSettings: false },
+        };
+
+        // Now, save this user's data to Firestore
+        await setDoc(doc(db, "users", user.uid), newUser);
+
+        const updatedUsers = [...users, newUser];
+        setUsers(updatedUsers);
+
+        toast({ title: 'Admin Created', description: `${newUser.fullName} has been added as an admin.`});
+        setIsCreateAdminOpen(false);
+        setNewAdmin({ fullName: '', email: '', password: '' });
+
+    } catch (error: any) {
+        console.error("Admin creation failed:", error);
+        toast({ variant: 'destructive', title: 'Admin Creation Failed', description: error.message});
+    }
   };
 
 
-  const handleRoleChange = (userId: string, isAdmin: boolean) => {
-    const newUsers = users.map(user => {
-      if (user.id === userId) {
-        // Prevent primary admin from being demoted
-        if (user.email === 'admin@azmaai.com.ng') {
-            toast({ variant: 'destructive', title: 'Action Forbidden', description: 'The primary admin role cannot be changed.'});
-            return user;
-        }
-        return { 
-          ...user, 
-          role: isAdmin ? 'Admin' : 'Student', // Revert to student if admin is revoked
-          permissions: isAdmin ? user.permissions || { canManageUsers: false, canManageTransactions: false, canManageSettings: false } : undefined
-        } as User;
-      }
-      return user;
-    });
-    saveUsers(newUsers);
-    toast({ title: "Permissions updated successfully."})
+  const handleRoleChange = async (userId: string, newRole: User['role']) => {
+    const userToUpdate = users.find(u => u.id === userId);
+    if (!userToUpdate) return;
+    
+    // Primary admin email from your previous request to prevent role change
+    if (userToUpdate.email === 'admin@azmaai.com.ng') {
+        toast({ variant: 'destructive', title: 'Action Forbidden', description: 'The primary admin role cannot be changed.'});
+        // We need to visually revert the switch if it was optimistically toggled
+        setUsers([...users]);
+        return;
+    }
+
+    try {
+        const userDocRef = doc(db, 'users', userId);
+        const permissions = newRole === 'Admin' ? userToUpdate.permissions || { canManageUsers: false, canManageTransactions: false, canManageSettings: false } : undefined;
+        await updateDoc(userDocRef, { role: newRole, permissions });
+        
+        setUsers(users.map(user => 
+            user.id === userId 
+            ? { ...user, role: newRole, permissions } as User
+            : user
+        ));
+        toast({ title: "Role updated successfully."})
+    } catch(error) {
+        console.error("Role change failed", error);
+        toast({ variant: 'destructive', title: "Error", description: "Failed to update user role."});
+    }
   };
 
-  const handlePermissionChange = (userId: string, permission: keyof UserPermissions, value: boolean) => {
-    const newUsers = users.map(user => {
-      if (user.id === userId && user.role === 'Admin') {
-        const newPermissions = { ...user.permissions, [permission]: value };
-        return { ...user, permissions: newPermissions } as User;
-      }
-      return user;
-    });
-    saveUsers(newUsers);
+  const handlePermissionChange = async (userId: string, permission: keyof UserPermissions, value: boolean) => {
+    const userToUpdate = users.find(u => u.id === userId);
+    if (!userToUpdate || userToUpdate.role !== 'Admin') return;
+    
+    const newPermissions = { ...userToUpdate.permissions, [permission]: value };
+
+    try {
+      const userDocRef = doc(db, 'users', userId);
+      await updateDoc(userDocRef, { permissions: newPermissions });
+
+      setUsers(users.map(user => 
+        user.id === userId ? { ...user, permissions: newPermissions } as User : user
+      ));
+
+    } catch (error) {
+       console.error("Permission change failed", error);
+       toast({ variant: 'destructive', title: "Error", description: "Failed to update permissions."});
+    }
   };
 
   return (
@@ -133,7 +158,7 @@ export default function AdminManagementPage() {
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Create a New Admin User</DialogTitle>
-                        <DialogDescription>Fill in the details below to add a new administrator.</DialogDescription>
+                        <DialogDescription>Fill in the details below to add a new administrator. This will create a new user in Firebase Authentication.</DialogDescription>
                     </DialogHeader>
                     <form onSubmit={handleCreateAdmin}>
                         <div className="grid gap-4 py-4">
@@ -179,7 +204,7 @@ export default function AdminManagementPage() {
                     <Switch
                         id={`is-admin-${user.id}`}
                         checked={user.role === 'Admin'}
-                        onCheckedChange={(checked) => handleRoleChange(user.id, checked)}
+                        onCheckedChange={(checked) => handleRoleChange(user.id, checked ? 'Admin' : 'Student')}
                         disabled={user.email === 'admin@azmaai.com.ng'}
                     />
                     <Label htmlFor={`is-admin-${user.id}`} className="font-medium">

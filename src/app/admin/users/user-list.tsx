@@ -32,57 +32,67 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { db } from '@/lib/firebase';
+import { collection, getDocs, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 
 export function UserList() {
   const [users, setUsers] = useState<User[]>([]);
   const { toast } = useToast();
 
-  useEffect(() => {
-    // This is a mock implementation.
-    // In a real app, you would fetch users from your backend API.
-    // For now, we'll try to read from localStorage to simulate a user base.
+  const fetchUsers = async () => {
     try {
-      const storedUsers = localStorage.getItem('azma_all_users');
-      if (storedUsers) {
-        setUsers(JSON.parse(storedUsers));
-      } else {
-        // Create some default users if none exist for demo purposes
-        const defaultUsers: User[] = [
-            { id: '1', fullName: 'John Doe', email: 'john@azma.com', role: 'Student', createdAt: new Date().toISOString() },
-            { id: '2', fullName: 'Jane Smith', email: 'jane@azma.com', role: 'Professor', createdAt: new Date().toISOString() },
-            { id: '3', fullName: 'Admin User', email: 'admin@azmaai.com.ng', role: 'Admin', createdAt: new Date().toISOString() },
-            { id: '4', fullName: 'Dike Paul', email: 'dike.paul@sfarettech.com.ng', role: 'Admin', createdAt: new Date().toISOString(), permissions: { canManageUsers: true, canManageTransactions: false, canManageSettings: false } },
-        ];
-        setUsers(defaultUsers);
-        localStorage.setItem('azma_all_users', JSON.stringify(defaultUsers));
-      }
+      const usersCollection = collection(db, 'users');
+      const userSnapshot = await getDocs(usersCollection);
+      const userList = userSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User));
+      setUsers(userList);
     } catch (error) {
-      console.error("Failed to load users from localStorage", error);
+      console.error("Failed to fetch users from Firestore", error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Could not load user data.',
+      });
     }
+  };
+
+  useEffect(() => {
+    fetchUsers();
   }, []);
 
-  const saveUsers = (newUsers: User[]) => {
-    setUsers(newUsers);
-    localStorage.setItem('azma_all_users', JSON.stringify(newUsers));
+  const handleDeleteUser = async (userId: string) => {
+    try {
+        await deleteDoc(doc(db, "users", userId));
+        setUsers(users.filter(user => user.id !== userId));
+        toast({
+            variant: 'destructive',
+            title: 'User Deleted',
+            description: 'The user has been removed from the system.',
+        });
+    } catch (error) {
+        toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: 'Could not delete the user.',
+        });
+    }
   }
 
-  const handleDeleteUser = (userId: string) => {
-    const newUsers = users.filter(user => user.id !== userId);
-    saveUsers(newUsers);
-    toast({
-        variant: 'destructive',
-        title: 'User Deleted',
-        description: 'The user has been removed from the system.',
-    });
-  }
-
-  const handleRoleChange = (userId: string, newRole: User['role']) => {
-    const newUsers = users.map(user => user.id === userId ? {...user, role: newRole } : user);
-    saveUsers(newUsers);
-    toast({
-        title: 'Role Updated',
-        description: `The user's role has been changed to ${newRole}.`
-    })
+  const handleRoleChange = async (userId: string, newRole: User['role']) => {
+    try {
+        const userDocRef = doc(db, 'users', userId);
+        await updateDoc(userDocRef, { role: newRole });
+        setUsers(users.map(user => user.id === userId ? {...user, role: newRole } : user));
+        toast({
+            title: 'Role Updated',
+            description: `The user's role has been changed to ${newRole}.`
+        });
+    } catch (error) {
+         toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: 'Could not update user role.',
+        });
+    }
   }
 
   return (
@@ -132,7 +142,7 @@ export function UserList() {
                           <AlertDialogHeader>
                           <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                           <AlertDialogDescription>
-                              This action cannot be undone. This will permanently delete the user account.
+                              This action cannot be undone. This will permanently delete the user account from the database.
                           </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>

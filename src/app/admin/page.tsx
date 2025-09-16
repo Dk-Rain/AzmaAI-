@@ -43,6 +43,7 @@ export default function AdminAuthPage() {
                 username: userData.username,
                 photoUrl: user.photoURL || userData.photoUrl
             }
+            // This is just for UI convenience, the dashboard-layout will re-verify role with DB
             localStorage.setItem('azmaUser', JSON.stringify(localUser));
 
             router.push('/admin/dashboard');
