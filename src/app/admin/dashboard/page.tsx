@@ -21,6 +21,14 @@ interface MonthlyData {
   subscriptions: number;
 }
 
+const portfolioChartConfig = {
+    Student: { label: 'Students', color: "hsl(var(--chart-1))"},
+    Teacher: { label: 'Teachers', color: "hsl(var(--chart-2))"},
+    Researcher: { label: 'Researchers', color: "hsl(var(--chart-4))"},
+    Professional: { label: 'Professionals', color: "hsl(var(--chart-5))"},
+    Professor: { label: 'Professors', color: "hsl(var(--chart-3))"},
+} satisfies ChartConfig;
+
 export default function AdminDashboard() {
   const [totalRevenue, setTotalRevenue] = useState(0);
   const [totalSubscriptions, setTotalSubscriptions] = useState(0);
@@ -49,19 +57,11 @@ export default function AdminDashboard() {
             rolesCount[user.role] = (rolesCount[user.role] || 0) + 1;
           }
         });
-
-        const roleColors: { [key: string]: string } = {
-            Student: "var(--color-students)",
-            Teacher: "var(--color-teachers)",
-            Researcher: "var(--color-researchers)",
-            Professional: "var(--color-professionals)",
-            Professor: "var(--color-professor)",
-        };
-
-        setUserRoleData(Object.entries(rolesCount).map(([name, value], index) => ({
+        
+        setUserRoleData(Object.entries(rolesCount).map(([name, value]) => ({
           name,
           value,
-          fill: roleColors[name] || `hsl(var(--chart-${index + 1}))`
+          fill: portfolioChartConfig[name as keyof typeof portfolioChartConfig]?.color || `hsl(var(--chart-1))`
         })));
 
 
@@ -108,13 +108,6 @@ export default function AdminDashboard() {
     subscriptions: { label: "Subscriptions", color: "hsl(var(--chart-2))" },
   } satisfies ChartConfig;
 
-  const portfolioChartConfig = {
-      Student: { label: 'Students', color: "hsl(var(--chart-1))"},
-      Teacher: { label: 'Teachers', color: "hsl(var(--chart-2))"},
-      Researcher: { label: 'Researchers', color: "hsl(var(--chart-4))"},
-      Professional: { label: 'Professionals', color: "hsl(var(--chart-5))"},
-      Professor: { label: 'Professors', color: "hsl(var(--chart-3))"},
-  } satisfies ChartConfig;
 
   if (isLoading) {
     return (
