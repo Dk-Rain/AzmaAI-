@@ -11,12 +11,14 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { DocumentContent, References, StyleOptions, FontType, Workspace, Project, DocumentItem, SharedDocument } from '@/types';
+import type { User as UserData } from '@/types/admin';
 import { GenerationSchema, GenerationFormValues, availableFonts } from '@/types';
 import { academicTaskTypes } from '@/types/academic-task-types';
 import { academicTaskFormats } from '@/types/academic-task-formats';
 
 import { 
   generateContentAction,
+  resetUsageAction,
 } from '@/app/actions';
 
 import { Button } from '@/components/ui/button';
@@ -58,44 +60,44 @@ import { Switch } from './ui/switch';
 import { Checkbox } from './ui/checkbox';
 
 
-type UserData = {
-  uid: string;
-  fullName: string;
-  role: string;
-  email: string;
-  username?: string;
-  photoUrl?: string;
-  isPremium?: boolean;
+const isSameDay = (d1: Date, d2: Date) => {
+    return d1.getFullYear() === d2.getFullYear() &&
+           d1.getMonth() === d2.getMonth() &&
+           d1.getDate() === d2.getDate();
 }
 
-const UsageMeter = ({ user }: { user: UserData | null }) => {
+
+const UsageMeter = ({ user, setUser }: { user: UserData | null, setUser: React.Dispatch<React.SetStateAction<UserData | null>> }) => {
     const router = useRouter();
-    const [usage, setUsage] = useState({ words: 0, documents: 0 });
     const [isOpen, setIsOpen] = useState(false);
     const [adsenseClientId, setAdsenseClientId] = useState<string | null>(null);
 
-
-    const isPremium = user?.isPremium || false;
-    const limits = { words: 1000, documents: 3 };
-
-    const wordPercentage = isPremium ? 100 : (usage.words / limits.words) * 100;
-    const docPercentage = isPremium ? 100 : (usage.documents / limits.documents) * 100;
-    
     useEffect(() => {
-        try {
-            const storedSettings = localStorage.getItem('azma_app_settings');
-            if(storedSettings) {
-                const settings = JSON.parse(storedSettings);
-                if (settings.googleAdsenseClientId) {
-                    setAdsenseClientId(settings.googleAdsenseClientId);
-                }
-            }
-        } catch (error) {
-            console.error("Failed to load ad settings", error);
+        if (!user || user.isPremium) return;
+
+        const lastUsageDate = user.usage?.lastUsage ? new Date(user.usage.lastUsage) : null;
+        const today = new Date();
+
+        if (lastUsageDate && !isSameDay(lastUsageDate, today)) {
+            // It's a new day, reset usage in DB
+            resetUsageAction(user.id).then(() => {
+                // Update local user state
+                setUser(prevUser => prevUser ? ({
+                    ...prevUser,
+                    usage: { wordsUsed: 0, documentsCreated: 0, lastUsage: today.toISOString() }
+                }) : null);
+            });
         }
-    }, []);
+    }, [user, setUser]);
 
     if (!user) return null;
+
+    const isPremium = user.isPremium || false;
+    const usage = user.usage || { wordsUsed: 0, documentsCreated: 0 };
+    const limits = { words: 1000, documents: 3 };
+
+    const wordPercentage = isPremium ? 100 : Math.min((usage.wordsUsed / limits.words) * 100, 100);
+    const docPercentage = isPremium ? 100 : Math.min((usage.documentsCreated / limits.documents) * 100, 100);
 
     if (!isOpen) {
         return (
@@ -119,14 +121,14 @@ const UsageMeter = ({ user }: { user: UserData | null }) => {
                 <div className="space-y-1">
                     <div className="flex justify-between text-xs text-muted-foreground">
                         <span>AI Words</span>
-                        <span>{isPremium ? 'Unlimited' : `${usage.words.toLocaleString()} / ${limits.words.toLocaleString()}`}</span>
+                        <span>{isPremium ? 'Unlimited' : `${usage.wordsUsed.toLocaleString()} / ${limits.words.toLocaleString()}`}</span>
                     </div>
                     <Progress value={wordPercentage} />
                 </div>
                  <div className="space-y-1">
                     <div className="flex justify-between text-xs text-muted-foreground">
                         <span>Documents</span>
-                        <span>{isPremium ? 'Unlimited' : `${usage.documents} / ${limits.documents}`}</span>
+                        <span>{isPremium ? 'Unlimited' : `${usage.documentsCreated} / ${limits.documents}`}</span>
                     </div>
                     <Progress value={docPercentage} />
                 </div>
@@ -135,14 +137,6 @@ const UsageMeter = ({ user }: { user: UserData | null }) => {
                     <Button variant="outline" size="sm" className="w-full" onClick={() => router.push('/dashboard/upgrade')}>
                         Upgrade for Unlimited Usage
                     </Button>
-                    {adsenseClientId && (
-                         <div className="mt-2 p-4 bg-muted/50 rounded-lg text-center">
-                            <p className="text-xs text-muted-foreground">Advertisement</p>
-                            <div className="w-full h-24 bg-muted flex items-center justify-center rounded-md">
-                                Ad placeholder
-                            </div>
-                        </div>
-                    )}
                     </>
                 )}
             </div>
@@ -153,6 +147,7 @@ const UsageMeter = ({ user }: { user: UserData | null }) => {
 
 interface ControlPanelProps {
     user: UserData | null;
+    setUser: React.Dispatch<React.SetStateAction<UserData | null>>;
     setContent: React.Dispatch<React.SetStateAction<DocumentContent>>;
     setReferences: React.Dispatch<React.SetStateAction<References>>;
     styles: StyleOptions;
@@ -168,6 +163,7 @@ interface ControlPanelProps {
 
 export function ControlPanel({
   user,
+  setUser,
   setContent,
   setReferences,
   styles,
@@ -242,12 +238,11 @@ export function ControlPanel({
   useEffect(() => {
     async function loadWorkspace() {
         if (!user) return;
-        const workspaceRef = doc(db, 'workspaces', user.uid);
+        const workspaceRef = doc(db, 'workspaces', user.id);
         const workspaceSnap = await getDoc(workspaceRef);
 
         if (workspaceSnap.exists()) {
             const workspaceData = workspaceSnap.data() as Workspace;
-            // Ensure all arrays exist
             workspaceData.projects = workspaceData.projects || [];
             workspaceData.standaloneDocuments = workspaceData.standaloneDocuments || [];
             workspaceData.archivedItems = workspaceData.archivedItems || [];
@@ -256,7 +251,6 @@ export function ControlPanel({
             setWorkspace(workspaceData);
             setExpandedProjects(workspaceData.projects.filter(p => p.documents.length > 0).map(p => p.id));
         } else {
-            // No workspace exists for this user yet, use the initial empty state.
             setWorkspace({ projects: [], standaloneDocuments: [], archivedItems: [], sharedDocuments: [] });
         }
     }
@@ -270,7 +264,7 @@ export function ControlPanel({
     }
     try {
         setWorkspace(newWorkspace);
-        const workspaceRef = doc(db, 'workspaces', user.uid);
+        const workspaceRef = doc(db, 'workspaces', user.id);
         await setDoc(workspaceRef, newWorkspace, { merge: true });
     } catch (error) {
         console.error("Failed to save workspace to Firestore", error);
@@ -312,7 +306,6 @@ export function ControlPanel({
     };
     
     const newWorkspace = {...workspace};
-    // Simple approach: Add as a standalone doc for now. Moving docs can be a future feature.
     const existingIndex = newWorkspace.standaloneDocuments.findIndex(doc => doc.title === newDoc.title);
     if(existingIndex > -1) {
         newWorkspace.standaloneDocuments[existingIndex] = newDoc;
@@ -397,7 +390,6 @@ export function ControlPanel({
     let docToShare: DocumentItem | undefined;
     const newWorkspace = { ...workspace };
 
-    // Find the document to be shared
     if (projectId) {
         const project = newWorkspace.projects.find(p => p.id === projectId);
         docToShare = project?.documents.find(d => d.id === docId);
@@ -412,7 +404,6 @@ export function ControlPanel({
 
     const publicId = docToShare.publicId || `${docId.substring(0, 8)}-${Date.now().toString(36)}`;
     
-    // Update the document item itself to mark it as shared
     const updateDoc = (doc: DocumentItem): DocumentItem => 
         doc.id === docId ? { ...doc, isShared: true, publicId } : doc;
 
@@ -424,7 +415,6 @@ export function ControlPanel({
         newWorkspace.standaloneDocuments = newWorkspace.standaloneDocuments.map(updateDoc);
     }
     
-    // Add to the centralized sharedDocuments list if it's not already there
     if (!newWorkspace.sharedDocuments.some(d => d.id === docId)) {
         const sharedDocEntry: SharedDocument = { 
             id: docId, 
@@ -496,7 +486,6 @@ export function ControlPanel({
             }
             return p;
         });
-        // Expand the project where the new doc was added
         if (!expandedProjects.includes(location)) {
           setExpandedProjects(prev => [...prev, location]);
         }
@@ -511,7 +500,7 @@ export function ControlPanel({
 
   const handleConfirmNewTask = () => {
     createNewDocument(newTaskLocation);
-    setIsNewTaskDialogOpen(false); // Close dialog after confirming
+    setIsNewTaskDialogOpen(false);
   }
   
   const handleRename = () => {
@@ -522,7 +511,7 @@ export function ControlPanel({
       newWorkspace.projects = newWorkspace.projects.map(p => 
         p.id === itemToRename.id ? {...p, name: newName} : p
       );
-    } else { // type === 'document'
+    } else { 
       if (itemToRename.projectId) {
         newWorkspace.projects = newWorkspace.projects.map(p => 
             p.id === itemToRename.projectId ? {...p, documents: p.documents.map(d => d.id === itemToRename.id ? {...d, title: newName, content: {...d.content, title: newName}} : d) } : p
@@ -530,7 +519,6 @@ export function ControlPanel({
       } else {
         newWorkspace.standaloneDocuments = newWorkspace.standaloneDocuments.map(d => d.id === itemToRename.id ? {...d, title: newName, content: {...d.content, title: newName}} : d);
       }
-      // If the renamed document is the one currently being edited, update the editor title as well.
       if (content.title === itemToRename.name) {
           setContent({...content, title: newName});
       }
@@ -555,10 +543,8 @@ export function ControlPanel({
 
     if (!docToMove) return;
 
-    // Remove from standalone
     newWorkspace.standaloneDocuments = newWorkspace.standaloneDocuments.filter(d => d.id !== docId);
 
-    // Add to target project
     newWorkspace.projects = newWorkspace.projects.map(p => {
         if (p.id === targetProjectId) {
             return { ...p, documents: [docToMove, ...p.documents] };
@@ -572,6 +558,19 @@ export function ControlPanel({
 
 
   async function onGenerate(values: GenerationFormValues) {
+    if (!user) {
+        toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to generate content.' });
+        return;
+    }
+    
+    if (!user.isPremium) {
+        const usage = user.usage || { wordsUsed: 0, documentsCreated: 0 };
+        if (usage.documentsCreated >= 3) {
+            toast({ variant: 'destructive', title: 'Daily Limit Reached', description: 'You have reached your daily document generation limit. Please upgrade for unlimited usage.'});
+            return;
+        }
+    }
+
     setIsGenerating(true);
     toast({
       title: 'Generating Content...',
@@ -583,7 +582,7 @@ export function ControlPanel({
         customTemplate: isTemplateMode ? customTemplate : undefined,
     }
 
-    const { data, error } = await generateContentAction(valuesToSubmit);
+    const { data, error } = await generateContentAction(valuesToSubmit, user.id);
 
     setIsGenerating(false);
 
@@ -597,6 +596,23 @@ export function ControlPanel({
       setContent(data.content);
       setReferences(data.references);
       saveDocument(data.content, data.references);
+      
+      // Manually update local user state for immediate feedback
+      setUser(prevUser => {
+          if (!prevUser) return null;
+          const wordCount = data.content.sections.reduce((acc, section) => 
+              acc + section.content.reduce((c, b) => c + (b.type === 'text' ? b.text.split(/\s+/).length : 0), 0), 0);
+          
+          return {
+              ...prevUser,
+              usage: {
+                  wordsUsed: (prevUser.usage?.wordsUsed || 0) + wordCount,
+                  documentsCreated: (prevUser.usage?.documentsCreated || 0) + 1,
+                  lastUsage: new Date().toISOString(),
+              }
+          }
+      });
+      
       toast({
         title: 'Content Generated',
         description: 'Your document has been created and saved to your projects.',
@@ -856,7 +872,6 @@ export function ControlPanel({
         <TabsContent value="edit" className="flex-1 overflow-auto">
             <ScrollArea className="h-full">
                 <div className="p-4 space-y-6">
-                    {/* Generate Content Form */}
                     <Form {...generationForm}>
                         <form
                         onSubmit={generationForm.handleSubmit(onGenerate)}
@@ -987,7 +1002,6 @@ export function ControlPanel({
                         </form>
                     </Form>
                     <Separator />
-                    {/* Style Customization */}
                     <div className="space-y-4">
                         <h3 className="text-base font-semibold">Customize Style</h3>
                         <div className="space-y-2">
@@ -1077,8 +1091,10 @@ export function ControlPanel({
       </Dialog>
 
       <div className="mt-auto">
-        <UsageMeter user={user} />
+        <UsageMeter user={user} setUser={setUser} />
       </div>
     </div>
   );
 }
+
+    

@@ -8,7 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import type { DocumentContent, References, StyleOptions } from '@/types';
 import { academicTaskFormats } from '@/types/academic-task-formats';
 import type { AcademicTaskType } from '@/types/academic-task-types';
-import type { DocumentHistoryEntry } from '@/types/admin';
+import type { User as UserData } from '@/types/admin';
 import { auth, db } from '@/lib/firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
@@ -55,16 +55,6 @@ const initialContent: DocumentContent = {
   sections,
 };
 
-type UserData = {
-  uid: string;
-  fullName: string;
-  role: string;
-  email: string;
-  username?: string;
-  photoUrl?: string;
-  isPremium?: boolean;
-}
-
 export function MainPage() {
   const [content, setContent] = useState<DocumentContent>(initialContent);
   const [references, setReferences] = useState<References>([]);
@@ -88,36 +78,30 @@ export function MainPage() {
   
   useEffect(() => {
     const checkMaintenanceAndAuth = async (firebaseUser: any) => {
-      // Fetch maintenance status
       const settingsDocRef = doc(db, 'settings', 'global');
       const settingsDoc = await getDoc(settingsDocRef);
       const isMaintenanceMode = settingsDoc.exists() ? settingsDoc.data().appSettings.maintenanceMode : false;
 
-      // User is signed in.
       const userDocRef = doc(db, "users", firebaseUser.uid);
       const userDoc = await getDoc(userDocRef);
 
       if (userDoc.exists()) {
-        const userData = userDoc.data();
+        const userData = userDoc.data() as UserData;
 
-        // Redirect non-admins during maintenance
         if (isMaintenanceMode && userData.role !== 'Admin') {
           router.push('/maintenance');
-          return; // Stop further execution
+          return;
         }
 
-        const isPremium = userData.isPremium || false;
         setUser({
-          uid: firebaseUser.uid,
+          ...userData,
+          id: firebaseUser.uid,
           fullName: firebaseUser.displayName || userData.fullName,
           email: firebaseUser.email || userData.email,
-          role: userData.role,
           photoUrl: firebaseUser.photoURL || userData.photoUrl,
-          username: userData.username,
-          isPremium,
         });
+
       } else {
-         // This case should ideally not happen if signup is correct
          toast({ variant: 'destructive', title: 'User data not found.'})
          router.push('/login');
       }
@@ -128,7 +112,6 @@ export function MainPage() {
       if (firebaseUser) {
         checkMaintenanceAndAuth(firebaseUser);
       } else {
-        // User is signed out.
         setUser(null);
         router.push('/login');
         setIsLoading(false);
@@ -210,7 +193,7 @@ export function MainPage() {
 
     if (format === 'docx') {
       try {
-        const { data, error } = await exportDocxAction(content, references, styles, user.uid);
+        const { data, error } = await exportDocxAction(content, references, styles, user.id);
         setIsExporting(false);
 
         if (error || !data) {
@@ -291,7 +274,6 @@ export function MainPage() {
     }
 
     setPlagiarismResult(data);
-    // The dialog trigger is now controlled by the presence of plagiarismResult
     toast({
       title: 'Check Complete',
       description: data.summary,
@@ -311,6 +293,7 @@ export function MainPage() {
       <aside className="hidden md:flex w-[450px] border-r bg-background flex-col print:hidden">
          <ControlPanel
           user={user}
+          setUser={setUser}
           setContent={setContent}
           setReferences={setReferences}
           styles={styles}
@@ -336,6 +319,7 @@ export function MainPage() {
             <SheetContent side="left" className="p-0 w-full max-w-sm">
                 <ControlPanel
                     user={user}
+                    setUser={setUser}
                     setContent={(newContent) => {
                         setContent(newContent);
                         setIsMobileMenuOpen(false);

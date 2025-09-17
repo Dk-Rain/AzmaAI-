@@ -6,6 +6,12 @@ export type UserPermissions = {
     canManageSettings: boolean;
 }
 
+export type UserUsage = {
+    wordsUsed: number;
+    documentsCreated: number;
+    lastUsage: string; // ISO date string
+}
+
 export type User = {
     id: string;
     fullName: string;
@@ -16,6 +22,9 @@ export type User = {
     photoUrl?: string;
     createdAt: string;
     permissions?: UserPermissions;
+    isPremium?: boolean;
+    subscriptionEndDate?: string;
+    usage?: UserUsage;
 };
 
 export type Transaction = {
@@ -68,3 +77,5 @@ export type PromoCode = {
   createdAt: string;
   isActive: boolean;
 };
+
+    

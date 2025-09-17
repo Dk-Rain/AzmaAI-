@@ -11,6 +11,8 @@ import { generateImageForSection } from '@/ai/flows/generate-image-for-section';
 import { exportToDocx as buildDocx } from '@/lib/docx-exporter';
 import { Packer } from 'docx';
 import type { DocumentContent, References, StyleOptions, Section, ContentBlock } from '@/types';
+import { db } from '@/lib/firebase';
+import { doc, updateDoc, increment } from 'firebase/firestore';
 
 
 type GenerationFormValuesWithTemplate = {
@@ -96,17 +98,33 @@ function formatAsCsv(content: DocumentContent, references: References): string {
 }
 
 
-export async function generateContentAction(values: GenerationFormValuesWithTemplate) {
+export async function generateContentAction(
+    values: GenerationFormValuesWithTemplate,
+    userId: string
+) {
   try {
     const generatedContent = await generateAcademicContent(values);
     
     const referencesSection = generatedContent.sections.find(s => s.title.toLowerCase() === 'references');
     const references: References = referencesSection ? referencesSection.content.map(c => {
         if (c.type === 'text') {
-            return { referenceText: c.text, isVerified: false, verificationNotes: '' }; // We can't verify here, but we can format
+            return { referenceText: c.text, isVerified: false, verificationNotes: '' };
         }
         return null;
     }).filter((r): r is { referenceText: string; isVerified: boolean; verificationNotes: string } => r !== null) : [];
+
+    // Calculate word count and update usage
+    const wordCount = generatedContent.sections.reduce((acc, section) => {
+        const sectionWords = section.content.reduce((count, block) => {
+            if (block.type === 'text') {
+                return count + block.text.split(/\s+/).length;
+            }
+            return count;
+        }, 0);
+        return acc + sectionWords;
+    }, 0);
+
+    await updateUsageAction(userId, wordCount, 1);
 
     return { data: { content: generatedContent, references }, error: null };
   } catch (error) {
@@ -114,6 +132,35 @@ export async function generateContentAction(values: GenerationFormValuesWithTemp
     return { data: null, error: 'Failed to generate content.' };
   }
 }
+
+export async function updateUsageAction(userId: string, words: number, documents: number) {
+    if (!userId) return;
+    try {
+        const userRef = doc(db, 'users', userId);
+        await updateDoc(userRef, {
+            'usage.wordsUsed': increment(words),
+            'usage.documentsCreated': increment(documents),
+            'usage.lastUsage': new Date().toISOString(),
+        });
+    } catch (error) {
+        console.error('Failed to update user usage:', error);
+    }
+}
+
+export async function resetUsageAction(userId: string) {
+    if (!userId) return;
+    try {
+        const userRef = doc(db, 'users', userId);
+        await updateDoc(userRef, {
+            'usage.wordsUsed': 0,
+            'usage.documentsCreated': 0,
+            'usage.lastUsage': new Date().toISOString(),
+        });
+    } catch (error) {
+        console.error('Failed to reset user usage:', error);
+    }
+}
+
 
 export async function regenerateSectionAction(
   document: DocumentContent,
@@ -127,8 +174,6 @@ export async function regenerateSectionAction(
       instructions,
     });
     
-    // The result of editSection is the entire updated document.
-    // We just need to find the updated section content to return.
     const newSection = result.sections.find((s) => s.title === sectionTitle);
 
     if (!newSection) {
@@ -289,3 +334,5 @@ export async function generateImageForSectionAction(prompt: string) {
         return { data: null, error: 'Failed to generate image.' };
     }
 }
+
+    
