@@ -118,18 +118,19 @@ const pubmedSearchTool = ai.defineTool(
 const generateAcademicContentPrompt = ai.definePrompt({
   name: 'generateAcademicContentPrompt',
   input: {schema: GenerateAcademicContentInputSchema.extend({
-    format: z.string().describe('The suggested structure or format for the document.')
+    format: z.string().describe('The suggested structure or format for the document.'),
+    shouldResearch: z.boolean().describe('Whether the AI should perform external academic research.'),
   })},
   output: {schema: GenerateAcademicContentOutputSchema},
   tools: [arxivSearchTool, pubmedSearchTool],
   prompt: `You are an expert academic content generator. Your primary task is to generate a comprehensive, well-structured academic document based on the user's request.
 
 **Process:**
-1.  **Research**: Use the \`arxivSearch\` and \`pubmedSearch\` tools to find relevant, real academic sources for the given topic. Synthesize the information from these sources to build your content.
+1.  **Research (If Required)**: {{#if shouldResearch}}You MUST use the \`arxivSearch\` and/or \`pubmedSearch\` tools to find relevant, real academic sources for the given topic. Synthesize the information from these sources to build your content.{{else}}You will generate the content based on your existing knowledge. Do NOT use any tools.{{/if}}
 2.  **Determine Structure**:
     *   If a 'Custom Template' is provided by the user, you MUST use it as the primary structure for the document.
     *   If no custom template is provided, use the 'Suggested Format' for the chosen 'Task Type'.
-3.  **Cite Sources**: Create a "References" section at the end of the document. This section must list the full citations of the articles you found and used from your tool-based research. Format these citations in APA style.
+3.  **Cite Sources**: {{#if shouldResearch}}Create a "References" section at the end of the document. This section must list the full citations of the articles you found and used from your tool-based research. Format these citations in APA style.{{else}}If you are not researching, you do not need to create a "References" section unless the user explicitly asks for sources in the parameters.{{/if}}
 
 Your output must be a single, valid JSON object that strictly adheres to the GenerateAcademicContentOutputSchema.
 
@@ -166,7 +167,14 @@ const generateAcademicContentFlow = ai.defineFlow(
   async input => {
     // If a custom template is provided, use it. Otherwise, get the default format.
     const format = input.customTemplate || academicTaskFormats[input.taskType];
-    const {output} = await generateAcademicContentPrompt({...input, format});
+
+    // Determine if the AI should perform external research based on the task type.
+    const researchHeavyTasks = ['Research Paper', 'Literature Review', 'Thesis', 'Dissertation'];
+    const shouldResearch = researchHeavyTasks.includes(input.taskType);
+    
+    const {output} = await generateAcademicContentPrompt({...input, format, shouldResearch});
     return output!;
   }
 );
+
+    
