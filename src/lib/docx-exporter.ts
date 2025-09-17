@@ -110,19 +110,19 @@ export async function exportToDocx(
 
   const uniqueId = `AZMA-DOC-${Date.now()}-${content.title.slice(0,10).replace(/\s/g, '')}`;
 
-  const historyEntry: DocumentHistoryEntry = {
+  const exportEntry: DocumentHistoryEntry = {
     docId: uniqueId,
     title: content.title,
     generatedAt: new Date().toISOString(),
     generatedBy: userId,
   };
 
-  // Save history to Firestore
+  // Save export record to Firestore
   try {
-      const historyDocRef = doc(db, 'document_history', uniqueId);
-      await setDoc(historyDocRef, historyEntry);
+      const exportDocRef = doc(db, 'export', uniqueId);
+      await setDoc(exportDocRef, exportEntry);
   } catch (error) {
-      console.error("Failed to save document history to Firestore:", error);
+      console.error("Failed to save export record to Firestore:", error);
       // We can decide if this should be a critical error or not.
       // For now, we'll just log it and continue with document generation.
   }

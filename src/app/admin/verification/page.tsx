@@ -34,7 +34,7 @@ export default function VerificationPage() {
     setVerificationResult(null);
 
     try {
-      const docRef = doc(db, 'document_history', docId);
+      const docRef = doc(db, 'export', docId);
       const docSnap = await getDoc(docRef);
 
       if (docSnap.exists()) {
