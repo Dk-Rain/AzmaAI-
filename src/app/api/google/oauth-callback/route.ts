@@ -1,35 +1,74 @@
 
 import { NextRequest, NextResponse } from 'next/server';
+import { OAuth2Client } from 'google-auth-library';
+import { google } from 'googleapis';
+import type { ArchivedItem } from '@/types';
 
 export async function POST(req: NextRequest) {
   try {
-    const { code } = await req.json();
+    const { code, archive } = await req.json();
 
     if (!code) {
       return NextResponse.json({ error: 'Authorization code is missing.' }, { status: 400 });
     }
+    if (!archive) {
+      return NextResponse.json({ error: 'Archive data is missing.' }, { status: 400 });
+    }
 
-    // --- Developer's Next Steps ---
-    // 1. You would use the 'code' received here to get an access_token and refresh_token from Google.
-    //    This must be done on the server-side because it requires your client_secret.
-    // 
-    //    Example using 'google-auth-library':
-    //    const { tokens } = await oauth2Client.getToken(code);
-    //
-    // 2. Securely store the `refresh_token` in your database (e.g., Firestore) associated with the user's ID.
-    //    The `access_token` is short-lived and can be stored in the user's session or retrieved using the refresh token.
-    //
-    // 3. For this placeholder, we will just simulate a successful response.
+    const oauth2Client = new OAuth2Client(
+        process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
+        process.env.GOOGLE_CLIENT_SECRET,
+        'postmessage' // Must match the redirect_uri used in the frontend
+    );
 
-    console.log(`Received authorization code: ${code}. In a real app, you would exchange this for tokens on the server.`);
+    const { tokens } = await oauth2Client.getToken(code);
+    oauth2Client.setCredentials(tokens);
+
+    const drive = google.drive({ version: 'v3', auth: oauth2Client });
+    
+    // Convert the archive data to a JSON string
+    const archiveContent = JSON.stringify(archive, null, 2);
+    const fileMetadata = {
+      name: 'AzmaAI_Archive.json',
+      mimeType: 'application/json',
+    };
+    const media = {
+      mimeType: 'application/json',
+      body: archiveContent,
+    };
+
+    // Check if the file already exists
+    const res = await drive.files.list({
+      q: "name='AzmaAI_Archive.json' and trashed=false",
+      spaces: 'drive',
+      fields: 'files(id)',
+    });
+
+    if (res.data.files && res.data.files.length > 0) {
+      // File exists, update it
+      const fileId = res.data.files[0].id!;
+      await drive.files.update({
+        fileId: fileId,
+        media: media,
+      });
+    } else {
+      // File doesn't exist, create it
+      await drive.files.create({
+        requestBody: fileMetadata,
+        media: media,
+        fields: 'id',
+      });
+    }
+
 
     return NextResponse.json({ 
         success: true, 
-        message: 'Authorization code received. Backend processing would happen now.' 
+        message: 'Archive synced to Google Drive.' 
     });
 
   } catch (error) {
     console.error('OAuth callback error:', error);
-    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
+    return NextResponse.json({ error: `Internal Server Error: ${errorMessage}` }, { status: 500 });
   }
 }

@@ -30,13 +30,17 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { ArrowLeft, Brush, User, Globe, Bell, Mail, Smartphone, Share2, Archive, Trash2, Database, Cloud, CheckCircle, XCircle } from 'lucide-react';
+import { ArrowLeft, Brush, User, Globe, Bell, Mail, Smartphone, Share2, Archive, Trash2, Database, Cloud, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { useGoogleLogin } from '@react-oauth/google';
+import type { Workspace } from '@/types';
+import { onAuthStateChanged } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
+import { auth, db } from '@/lib/firebase';
 
 
 export default function SettingsPage() {
@@ -46,6 +50,8 @@ export default function SettingsPage() {
   const [pushNotificationStatus, setPushNotificationStatus] = useState<NotificationPermission>('default');
   const [isPushEnabled, setIsPushEnabled] = useState(false);
   const [isGoogleDriveConnected, setIsGoogleDriveConnected] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
 
 
   useEffect(() => {
@@ -54,6 +60,13 @@ export default function SettingsPage() {
       setPushNotificationStatus(Notification.permission);
       setIsPushEnabled(Notification.permission === 'granted');
     }
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if(user) {
+        setUserId(user.uid);
+      }
+    });
+
+    return () => unsubscribe();
   }, []);
 
   const handlePushToggle = async (checked: boolean) => {
@@ -138,19 +151,30 @@ export default function SettingsPage() {
   
   const handleConnectGoogleDrive = useGoogleLogin({
     onSuccess: async (codeResponse) => {
+        if (!userId) {
+             toast({ variant: 'destructive', title: 'Error', description: 'User not found. Cannot sync archive.'});
+             return;
+        }
+
+        setIsSyncing(true);
         toast({
             title: 'Permissions Granted!',
-            description: 'Sending authorization to server...',
+            description: 'Syncing your archive to Google Drive...',
         });
+
+        // 1. Fetch the user's workspace to get archived items
+        const workspaceRef = doc(db, 'workspaces', userId);
+        const workspaceSnap = await getDoc(workspaceRef);
+        const archivedItems = workspaceSnap.exists() ? (workspaceSnap.data() as Workspace).archivedItems : [];
         
-        // Send the one-time code to our backend API route
+        // 2. Send the one-time code AND the archive data to our backend
         try {
             const response = await fetch('/api/google/oauth-callback', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ code: codeResponse.code }),
+                body: JSON.stringify({ code: codeResponse.code, archive: archivedItems }),
             });
 
             if (!response.ok) {
@@ -160,7 +184,7 @@ export default function SettingsPage() {
 
             const data = await response.json();
             toast({
-                title: 'Google Account Connected!',
+                title: 'Google Drive Sync Complete!',
                 description: data.message,
             });
             setIsGoogleDriveConnected(true);
@@ -168,9 +192,11 @@ export default function SettingsPage() {
         } catch (error: any) {
              toast({
                 variant: 'destructive',
-                title: 'Connection Failed',
+                title: 'Sync Failed',
                 description: error.message,
             });
+        } finally {
+            setIsSyncing(false);
         }
     },
     onError: (error) => {
@@ -340,7 +366,7 @@ export default function SettingsPage() {
                           <div className="space-y-1">
                             <h4 className="font-medium">Google Drive Sync</h4>
                             <p className="text-sm text-muted-foreground">
-                                Back up your projects and documents to your Google Drive.
+                                Back up your archived projects and documents to Google Drive.
                             </p>
                           </div>
                            {isGoogleDriveConnected ? (
@@ -354,9 +380,12 @@ export default function SettingsPage() {
                                     </Button>
                                 </div>
                           ) : (
-                            <Button variant="outline" onClick={() => handleConnectGoogleDrive()}>
-                                <Cloud className="mr-2 h-4 w-4" />
-                                Connect
+                            <Button variant="outline" onClick={() => handleConnectGoogleDrive()} disabled={isSyncing}>
+                                {isSyncing ? (
+                                    <><Loader2 className="mr-2 h-4 w-4 animate-spin"/> Syncing...</>
+                                ) : (
+                                    <><Cloud className="mr-2 h-4 w-4" /> Connect & Sync</>
+                                )}
                             </Button>
                           )}
                         </div>
@@ -438,5 +467,3 @@ export default function SettingsPage() {
     </div>
   );
 }
-
-    
