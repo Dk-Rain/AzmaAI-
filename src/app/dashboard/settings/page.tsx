@@ -30,7 +30,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { ArrowLeft, Brush, User, Globe, Bell, Mail, Smartphone, Share2, Archive, Trash2, Database, Cloud } from 'lucide-react';
+import { ArrowLeft, Brush, User, Globe, Bell, Mail, Smartphone, Share2, Archive, Trash2, Database, Cloud, CheckCircle } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -45,6 +45,7 @@ export default function SettingsPage() {
   const { toast } = useToast();
   const [pushNotificationStatus, setPushNotificationStatus] = useState<NotificationPermission>('default');
   const [isPushEnabled, setIsPushEnabled] = useState(false);
+  const [isGoogleDriveConnected, setIsGoogleDriveConnected] = useState(false);
 
 
   useEffect(() => {
@@ -162,8 +163,7 @@ export default function SettingsPage() {
                 title: 'Google Account Connected!',
                 description: data.message,
             });
-            // Here you would typically update the UI to show a "connected" state
-            // and enable a "Sync to Drive" button.
+            setIsGoogleDriveConnected(true);
 
         } catch (error: any) {
              toast({
@@ -333,10 +333,17 @@ export default function SettingsPage() {
                                 Back up your projects and documents to your Google Drive.
                             </p>
                           </div>
-                          <Button variant="outline" onClick={() => handleConnectGoogleDrive()}>
-                             <Cloud className="mr-2 h-4 w-4" />
-                             Connect
-                          </Button>
+                          {isGoogleDriveConnected ? (
+                                <Button variant="outline" disabled>
+                                    <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
+                                    Connected
+                                </Button>
+                          ) : (
+                            <Button variant="outline" onClick={() => handleConnectGoogleDrive()}>
+                                <Cloud className="mr-2 h-4 w-4" />
+                                Connect
+                            </Button>
+                          )}
                         </div>
                         <Separator />
                          <div className="flex items-center justify-between space-x-4">
