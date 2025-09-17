@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import type { DocumentHistoryEntry } from '@/types/admin';
 import {
   Card,
@@ -13,28 +13,17 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { BadgeCheck, Search, XCircle, CheckCircle, FileClock } from 'lucide-react';
+import { BadgeCheck, Search, XCircle, CheckCircle, Loader2 } from 'lucide-react';
+import { db } from '@/lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 export default function VerificationPage() {
   const [docId, setDocId] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [verificationResult, setVerificationResult] = useState<DocumentHistoryEntry | null | 'not_found'>(null);
   const { toast } = useToast();
-  const [history, setHistory] = useState<DocumentHistoryEntry[]>([]);
 
-  useEffect(() => {
-    // Load history from localStorage on component mount
-    try {
-      const storedHistory = localStorage.getItem('azma_document_history');
-      if (storedHistory) {
-        setHistory(JSON.parse(storedHistory));
-      }
-    } catch (error) {
-      console.error('Failed to load document history from localStorage', error);
-    }
-  }, []);
-
-  const handleVerify = (e: React.FormEvent) => {
+  const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!docId) {
       toast({ variant: 'destructive', title: 'Document ID required' });
@@ -44,18 +33,22 @@ export default function VerificationPage() {
     setIsLoading(true);
     setVerificationResult(null);
 
-    // Simulate API call to check for the document
-    setTimeout(() => {
-      const foundDocument = history.find(entry => entry.docId === docId);
+    try {
+      const docRef = doc(db, 'document_history', docId);
+      const docSnap = await getDoc(docRef);
 
-      if (foundDocument) {
-        setVerificationResult(foundDocument);
+      if (docSnap.exists()) {
+        setVerificationResult(docSnap.data() as DocumentHistoryEntry);
+        toast({ title: "Document Verified", description: "The document is authentic."});
       } else {
         setVerificationResult('not_found');
       }
-      
+    } catch (error) {
+      console.error('Error verifying document:', error);
+      toast({ variant: 'destructive', title: 'Error', description: 'An error occurred during verification.' });
+    } finally {
       setIsLoading(false);
-    }, 500);
+    }
   };
 
   return (
@@ -75,7 +68,8 @@ export default function VerificationPage() {
             className="flex-1"
           />
           <Button type="submit" disabled={isLoading}>
-            {isLoading ? 'Verifying...' : 'Verify'} <Search className="ml-2 h-4 w-4" />
+            {isLoading ? <Loader2 className="h-4 w-4 animate-spin"/> : <Search className="h-4 w-4" />}
+            <span className="ml-2">Verify</span>
           </Button>
         </form>
 
