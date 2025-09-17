@@ -108,7 +108,7 @@ export async function exportToDocx(
     (section) => section.title.toLowerCase().includes('references')
   );
 
-  const uniqueId = `AZMA-DOC-${Date.now()}-${content.title.slice(0,10).replace(/\s/g, '')}`;
+  const uniqueId = `AZMA-DOC-${Date.now()}-${(content.title || 'untitled').slice(0,10).replace(/\s/g, '')}`;
 
   const exportEntry: DocumentHistoryEntry = {
     docId: uniqueId,
@@ -300,5 +300,5 @@ export async function exportToDocx(
     ],
   });
 
-  return { doc, historyEntry: null }; // We no longer return the history entry to be saved in localStorage
+  return { doc };
 }
