@@ -117,6 +117,7 @@ const pubmedSearchTool = ai.defineTool(
 
 const generateAcademicContentPrompt = ai.definePrompt({
   name: 'generateAcademicContentPrompt',
+  model: 'googleai/gemini-2.5-pro',
   input: {schema: GenerateAcademicContentInputSchema.extend({
     format: z.string().describe('The suggested structure or format for the document.'),
     shouldResearch: z.boolean().describe('Whether the AI should perform external academic research.'),
@@ -176,5 +177,7 @@ const generateAcademicContentFlow = ai.defineFlow(
     return output!;
   }
 );
+
+    
 
     
