@@ -20,12 +20,7 @@ export async function POST(req: NextRequest) {
         process.env.GOOGLE_CLIENT_SECRET,
         // The redirect_uri must match EXACTLY what's in your Google Cloud Console
         // for this OAuth Client ID under "Authorized redirect URIs".
-        // For local development, this is typically your localhost address.
-        // For production, it would be your app's domain.
-        // The 'postmessage' value can be inconsistent.
-        process.env.NODE_ENV === 'production' 
-          ? 'https://your-production-app-url.com' // You'll need to replace this
-          : 'http://localhost:9002'
+        'http://localhost:9002'
     );
 
     const { tokens } = await oauth2Client.getToken(code);
