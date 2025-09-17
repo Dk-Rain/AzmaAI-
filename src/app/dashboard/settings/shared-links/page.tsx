@@ -28,32 +28,50 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import type { Workspace, SharedDocument } from '@/types';
+import { auth, db } from '@/lib/firebase';
+import { onAuthStateChanged } from 'firebase/auth';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 
 export default function SharedLinksPage() {
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [copiedLink, setCopiedLink] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
-    try {
-      const storedWorkspace = localStorage.getItem('azma_workspace');
-      if (storedWorkspace) {
-        const parsed = JSON.parse(storedWorkspace);
-        if (!parsed.sharedDocuments) {
-            parsed.sharedDocuments = [];
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+        if (user) {
+            setUserId(user.uid);
+            loadWorkspace(user.uid);
+        } else {
+            setWorkspace({ projects: [], standaloneDocuments: [], archivedItems: [], sharedDocuments: [] });
         }
-        setWorkspace(parsed);
-      }
-    } catch (error) {
-      console.error("Failed to load workspace from localStorage", error);
-    }
+    });
+    return () => unsubscribe();
   }, []);
 
-  const saveWorkspace = (newWorkspace: Workspace) => {
+  const loadWorkspace = async (uid: string) => {
+    const workspaceRef = doc(db, 'workspaces', uid);
+    const workspaceSnap = await getDoc(workspaceRef);
+    if (workspaceSnap.exists()) {
+        const ws = workspaceSnap.data() as Workspace;
+        ws.sharedDocuments = ws.sharedDocuments || [];
+        setWorkspace(ws);
+    } else {
+        setWorkspace({ projects: [], standaloneDocuments: [], archivedItems: [], sharedDocuments: [] });
+    }
+  };
+
+  const saveWorkspace = async (newWorkspace: Workspace) => {
+    if (!userId) {
+        toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to make changes.' });
+        return;
+    }
     setWorkspace(newWorkspace);
-    localStorage.setItem('azma_workspace', JSON.stringify(newWorkspace));
+    const workspaceRef = doc(db, 'workspaces', userId);
+    await setDoc(workspaceRef, newWorkspace, { merge: true });
   };
 
 
@@ -76,7 +94,6 @@ export default function SharedLinksPage() {
   const revokeAccess = (publicId: string) => {
     if (!workspace) return;
     
-    // Find the original document and mark it as not shared
     let docTitle = '';
     const newProjects = workspace.projects.map(p => ({
         ...p,
@@ -96,7 +113,6 @@ export default function SharedLinksPage() {
         return d;
     });
 
-    // Remove from shared documents list
     const newSharedDocs = workspace.sharedDocuments.filter(item => item.publicId !== publicId);
 
     const newWorkspace: Workspace = {

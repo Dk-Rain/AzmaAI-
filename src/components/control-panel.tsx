@@ -10,7 +10,7 @@ import {
     Trash2, Search, Library, PlusCircle, FolderPlus, MountainIcon, Folder, File, GripVertical, ChevronDown, MoreHorizontal, Edit, FolderInput, PenLine, Archive, Share2, Gauge, X, FileText
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import type { DocumentContent, References, StyleOptions, FontType, Workspace, Project, DocumentItem } from '@/types';
+import type { DocumentContent, References, StyleOptions, FontType, Workspace, Project, DocumentItem, SharedDocument } from '@/types';
 import { GenerationSchema, GenerationFormValues, availableFonts } from '@/types';
 import { academicTaskTypes } from '@/types/academic-task-types';
 import { academicTaskFormats } from '@/types/academic-task-formats';
@@ -394,24 +394,26 @@ export function ControlPanel({
   };
 
   const shareDocument = (docId: string, projectId?: string) => {
-    const newWorkspace = { ...workspace };
     let docToShare: DocumentItem | undefined;
+    const newWorkspace = { ...workspace };
 
-    const findDoc = (docs: DocumentItem[]) => docs.find(d => d.id === docId);
-
+    // Find the document to be shared
     if (projectId) {
-      const project = newWorkspace.projects.find(p => p.id === projectId);
-      docToShare = findDoc(project?.documents || []);
+        const project = newWorkspace.projects.find(p => p.id === projectId);
+        docToShare = project?.documents.find(d => d.id === docId);
     } else {
-      docToShare = findDoc(newWorkspace.standaloneDocuments);
+        docToShare = newWorkspace.standaloneDocuments.find(d => d.id === docId);
     }
 
-    if (!docToShare) return;
+    if (!docToShare) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Could not find the document to share.' });
+        return;
+    }
 
     const publicId = docToShare.publicId || `${docId.substring(0, 8)}-${Date.now().toString(36)}`;
     
-    // Update the document item to mark it as shared
-    const updateDoc = (doc: DocumentItem) => 
+    // Update the document item itself to mark it as shared
+    const updateDoc = (doc: DocumentItem): DocumentItem => 
         doc.id === docId ? { ...doc, isShared: true, publicId } : doc;
 
     if (projectId) {
@@ -422,9 +424,15 @@ export function ControlPanel({
         newWorkspace.standaloneDocuments = newWorkspace.standaloneDocuments.map(updateDoc);
     }
     
-    // Add to shared documents list if not already there
+    // Add to the centralized sharedDocuments list if it's not already there
     if (!newWorkspace.sharedDocuments.some(d => d.id === docId)) {
-        newWorkspace.sharedDocuments.push({ ...docToShare, publicId, sharedAt: new Date().toISOString(), title: docToShare.title });
+        const sharedDocEntry: SharedDocument = { 
+            id: docId, 
+            publicId, 
+            title: docToShare.title, 
+            sharedAt: new Date().toISOString() 
+        };
+        newWorkspace.sharedDocuments.push(sharedDocEntry);
     }
 
     saveWorkspace(newWorkspace);
@@ -436,7 +444,7 @@ export function ControlPanel({
         title: 'Share Link Copied!',
         description: 'A public link to your document has been copied to your clipboard.',
     });
-  };
+};
 
 
   const handleNewProject = () => {
