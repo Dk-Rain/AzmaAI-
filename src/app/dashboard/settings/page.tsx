@@ -30,7 +30,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { ArrowLeft, Brush, User, Globe, Bell, Mail, Smartphone, Share2, Archive, Trash2, Database, Cloud, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Brush, User, Globe, Bell, Mail, Smartphone, Share2, Archive, Trash2, Database, Cloud, CheckCircle, XCircle } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -185,6 +185,16 @@ export default function SettingsPage() {
     scope: 'https://www.googleapis.com/auth/drive.file', // Request permission to create files
   });
 
+  const handleDisconnectGoogleDrive = () => {
+    // In a real app, you would make an API call to your backend here to revoke the token.
+    // For this prototype, we'll just update the client-side state.
+    setIsGoogleDriveConnected(false);
+    toast({
+        title: 'Google Drive Disconnected',
+        description: 'Your account is no longer linked to Google Drive.',
+    });
+  };
+
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
@@ -333,11 +343,16 @@ export default function SettingsPage() {
                                 Back up your projects and documents to your Google Drive.
                             </p>
                           </div>
-                          {isGoogleDriveConnected ? (
-                                <Button variant="outline" disabled>
-                                    <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
-                                    Connected
-                                </Button>
+                           {isGoogleDriveConnected ? (
+                                <div className="flex items-center gap-2">
+                                    <Button variant="outline" disabled>
+                                        <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
+                                        Connected
+                                    </Button>
+                                    <Button variant="destructive" size="icon" onClick={handleDisconnectGoogleDrive} title="Disconnect Google Drive">
+                                        <XCircle className="h-4 w-4" />
+                                    </Button>
+                                </div>
                           ) : (
                             <Button variant="outline" onClick={() => handleConnectGoogleDrive()}>
                                 <Cloud className="mr-2 h-4 w-4" />
@@ -423,3 +438,5 @@ export default function SettingsPage() {
     </div>
   );
 }
+
+    
