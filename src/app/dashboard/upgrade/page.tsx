@@ -29,6 +29,7 @@ import type { PricingSettings, Transaction } from '@/types/admin';
 import { auth, db } from '@/lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, updateDoc, collection, addDoc } from 'firebase/firestore';
+import { useFlutterwave, closePaymentModal } from 'flutterwave-react-v3';
 
 
 type UserData = {
@@ -38,6 +39,7 @@ type UserData = {
   role: string;
   isPremium?: boolean;
   subscriptionEndDate?: string;
+  phoneNumber?: string;
 };
 
 const defaultPricing: PricingSettings = {
@@ -91,7 +93,8 @@ export default function UpgradePage() {
   const [isYearly, setIsYearly] = useState(false);
   const [user, setUser] = useState<UserData | null>(null);
   const [pricing, setPricing] = useState<PricingSettings>(defaultPricing);
-  const [isUpgrading, setIsUpgrading] = useState(false);
+  const [paymentKey, setPaymentKey] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
   const [isDowngrading, setIsDowngrading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
@@ -117,88 +120,103 @@ export default function UpgradePage() {
         }
     });
 
-    try {
-        const storedPricing = localStorage.getItem('azma_pricing_settings');
-        if (storedPricing) {
-            setPricing(JSON.parse(storedPricing));
+    const fetchSettings = async () => {
+        const settingsDocRef = doc(db, 'settings', 'global');
+        const settingsDoc = await getDoc(settingsDocRef);
+        if (settingsDoc.exists()) {
+            const data = settingsDoc.data();
+            setPricing(data.pricingSettings || defaultPricing);
+            setPaymentKey(data.appSettings.paymentGatewayPublicKey || '');
         }
-    } catch (error) {
-        console.error("Failed to parse pricing data from localStorage", error);
     }
+    fetchSettings();
     
     return () => unsubscribe();
   }, [router]);
+  
+  const currentPlanRole = user?.role ? user.role.toLowerCase() as keyof PricingSettings : null;
+  const currentPlanPriceInfo = currentPlanRole ? pricing[currentPlanRole] : null;
 
-  const handleUpgrade = async () => {
-    if (!user || !user.role) return;
-    const currentPlanRole = user.role.toLowerCase() as keyof PricingSettings;
-    const currentPlanPriceInfo = pricing[currentPlanRole];
-    if (!currentPlanPriceInfo) {
-        toast({ variant: 'destructive', title: 'Error', description: 'Cannot find pricing for your role.'});
+  const paymentConfig = {
+    public_key: paymentKey,
+    tx_ref: `AZMA-${user?.uid}-${Date.now()}`,
+    amount: currentPlanPriceInfo ? (isYearly ? currentPlanPriceInfo.yearly : currentPlanPriceInfo.monthly) : 0,
+    currency: 'NGN',
+    payment_options: 'card,mobilemoney,ussd',
+    customer: {
+      email: user?.email || '',
+      phone_number: user?.phoneNumber || '',
+      name: user?.fullName || '',
+    },
+    customizations: {
+      title: 'AzmaAI Subscription',
+      description: `Payment for ${getPlanName(user?.role || 'Premium')}`,
+      logo: 'https://www.azma.com/logo.png', // Replace with your logo URL
+    },
+  };
+
+  const handleFlutterwavePayment = useFlutterwave(paymentConfig);
+
+  const handleUpgrade = () => {
+    if (!user || !user.role || !paymentKey) {
+        toast({ variant: 'destructive', title: 'Error', description: 'User data or payment key is missing. Please configure in admin settings.'});
         return;
     }
 
-    setIsUpgrading(true);
-    toast({
-        title: 'Processing Upgrade...',
-        description: 'Please wait while we confirm your payment.'
-    })
-    
-    // Simulate API call to payment gateway and DB update
-    setTimeout(async () => {
-        try {
-            const userDocRef = doc(db, 'users', user.uid);
-
-            const now = new Date();
-            const subscriptionEndDate = new Date(now);
-            if (isYearly) {
-                subscriptionEndDate.setFullYear(subscriptionEndDate.getFullYear() + 1);
-            } else {
-                subscriptionEndDate.setDate(subscriptionEndDate.getDate() + 30);
-            }
-
-            const dataToUpdate = {
-                isPremium: true,
-                subscriptionEndDate: subscriptionEndDate.toISOString(),
-            }
-
-            await updateDoc(userDocRef, dataToUpdate);
+    handleFlutterwavePayment({
+      callback: async (response) => {
+        if (response.status === 'successful') {
+            setIsProcessing(true);
+            toast({ title: 'Payment Successful!', description: 'Finalizing your upgrade...' });
             
-            // Update local user state to reflect the change immediately
-            setUser(prevUser => prevUser ? { ...prevUser, ...dataToUpdate } : null);
+            try {
+                // Update user document in Firestore
+                const userDocRef = doc(db, 'users', user.uid);
+                const now = new Date();
+                const subscriptionEndDate = new Date(now);
+                if (isYearly) {
+                    subscriptionEndDate.setFullYear(subscriptionEndDate.getFullYear() + 1);
+                } else {
+                    subscriptionEndDate.setDate(subscriptionEndDate.getDate() + 30);
+                }
 
-            // Create a new transaction record in Firestore
-            const newTransaction: Omit<Transaction, 'id'> = {
-                invoiceId: `INV${Date.now().toString().slice(-6)}`,
-                userFullName: user.fullName,
-                userEmail: user.email,
-                amount: isYearly ? currentPlanPriceInfo.yearly : currentPlanPriceInfo.monthly,
-                status: 'Success',
-                date: new Date().toISOString(),
-                plan: getPlanName(user.role),
-            };
+                const dataToUpdate = {
+                    isPremium: true,
+                    subscriptionEndDate: subscriptionEndDate.toISOString(),
+                };
+                await updateDoc(userDocRef, dataToUpdate);
+                setUser(prevUser => prevUser ? { ...prevUser, ...dataToUpdate } : null);
 
-            const transactionsCollection = collection(db, 'transactions');
-            await addDoc(transactionsCollection, newTransaction);
+                // Create a transaction record
+                const newTransaction: Omit<Transaction, 'id'> = {
+                    invoiceId: response.tx_ref || `INV-${Date.now()}`,
+                    userFullName: user.fullName,
+                    userEmail: user.email,
+                    amount: response.amount || 0,
+                    status: 'Success',
+                    date: new Date().toISOString(),
+                    plan: getPlanName(user.role),
+                };
+                await addDoc(collection(db, 'transactions'), newTransaction);
 
-
-            toast({
-                title: 'Upgrade Successful!',
-                description: 'Welcome to your new plan.'
-            });
-
-        } catch (error) {
-            console.error("Upgrade failed:", error);
-            toast({
-                variant: 'destructive',
-                title: 'Upgrade Failed',
-                description: 'Could not update your plan. Please try again.'
-            })
-        } finally {
-            setIsUpgrading(false);
+                toast({ title: 'Upgrade Complete!', description: 'Welcome to your new premium plan.' });
+            } catch (error) {
+                console.error("Failed to finalize upgrade:", error);
+                toast({ variant: 'destructive', title: 'Upgrade Failed', description: 'Your payment was successful, but we failed to update your account. Please contact support.' });
+            } finally {
+                setIsProcessing(false);
+            }
+        } else {
+            toast({ variant: 'destructive', title: 'Payment Failed', description: 'Your payment was not successful. Please try again.' });
         }
-    }, 1500);
+        closePaymentModal();
+      },
+      onClose: () => {
+        toast({ variant: 'outline', title: 'Payment window closed' });
+      },
+    });
   }
+
 
   const handleDowngrade = async () => {
     if (!user) return;
@@ -211,8 +229,6 @@ export default function UpgradePage() {
     setTimeout(async () => {
         try {
             const userDocRef = doc(db, 'users', user.uid);
-            // Firestore does not have a direct way to delete fields from the client-side SDK.
-            // Setting them to null or undefined works for this case.
             const dataToUpdate = { 
                 isPremium: false,
                 subscriptionEndDate: null 
@@ -242,9 +258,6 @@ export default function UpgradePage() {
   const handleContactSales = () => {
     window.location.href = "mailto:sales@azma.com?subject=Enterprise%20Plan%20Inquiry";
   };
-  
-  const currentPlanRole = user?.role ? user.role.toLowerCase() as keyof PricingSettings : null;
-  const currentPlanPriceInfo = currentPlanRole ? pricing[currentPlanRole] : null;
 
 
   return (
@@ -328,9 +341,9 @@ export default function UpgradePage() {
                         </div>
                     </CardContent>
                     <CardFooter className="mt-auto">
-                        <Button className="w-full" onClick={handleUpgrade} disabled={user?.isPremium || isUpgrading}>
-                          {isUpgrading ? (
-                              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Upgrading...</>
+                        <Button className="w-full" onClick={handleUpgrade} disabled={user?.isPremium || isProcessing || !paymentKey}>
+                          {isProcessing ? (
+                              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing...</>
                           ) : user?.isPremium ? (
                               'Your Current Plan'
                           ) : (

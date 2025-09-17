@@ -6,6 +6,7 @@ import { Suspense } from 'react';
 import Loading from './loading';
 import { ThemeProvider } from '@/components/theme-provider';
 import { GoogleOAuthProvider } from '@react-oauth/google';
+import Script from 'next/script';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 const literata = Literata({ subsets: ['latin'], variable: '--font-literata' });
@@ -38,6 +39,7 @@ export default function RootLayout({
                 <Toaster />
             </ThemeProvider>
         </GoogleOAuthProvider>
+        <Script src="https://checkout.flutterwave.com/v3.js" />
       </body>
     </html>
   );
