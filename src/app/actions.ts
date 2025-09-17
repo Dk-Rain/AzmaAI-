@@ -104,9 +104,13 @@ export async function generateContentAction(
 ) {
   try {
     const generatedContent = await generateAcademicContent(values);
+
+    if (!generatedContent || !generatedContent.sections) {
+      throw new Error('AI failed to generate valid document content.');
+    }
     
     const referencesSection = generatedContent.sections.find(s => s.title.toLowerCase() === 'references');
-    const references: References = referencesSection ? referencesSection.content.map(c => {
+    const references: References = referencesSection ? (referencesSection.content || []).map(c => {
         if (c.type === 'text') {
             return { referenceText: c.text, isVerified: false, verificationNotes: '' };
         }
@@ -115,7 +119,7 @@ export async function generateContentAction(
 
     // Calculate word count and update usage
     const wordCount = generatedContent.sections.reduce((acc, section) => {
-        const sectionWords = section.content.reduce((count, block) => {
+        const sectionWords = (section.content || []).reduce((count, block) => {
             if (block.type === 'text') {
                 return count + block.text.split(/\s+/).length;
             }
@@ -129,7 +133,8 @@ export async function generateContentAction(
     return { data: { content: generatedContent, references }, error: null };
   } catch (error) {
     console.error(error);
-    return { data: null, error: 'Failed to generate content.' };
+    const message = error instanceof Error ? error.message : 'Failed to generate content.';
+    return { data: null, error: message };
   }
 }
 
