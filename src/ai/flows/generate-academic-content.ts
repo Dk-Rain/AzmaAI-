@@ -155,7 +155,7 @@ Your output must be a single, valid JSON object that strictly adheres to the Gen
 *   **Include Tables**: {{#if includeTables}}Yes{{else}}No{{/if}}
 *   **Include Lists**: {{#if includeLists}}Yes{{else}}No{{/if}}
 
-Adhere to all instructions and generate a complete, high-quality academic document in the specified JSON format. You MUST include a "References" section populated with the sources you used. Do NOT include an "Abstract" section unless explicitly requested in the parameters.
+Adhere to all instructions and generate a complete, high-quality academic document in the specified JSON format. Do NOT include an "Abstract" section unless explicitly requested in the parameters. If you performed research, you MUST include a "References" section populated with the sources you used.
 `,
 });
 
@@ -177,7 +177,3 @@ const generateAcademicContentFlow = ai.defineFlow(
     return output!;
   }
 );
-
-    
-
-    

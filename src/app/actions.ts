@@ -119,7 +119,9 @@ export async function generateContentAction(
 
     // Calculate word count and update usage
     const wordCount = generatedContent.sections.reduce((acc, section) => {
-        const sectionWords = (section.content || []).reduce((count, block) => {
+        // Ensure section.content is an array before reducing
+        const sectionContent = Array.isArray(section.content) ? section.content : [];
+        const sectionWords = sectionContent.reduce((count, block) => {
             if (block.type === 'text') {
                 return count + block.text.split(/\s+/).length;
             }
