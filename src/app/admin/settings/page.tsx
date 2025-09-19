@@ -23,24 +23,14 @@ import {
 import { Switch } from "@/components/ui/switch"
 import { useToast } from "@/hooks/use-toast"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Trash2, KeyRound, Building, Brush, Tag, Megaphone, Loader2 } from "lucide-react";
+import { Trash2, KeyRound, Building, Brush, Tag, Megaphone, Loader2, Cpu } from "lucide-react";
 import { useTheme } from "next-themes";
-import type { PricingSettings } from '@/types/admin';
+import type { PricingSettings, AppSettings as AppSettingsType } from '@/types/admin';
 import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 
-type AppSettings = {
-    appName: string;
-    allowRegistrations: boolean;
-    defaultUserRole: string;
-    maintenanceMode: boolean;
-    paymentGatewayPublicKey: string;
-    paymentGatewaySecretKey: string;
-    googleAdsenseClientId?: string;
-};
-
-const initialSettings: AppSettings = {
+const initialSettings: AppSettingsType = {
     appName: 'AzmaAI',
     allowRegistrations: true,
     defaultUserRole: 'Student',
@@ -48,6 +38,7 @@ const initialSettings: AppSettings = {
     paymentGatewayPublicKey: '',
     paymentGatewaySecretKey: '',
     googleAdsenseClientId: '',
+    defaultModel: 'googleai/gemini-2.5-pro',
 };
 
 const initialPricing: PricingSettings = {
@@ -62,7 +53,7 @@ export default function AdminSettingsPage() {
     const { toast } = useToast();
     const { setTheme, theme } = useTheme();
     const [mounted, setMounted] = useState(false);
-    const [settings, setSettings] = useState<AppSettings>(initialSettings);
+    const [settings, setSettings] = useState<AppSettingsType>(initialSettings);
     const [pricing, setPricing] = useState<PricingSettings>(initialPricing);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
@@ -214,6 +205,36 @@ export default function AdminSettingsPage() {
                 </form>
             </CardContent>
         </Card>
+
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2"><Cpu /> AI Model Configuration</CardTitle>
+                <CardDescription>
+                    Choose the default generative model for content creation.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="grid gap-2">
+                    <Label htmlFor="default-model">Default Generative Model</Label>
+                    <Select
+                        value={settings.defaultModel}
+                        onValueChange={(value) => setSettings({...settings, defaultModel: value})}
+                    >
+                        <SelectTrigger id="default-model" className="w-full md:w-1/2">
+                            <SelectValue placeholder="Select a model" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="googleai/gemini-2.5-pro">Gemini 2.5 Pro (Recommended)</SelectItem>
+                            <SelectItem value="googleai/gemini-2.5-flash">Gemini 2.5 Flash (Faster)</SelectItem>
+                        </SelectContent>
+                    </Select>
+                     <p className="text-xs text-muted-foreground">
+                        Gemini Pro offers higher quality, while Flash is faster. Choose based on your priority.
+                    </p>
+                </div>
+            </CardContent>
+        </Card>
+
 
         <Card>
             <CardHeader>
@@ -424,5 +445,3 @@ export default function AdminSettingsPage() {
     </div>
   )
 }
-
-    

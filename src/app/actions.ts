@@ -12,7 +12,7 @@ import { exportToDocx as buildDocx } from '@/lib/docx-exporter';
 import { Packer } from 'docx';
 import type { DocumentContent, References, StyleOptions, Section, ContentBlock } from '@/types';
 import { db } from '@/lib/firebase';
-import { doc, updateDoc, increment } from 'firebase/firestore';
+import { doc, updateDoc, increment, getDoc } from 'firebase/firestore';
 
 
 type GenerationFormValuesWithTemplate = {
@@ -103,7 +103,12 @@ export async function generateContentAction(
     userId: string
 ) {
   try {
-    const generatedContent = await generateAcademicContent(values);
+    const settingsDocRef = doc(db, 'settings', 'global');
+    const settingsDoc = await getDoc(settingsDocRef);
+    const defaultModel = settingsDoc.exists() ? settingsDoc.data().appSettings.defaultModel : 'googleai/gemini-2.5-pro';
+
+    const generatedContent = await generateAcademicContent({ ...values, model: defaultModel });
+
 
     if (!generatedContent || !generatedContent.sections) {
       throw new Error('AI failed to generate valid document content.');

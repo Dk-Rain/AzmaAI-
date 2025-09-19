@@ -21,6 +21,7 @@ const GenerateAcademicContentInputSchema = z.object({
   taskType: z.enum(academicTaskTypes).describe('The type of academic task.'),
   topic: z.string().describe('The topic of the academic content to generate.'),
   numPages: z.coerce.number().optional().describe('The desired number of pages for the content.'),
+  model: z.string().optional().describe('The generative model to use.'),
   parameters: z
     .string().optional()
     .describe(
@@ -64,7 +65,7 @@ const arxivSearchTool = ai.defineTool(
             
             const results = entries.map(entry => {
                 const title = entry.match(/<title>([\s\S]*?)<\/title>/)?.[1].trim().replace(/\n\s*/g, ' ');
-                const summary = entry.match(/<summary>([\s-S]*?)<\/summary>/)?.[1].trim().replace(/\n\s*/g, ' ');
+                const summary = entry.match(/<summary>([\s\S]*?)<\/summary>/)?.[1].trim().replace(/\n\s*/g, ' ');
                 const authors = [...entry.matchAll(/<name>([\s\S]*?)<\/name>/g)].map(match => match[1].trim()).join(', ');
                 const published = entry.match(/<published>([\s\S]*?)<\/published>/)?.[1].trim();
                 const doi = entry.match(/<arxiv:doi[\s\S]*?>([\s\S]*?)<\/arxiv:doi>/)?.[1].trim();
@@ -117,7 +118,6 @@ const pubmedSearchTool = ai.defineTool(
 
 const generateAcademicContentPrompt = ai.definePrompt({
   name: 'generateAcademicContentPrompt',
-  model: 'googleai/gemini-2.5-pro',
   input: {schema: GenerateAcademicContentInputSchema.extend({
     format: z.string().describe('The suggested structure or format for the document.'),
     shouldResearch: z.boolean().describe('Whether the AI should perform external academic research.'),
@@ -173,7 +173,13 @@ const generateAcademicContentFlow = ai.defineFlow(
     const researchHeavyTasks = ['Research Paper', 'Literature Review', 'Thesis', 'Dissertation'];
     const shouldResearch = researchHeavyTasks.includes(input.taskType);
     
-    const {output} = await generateAcademicContentPrompt({...input, format, shouldResearch});
+    const {output} = await ai.generate({
+        model: input.model || 'googleai/gemini-2.5-pro',
+        prompt: generateAcademicContentPrompt.prompt,
+        input: {...input, format, shouldResearch},
+        output: { schema: generateAcademicContentPrompt.output.schema},
+        tools: generateAcademicContentPrompt.tools,
+    });
     return output!;
   }
 );

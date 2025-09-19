@@ -42,7 +42,7 @@ export type DocumentHistoryEntry = {
     docId: string;
     title: string;
     generatedAt: string;
-    generatedBy: string; // In a real app, this would be a user ID
+    generatedBy: string; 
 };
 
 export type PricingSettings = {
@@ -51,7 +51,19 @@ export type PricingSettings = {
     researcher: { monthly: number; yearly: number };
     professor: { monthly: number; yearly: number };
     teacher: { monthly: number; yearly: number };
-}
+};
+
+export type AppSettings = {
+    appName: string;
+    allowRegistrations: boolean;
+    defaultUserRole: string;
+    maintenanceMode: boolean;
+    paymentGatewayPublicKey: string;
+    paymentGatewaySecretKey: string;
+    googleAdsenseClientId?: string;
+    defaultModel: string;
+};
+
 
 export type Announcement = {
     id: string;
