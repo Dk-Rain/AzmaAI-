@@ -175,8 +175,7 @@ const generateAcademicContentFlow = ai.defineFlow(
     
     const {output} = await ai.generate({
         model: input.model || 'googleai/gemini-2.5-pro',
-        prompt: generateAcademicContentPrompt.prompt,
-        input: {...input, format, shouldResearch},
+        prompt: generateAcademicContentPrompt.render({input: {...input, format, shouldResearch}}),
         output: { schema: generateAcademicContentPrompt.output.schema},
         tools: generateAcademicContentPrompt.tools,
     });
