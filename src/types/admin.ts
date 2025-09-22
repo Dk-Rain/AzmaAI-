@@ -60,7 +60,7 @@ export type AppSettings = {
     maintenanceMode: boolean;
     paymentGatewayPublicKey: string;
     paymentGatewaySecretKey: string;
-g    googleAdsenseClientId?: string;
+    googleAdsenseClientId?: string;
     defaultModel: 'googleai/gemini-2.5-pro' | 'googleai/gemini-2.5-flash' | 'openai/gpt-4o';
 };
 

@@ -173,8 +173,11 @@ const generateAcademicContentFlow = ai.defineFlow(
     const researchHeavyTasks = ['Research Paper', 'Literature Review', 'Thesis', 'Dissertation'];
     const shouldResearch = researchHeavyTasks.includes(input.taskType);
     
+    // Dynamically select the model based on the input
+    const model = ai.model(input.model || 'googleai/gemini-2.5-pro');
+
     const {output} = await ai.generate({
-        model: input.model || 'googleai/gemini-2.5-pro',
+        model,
         prompt: generateAcademicContentPrompt.render({input: {...input, format, shouldResearch}}),
         output: { schema: generateAcademicContentPrompt.output.schema},
         tools: generateAcademicContentPrompt.tools,
