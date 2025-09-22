@@ -209,7 +209,7 @@ export default function AdminSettingsPage() {
 
         <Card>
             <CardHeader>
-                <CardTitle className="flex items-center gap-2"><Cpu /> AI Model Configuration</CardTitle>
+                <CardTitle className="flex items-center gap-2"><Cpu /> Default Generative Model</CardTitle>
                 <CardDescription>
                     Choose the default generative model for content creation.
                 </CardDescription>
@@ -227,7 +227,6 @@ export default function AdminSettingsPage() {
                         <SelectContent>
                             <SelectItem value="googleai/gemini-2.5-pro">Google - Gemini 2.5 Pro (Recommended)</SelectItem>
                             <SelectItem value="googleai/gemini-2.5-flash">Google - Gemini 2.5 Flash (Fast)</SelectItem>
-                            <SelectItem value="openai/gpt-4o">OpenAI - GPT-4o</SelectItem>
                         </SelectContent>
                     </Select>
                      <p className="text-xs text-muted-foreground">
