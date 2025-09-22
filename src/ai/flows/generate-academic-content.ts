@@ -155,7 +155,7 @@ Your output must be a single, valid JSON object that strictly adheres to the Gen
 *   **Include Tables**: {{#if includeTables}}Yes{{else}}No{{/if}}
 *   **Include Lists**: {{#if includeLists}}Yes{{else}}No{{/if}}
 
-Adhere to all instructions and generate a complete, high-quality academic document in the specified JSON format. Do NOT include an "Abstract" section unless explicitly requested in the parameters. If you performed research, you MUST include a "References" section populated with the sources you used.
+Adhere to all instructions and generate a complete, high-quality academic document in the specified JSON format. Do NOT include an "Abstract" section unless a user explicitly asks for sources in the parameters. If you performed research, you MUST include a "References" section populated with the sources you used.
 `,
 });
 
@@ -173,11 +173,8 @@ const generateAcademicContentFlow = ai.defineFlow(
     const researchHeavyTasks = ['Research Paper', 'Literature Review', 'Thesis', 'Dissertation'];
     const shouldResearch = researchHeavyTasks.includes(input.taskType);
     
-    // Dynamically select the model based on the input
-    const model = ai.model(input.model || 'googleai/gemini-2.5-pro');
-
     const {output} = await ai.generate({
-        model,
+        model: input.model || 'googleai/gemini-2.5-pro',
         prompt: generateAcademicContentPrompt.render({input: {...input, format, shouldResearch}}),
         output: { schema: generateAcademicContentPrompt.output.schema},
         tools: generateAcademicContentPrompt.tools,
