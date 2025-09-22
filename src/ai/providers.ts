@@ -1,37 +1,12 @@
 
 import { googleAI } from '@genkit-ai/googleai';
-import { openAI } from 'genkitx-openai';
+// import { openAI } from 'genkitx-openai';
 import { defineModel } from 'genkit/models';
 
 // Define standard models
-export const gpt4o = defineModel(
-  {
-    name: 'openai/gpt-4o',
-    label: 'OpenAI - GPT-4o',
-    supports: {
-      media: false,
-      multiturn: true,
-      tools: true,
-      systemRole: true,
-      output: ['text', 'json'],
-    },
-  },
-  async (request) => {
-    // This is a placeholder for the actual OpenAI API call logic
-    // which the openAI plugin will handle.
-    return {
-      candidates: [{
-        index: 0,
-        finishReason: 'stop',
-        message: {
-          role: 'model',
-          content: [{ text: 'response from GPT-4o' }]
-        }
-      }]
-    };
-  }
-);
+// export const gpt4o = 'gpt-4o'; // The plugin resolves the string to the correct model
 
+/*
 export const deepseek = defineModel(
   {
     name: 'deepseek/deepseek-chat',
@@ -58,12 +33,14 @@ export const deepseek = defineModel(
     };
   }
 );
+*/
 
 // Array of all provider plugins
 export const providerPlugins = [
   googleAI({ apiKey: process.env.GEMINI_API_KEY }),
 ];
 
+/*
 // Conditionally add OpenAI if the key is provided
 if (process.env.OPENAI_API_KEY) {
   providerPlugins.push(openAI({ apiKey: process.env.OPENAI_API_KEY }));
@@ -83,11 +60,12 @@ if (process.env.DEEPSEEK_API_KEY) {
     )
   );
 }
+*/
 
 // Array of all models
 export const allModels = {
   'googleai/gemini-2.5-pro': 'googleai/gemini-2.5-pro',
   'googleai/gemini-2.5-flash': 'googleai/gemini-2.5-flash',
-  'openai/gpt-4o': gpt4o,
-  'deepseek/deepseek-chat': deepseek,
+  // 'openai/gpt-4o': gpt4o,
+  // 'deepseek/deepseek-chat': deepseek,
 };

@@ -226,8 +226,6 @@ export default function AdminSettingsPage() {
                         <SelectContent>
                             <SelectItem value="googleai/gemini-2.5-pro">Google - Gemini 2.5 Pro (Recommended)</SelectItem>
                             <SelectItem value="googleai/gemini-2.5-flash">Google - Gemini 2.5 Flash (Fast)</SelectItem>
-                            <SelectItem value="openai/gpt-4o">OpenAI - GPT-4o</SelectItem>
-                            <SelectItem value="deepseek/deepseek-chat">DeepSeek - DeepSeek-Chat</SelectItem>
                         </SelectContent>
                     </Select>
                      <p className="text-xs text-muted-foreground">
