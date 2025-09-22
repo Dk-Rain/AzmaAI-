@@ -1,7 +1,14 @@
-import {genkit} from 'genkit';
-import {googleAI} from '@genkit-ai/googleai';
+
+import { genkit } from 'genkit';
+import { providerPlugins, allModels } from './providers';
 
 export const ai = genkit({
-  plugins: [googleAI()],
-  model: 'googleai/gemini-2.5-flash',
+  plugins: providerPlugins,
+  // The 'model' here is a fallback. The actual model used for generation
+  // will be determined by the admin settings.
+  model: allModels['googleai/gemini-2.5-flash'],
+  
+  // Optional: configure logging and other Genkit settings
+  // logLevel: 'debug',
+  // logSinks: ['file'],
 });

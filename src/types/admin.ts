@@ -61,7 +61,7 @@ export type AppSettings = {
     paymentGatewayPublicKey: string;
     paymentGatewaySecretKey: string;
     googleAdsenseClientId?: string;
-    defaultModel: string;
+    defaultModel: 'googleai/gemini-2.5-pro' | 'googleai/gemini-2.5-flash' | 'openai/gpt-4o' | 'deepseek/deepseek-chat';
 };
 
 

@@ -218,18 +218,20 @@ export default function AdminSettingsPage() {
                     <Label htmlFor="default-model">Default Generative Model</Label>
                     <Select
                         value={settings.defaultModel}
-                        onValueChange={(value) => setSettings({...settings, defaultModel: value})}
+                        onValueChange={(value) => setSettings({...settings, defaultModel: value as AppSettingsType['defaultModel']})}
                     >
                         <SelectTrigger id="default-model" className="w-full md:w-1/2">
                             <SelectValue placeholder="Select a model" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="googleai/gemini-2.5-pro">Gemini 2.5 Pro (Recommended)</SelectItem>
-                            <SelectItem value="googleai/gemini-2.5-flash">Gemini 2.5 Flash (Faster)</SelectItem>
+                            <SelectItem value="googleai/gemini-2.5-pro">Google - Gemini 2.5 Pro (Recommended)</SelectItem>
+                            <SelectItem value="googleai/gemini-2.5-flash">Google - Gemini 2.5 Flash (Fast)</SelectItem>
+                            <SelectItem value="openai/gpt-4o">OpenAI - GPT-4o</SelectItem>
+                            <SelectItem value="deepseek/deepseek-chat">DeepSeek - DeepSeek-Chat</SelectItem>
                         </SelectContent>
                     </Select>
                      <p className="text-xs text-muted-foreground">
-                        Gemini Pro offers higher quality, while Flash is faster. Choose based on your priority.
+                        Ensure the appropriate API keys are set in your environment for the selected provider.
                     </p>
                 </div>
             </CardContent>
