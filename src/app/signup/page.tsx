@@ -1,6 +1,6 @@
 
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,6 +18,7 @@ import { MountainIcon } from 'lucide-react';
 import { auth, db } from '@/lib/firebase';
 import { createUserWithEmailAndPassword, updateProfile, signInWithPopup, GoogleAuthProvider, sendEmailVerification } from 'firebase/auth';
 import { setDoc, doc, getDoc } from 'firebase/firestore';
+import type { AppSettings } from '@/types/admin';
 
 const GoogleIcon = () => (
     <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="h-5 w-5">
@@ -34,11 +35,36 @@ export default function SignupPage() {
   const [role, setRole] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [settings, setSettings] = useState<AppSettings | null>(null);
   const { toast } = useToast();
   const router = useRouter();
 
+  useEffect(() => {
+    const fetchSettings = async () => {
+        const settingsDocRef = doc(db, 'settings', 'global');
+        const settingsDoc = await getDoc(settingsDocRef);
+        if (settingsDoc.exists()) {
+            setSettings(settingsDoc.data().appSettings as AppSettings);
+        } else {
+            // Fallback if settings are not found, default to allowing registration
+            setSettings({ allowRegistrations: true } as AppSettings);
+        }
+    };
+    fetchSettings();
+  }, []);
+
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (settings && !settings.allowRegistrations) {
+        toast({
+            variant: 'destructive',
+            title: "Registrations Disabled",
+            description: "New user registrations are currently not allowed.",
+        });
+        return;
+    }
+
     if (!role) {
       toast({
         variant: 'destructive',
@@ -79,6 +105,15 @@ export default function SignupPage() {
   };
 
   const handleGoogleSignIn = async () => {
+    if (settings && !settings.allowRegistrations) {
+        toast({
+            variant: 'destructive',
+            title: "Registrations Disabled",
+            description: "New user registrations are currently not allowed.",
+        });
+        return;
+    }
+
     setIsGoogleLoading(true);
     try {
         const provider = new GoogleAuthProvider();
@@ -93,7 +128,7 @@ export default function SignupPage() {
                 uid: user.uid,
                 fullName: user.displayName,
                 email: user.email,
-                role: 'Student', // Default role for new Google sign-ins
+                role: settings?.defaultUserRole || 'Student', // Use default role from settings
                 isPremium: false, // New Google sign-ins also start on Free plan
                 photoUrl: user.photoURL,
                 createdAt: new Date().toISOString(),
