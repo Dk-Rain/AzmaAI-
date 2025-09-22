@@ -3,21 +3,6 @@ import { googleAI } from '@genkit-ai/googleai';
 import { openAI } from 'genkitx-openai';
 import { defineModel } from 'genkit/models';
 
-// Define standard models
-const gpt4o = defineModel(
-  {
-    name: 'openai/gpt-4o',
-    label: 'OpenAI - GPT-4o',
-    version: '4o',
-    vendor: 'OpenAI',
-  },
-  async (request) => {
-    // Note: The 'openAI' plugin handles the actual API call logic.
-    // This definition is primarily for metadata and registration.
-    return request as any; // This is a placeholder, actual logic is in the plugin
-  }
-);
-
 // Array to hold provider plugins that are initialized
 const providerPlugins: any[] = [];
 

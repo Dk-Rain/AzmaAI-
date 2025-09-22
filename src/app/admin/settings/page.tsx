@@ -213,7 +213,7 @@ export default function AdminSettingsPage() {
                     Choose the default generative model for content creation.
                 </CardDescription>
             </CardHeader>
-            <CardContent className="p-4 border rounded-lg">
+            <CardContent>
                 <div className="grid gap-2">
                     <Label htmlFor="default-model">Default Generative Model</Label>
                     <Select
