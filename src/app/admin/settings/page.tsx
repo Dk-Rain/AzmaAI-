@@ -208,14 +208,14 @@ export default function AdminSettingsPage() {
 
         <Card>
             <CardHeader>
-                <CardTitle className="flex items-center gap-2"><Cpu /> AI Model Configuration</CardTitle>
+                <CardTitle className="flex items-center gap-2"><Cpu /> Default Generative Model</CardTitle>
                 <CardDescription>
                     Choose the default generative model for content creation.
                 </CardDescription>
             </CardHeader>
             <CardContent>
                 <div className="grid gap-2">
-                    <Label htmlFor="default-model">Default Generative Model</Label>
+                    <Label htmlFor="default-model">Default Google Model</Label>
                     <Select
                         value={settings.defaultModel}
                         onValueChange={(value) => setSettings({...settings, defaultModel: value as AppSettingsType['defaultModel']})}
@@ -445,3 +445,5 @@ export default function AdminSettingsPage() {
     </div>
   )
 }
+
+    
