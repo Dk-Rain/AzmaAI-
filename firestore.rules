@@ -1,5 +1,4 @@
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -78,9 +77,8 @@ service cloud.firestore {
         // Anyone can read document history to verify a document's authenticity.
         allow read: if true;
         
-        // The application backend is responsible for creating these records.
-        // Direct client-side writes should be disallowed.
-        allow write: if false; // In a production app, this would be restricted to a server-side process
+        // The export record is only created from the backend and should not be client-writable.
+        allow write: if false;
     }
   }
 }
