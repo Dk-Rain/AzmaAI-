@@ -94,6 +94,9 @@ const editSectionFlow = ai.defineFlow(
         sectionTitle,
         instructions
     });
-    return output!;
+    if (!output) {
+      throw new Error("The AI failed to return an edited document.");
+    }
+    return output;
   }
 );

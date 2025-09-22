@@ -61,6 +61,9 @@ const checkPlagiarismFlow = ai.defineFlow(
   },
   async ({document}) => {
     const {output} = await prompt({document: JSON.stringify(document)});
-    return output!;
+    if (!output) {
+      throw new Error("The AI failed to return a plagiarism check result.");
+    }
+    return output;
   }
 );

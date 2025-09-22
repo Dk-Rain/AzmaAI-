@@ -174,11 +174,15 @@ const generateAcademicContentFlow = ai.defineFlow(
     const shouldResearch = researchHeavyTasks.includes(input.taskType);
     
     const {output} = await ai.generate({
-        model: input.model || 'googleai/gemini-2.5-pro',
+        model: input.model as any || 'googleai/gemini-2.5-pro',
         prompt: generateAcademicContentPrompt.render({input: {...input, format, shouldResearch}}),
         output: { schema: generateAcademicContentPrompt.output.schema},
         tools: generateAcademicContentPrompt.tools,
     });
-    return output!;
+    
+    if (!output) {
+      throw new Error("The AI failed to generate any content for the document.");
+    }
+    return output;
   }
 );

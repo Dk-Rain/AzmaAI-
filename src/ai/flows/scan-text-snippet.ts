@@ -50,6 +50,9 @@ const scanTextSnippetFlow = ai.defineFlow(
   },
   async ({text}) => {
     const {output} = await prompt({text});
-    return output!;
+    if (!output) {
+      throw new Error("The AI failed to return cleaned text.");
+    }
+    return output;
   }
 );
