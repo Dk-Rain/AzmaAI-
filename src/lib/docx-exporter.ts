@@ -30,25 +30,19 @@ async function renderBlockToDocx(block: ContentBlock, styles: StyleOptions): Pro
     
     case 'image':
       try {
-        let imageBuffer: ArrayBuffer;
-        if (block.url.startsWith('data:')) {
-            const base64Data = block.url.split(',')[1];
-            const buffer = Buffer.from(base64Data, 'base64');
-            imageBuffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
-        } else {
-            const response = await fetch(block.url);
-            if (!response.ok) {
-                throw new Error(`Failed to fetch image: ${response.statusText}`);
-            }
-            imageBuffer = await response.arrayBuffer();
+        if (!block.url.startsWith('data:image/png;base64,')) {
+            // If it's not a PNG data URL, we can't process it with this simple logic.
+            // In a real app, you might fetch and convert other URLs.
+            throw new Error('Image URL is not in the expected data URL format.');
         }
+        const base64Data = block.url.replace(/^data:image\/png;base64,/, "");
 
         return [
           new Paragraph({
             alignment: AlignmentType.CENTER,
             children: [
               new ImageRun({
-                data: imageBuffer,
+                data: base64Data,
                 transformation: {
                   width: 500,
                   height: 300,
@@ -60,7 +54,7 @@ async function renderBlockToDocx(block: ContentBlock, styles: StyleOptions): Pro
         ];
       } catch (error) {
         console.error('Failed to process image for DOCX:', error);
-        return [new Paragraph({ text: `[Image could not be loaded: ${block.url}]`, style: 'default' })];
+        return [new Paragraph({ text: `[Image could not be loaded: ${block.caption || 'Untitled'}]`, style: 'default' })];
       }
     
     case 'image_placeholder':
