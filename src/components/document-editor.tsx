@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -427,7 +428,7 @@ export function DocumentEditor({
             );
         default:
             const exhaustiveCheck: never = block;
-            return [new Paragraph({ text: `[Unsupported Block]`, style: 'default' })];
+            return <p key={blockIndex}>[Unsupported Block Type]</p>;
     }
   };
 
