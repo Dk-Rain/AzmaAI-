@@ -108,7 +108,7 @@ export default function ProfilePage() {
 
         // Update Firestore document
         const userDocRef = doc(db, 'users', user.uid);
-        await updateDoc(userDocRef, dataToUpdate, { merge: true });
+        await updateDoc(userDocRef, dataToUpdate);
         
         const updatedUser: UserData = {
           ...user,
