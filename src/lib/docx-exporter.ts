@@ -30,12 +30,10 @@ async function renderBlockToDocx(block: ContentBlock, styles: StyleOptions): Pro
     
     case 'image':
       try {
-        if (!block.url.startsWith('data:image/png;base64,')) {
-            // If it's not a PNG data URL, we can't process it with this simple logic.
-            // In a real app, you might fetch and convert other URLs.
-            throw new Error('Image URL is not in the expected data URL format.');
+        if (!block.url.startsWith('data:image/')) {
+            throw new Error('Image URL is not in a data URL format.');
         }
-        const base64Data = block.url.replace(/^data:image\/png;base64,/, "");
+        const base64Data = block.url.split(',')[1];
 
         return [
           new Paragraph({
@@ -90,7 +88,6 @@ async function renderBlockToDocx(block: ContentBlock, styles: StyleOptions): Pro
       return [table, new Paragraph({ text: block.caption || '', alignment: AlignmentType.CENTER, style: 'default' })];
 
     default:
-      const exhaustiveCheck: never = block;
       return [new Paragraph({ text: `[Unsupported Block]`, style: 'default' })];
   }
 }
