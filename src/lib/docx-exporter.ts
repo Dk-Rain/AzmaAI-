@@ -3,7 +3,6 @@
 
 import {
   Document,
-  Packer,
   Paragraph,
   TextRun,
   HeadingLevel,
@@ -15,7 +14,6 @@ import {
   TableRow,
   TableCell,
   WidthType,
-  ISectionOptions,
 } from 'docx';
 import type { DocumentContent, References, StyleOptions, ContentBlock } from '@/types';
 import type { DocumentHistoryEntry } from '@/types/admin';
@@ -23,7 +21,7 @@ import { db } from './firebase';
 import { doc, setDoc } from 'firebase/firestore';
 
 
-async function renderBlockToDocx(block: ContentBlock, styles: StyleOptions): Promise<(Paragraph | Table)[]> {
+async function renderBlockToDocx(block: ContentBlock): Promise<(Paragraph | Table)[]> {
   switch (block.type) {
     case 'text':
       return [new Paragraph({ text: block.text, style: 'default' })];
@@ -135,7 +133,7 @@ export async function exportToDocx(
     }));
 
     for (const block of (section.content || [])) {
-        const renderedBlocks = await renderBlockToDocx(block, styles);
+        const renderedBlocks = await renderBlockToDocx(block);
         sectionChildren.push(...renderedBlocks);
     }
     
@@ -147,7 +145,7 @@ export async function exportToDocx(
                 style: 'h2',
             }));
             for (const block of (subSection.content || [])) {
-                const renderedBlocks = await renderBlockToDocx(block, styles);
+                const renderedBlocks = await renderBlockToDocx(block);
                 sectionChildren.push(...renderedBlocks);
             }
         }
@@ -235,7 +233,6 @@ export async function exportToDocx(
         }));
     });
   }
-
 
   const doc = new Document({
     styles: {
