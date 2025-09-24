@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -721,7 +722,7 @@ export function ControlPanel({
                                 <CollapsibleTrigger className="flex items-center gap-2 font-semibold text-left flex-1 py-1 group/trigger">
                                     <ChevronDown className="h-5 w-5 text-muted-foreground transition-transform duration-200 group-data-[state=closed]/trigger:-rotate-90" />
                                     <Folder className="h-5 w-5 text-primary" />
-                                    <span>{project.name}</span>
+                                    <span className="truncate">{project.name}</span>
                                 </CollapsibleTrigger>
                                 
                                 <DropdownMenu>
@@ -730,6 +731,7 @@ export function ControlPanel({
                                           <MoreHorizontal className="h-4 w-4" />
                                       </Button>
                                   </DropdownMenuTrigger>
+                                  <DropdownMenuPortal>
                                   <DropdownMenuContent align="end">
                                       <DropdownMenuItem onClick={() => openRenameDialog({id: project.id, name: project.name, type: 'project'})}>
                                           <Edit className="mr-2 h-4 w-4"/> Rename
@@ -757,22 +759,24 @@ export function ControlPanel({
                                           </AlertDialogContent>
                                       </AlertDialog>
                                   </DropdownMenuContent>
+                                  </DropdownMenuPortal>
                                 </DropdownMenu>
                             </div>
 
                             <CollapsibleContent className="pl-4 border-l-2 border-muted ml-4 space-y-1">
                                 {project.documents.length > 0 ? project.documents.map(doc => (
                                     <div key={doc.id} className="flex justify-between items-center group pl-2">
-                                        <button onClick={() => loadDocument(doc)} className="flex items-center gap-2 text-left flex-1 py-1">
-                                            <File className="h-4 w-4 text-muted-foreground" />
+                                        <button onClick={() => loadDocument(doc)} className="flex items-center gap-2 text-left flex-1 py-1 overflow-hidden">
+                                            <File className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                                             <span className="text-sm truncate">{doc.title}</span>
                                         </button>
                                           <DropdownMenu>
                                               <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100">
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 flex-shrink-0">
                                                     <MoreHorizontal className="h-4 w-4" />
                                                 </Button>
                                               </DropdownMenuTrigger>
+                                              <DropdownMenuPortal>
                                               <DropdownMenuContent align="end">
                                                   <DropdownMenuItem onClick={() => openRenameDialog({id: doc.id, name: doc.title, type: 'document', projectId: project.id})}>
                                                       <Edit className="mr-2 h-4 w-4"/> Rename
@@ -801,6 +805,7 @@ export function ControlPanel({
                                                       </AlertDialogContent>
                                                   </AlertDialog>
                                               </DropdownMenuContent>
+                                              </DropdownMenuPortal>
                                           </DropdownMenu>
                                     </div>
                                 )) : <p className="text-xs text-muted-foreground pl-4 py-1">No documents in this project.</p>}
@@ -813,16 +818,17 @@ export function ControlPanel({
                     <div className="space-y-1">
                          {filteredWorkspace.standaloneDocuments.map(doc => (
                             <div key={doc.id} className="flex justify-between items-center group pr-2">
-                                <button onClick={() => loadDocument(doc)} className="flex items-center gap-2 text-left flex-1 py-1">
-                                    <File className="h-5 w-5 text-muted-foreground" />
+                                <button onClick={() => loadDocument(doc)} className="flex items-center gap-2 text-left flex-1 py-1 overflow-hidden">
+                                    <File className="h-5 w-5 text-muted-foreground flex-shrink-0" />
                                     <span className="font-medium text-sm truncate">{doc.title}</span>
                                 </button>
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
-                                      <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100">
+                                      <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 flex-shrink-0">
                                           <MoreHorizontal className="h-4 w-4" />
                                       </Button>
                                     </DropdownMenuTrigger>
+                                    <DropdownMenuPortal>
                                     <DropdownMenuContent align="end">
                                         <DropdownMenuItem onClick={() => openRenameDialog({id: doc.id, name: doc.title, type: 'document'})}>
                                             <Edit className="mr-2 h-4 w-4"/> Rename
@@ -870,6 +876,7 @@ export function ControlPanel({
                                             </AlertDialogContent>
                                         </AlertDialog>
                                     </DropdownMenuContent>
+                                    </DropdownMenuPortal>
                                 </DropdownMenu>
                             </div>
                          ))}
