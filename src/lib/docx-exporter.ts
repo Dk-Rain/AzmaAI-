@@ -18,7 +18,7 @@ import {
 import type { DocumentContent, References, StyleOptions, ContentBlock } from '@/types';
 import type { DocumentHistoryEntry } from '@/types/admin';
 import { db } from './firebase';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc as getFirestoreDoc, setDoc } from 'firebase/firestore';
 
 
 async function renderBlockToDocx(block: ContentBlock): Promise<(Paragraph | Table)[]> {
@@ -86,6 +86,7 @@ async function renderBlockToDocx(block: ContentBlock): Promise<(Paragraph | Tabl
       return [table, new Paragraph({ text: block.caption || '', alignment: AlignmentType.CENTER, style: 'default' })];
 
     default:
+      const exhaustiveCheck: never = block;
       return [new Paragraph({ text: `[Unsupported Block]`, style: 'default' })];
   }
 }
@@ -115,7 +116,7 @@ export async function exportToDocx(
 
   // Save export record to Firestore
   try {
-      const exportDocRef = doc(db, 'export', uniqueId);
+      const exportDocRef = getFirestoreDoc(db, 'export', uniqueId);
       await setDoc(exportDocRef, exportEntry);
   } catch (error) {
       console.error("Failed to save export record to Firestore:", error);
