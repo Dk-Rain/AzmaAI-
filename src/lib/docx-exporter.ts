@@ -38,7 +38,7 @@ async function renderBlockToDocx(block: ContentBlock): Promise<(Paragraph | Tabl
             alignment: AlignmentType.CENTER,
             children: [
               new ImageRun({
-                data: base64Data,
+                data: Buffer.from(base64Data, 'base64'),
                 transformation: {
                   width: 500,
                   height: 300,
@@ -297,3 +297,5 @@ export async function exportToDocx(
 
   return doc;
 }
+
+    
