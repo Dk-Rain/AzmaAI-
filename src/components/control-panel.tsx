@@ -94,7 +94,7 @@ const UsageMeter = ({ user, setUser }: { user: UserData | null, setUser: React.D
 
     const isPremium = user.isPremium || false;
     const usage = user.usage || { wordsUsed: 0, documentsCreated: 0 };
-    const limits = { words: 1000, documents: 3 };
+    const limits = { words: 5000, documents: 3 };
 
     const wordPercentage = isPremium ? 100 : Math.min((usage.wordsUsed / limits.words) * 100, 100);
     const docPercentage = isPremium ? 100 : Math.min((usage.documentsCreated / limits.documents) * 100, 100);
