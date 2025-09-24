@@ -86,8 +86,7 @@ async function renderBlockToDocx(block: ContentBlock): Promise<(Paragraph | Tabl
       return [table, new Paragraph({ text: block.caption || '', alignment: AlignmentType.CENTER, style: 'default' })];
 
     default:
-      const exhaustiveCheck: never = block;
-      return [new Paragraph({ text: `[Unsupported Block]`, style: 'default' })];
+        return [new Paragraph({ text: `[Unsupported Block]`, style: 'default' })];
   }
 }
 
