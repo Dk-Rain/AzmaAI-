@@ -123,16 +123,22 @@ export async function generateContentAction(
     }).filter((r): r is { referenceText: string; isVerified: boolean; verificationNotes: string } => r !== null) : [];
 
     // Calculate word count and update usage
-    const wordCount = generatedContent.sections.reduce((acc, section) => {
-        // Ensure section.content is an array before reducing
-        const sectionContent = Array.isArray(section.content) ? section.content : [];
-        const sectionWords = sectionContent.reduce((count, block) => {
+    const calculateWords = (blocks: ContentBlock[]): number => {
+        return (blocks || []).reduce((count, block) => {
             if (block.type === 'text') {
-                return count + block.text.split(/\s+/).length;
+                return count + block.text.split(/\s+/).filter(Boolean).length;
             }
             return count;
         }, 0);
-        return acc + sectionWords;
+    };
+
+    const wordCount = generatedContent.sections.reduce((acc, section) => {
+        const sectionWords = calculateWords(section.content);
+        const subSectionsWords = (section.subSections || []).reduce(
+            (subAcc, subSection) => subAcc + calculateWords(subSection.content),
+            0
+        );
+        return acc + sectionWords + subSectionsWords;
     }, 0);
 
     await updateUsageAction(userId, wordCount, 1);
@@ -346,5 +352,3 @@ export async function generateImageForSectionAction(prompt: string) {
         return { data: null, error: 'Failed to generate image.' };
     }
 }
-
-    

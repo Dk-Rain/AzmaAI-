@@ -10,7 +10,7 @@ import {
     Trash2, Search, Library, PlusCircle, FolderPlus, MountainIcon, Folder, File, GripVertical, ChevronDown, MoreHorizontal, Edit, FolderInput, PenLine, Archive, Share2, Gauge, X, FileText
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import type { DocumentContent, References, StyleOptions, FontType, Workspace, Project, DocumentItem, SharedDocument } from '@/types';
+import type { DocumentContent, References, StyleOptions, FontType, Workspace, Project, DocumentItem, SharedDocument, ContentBlock } from '@/types';
 import type { User as UserData } from '@/types/admin';
 import { GenerationSchema, GenerationFormValues, availableFonts } from '@/types';
 import { academicTaskTypes } from '@/types/academic-task-types';
@@ -600,8 +600,24 @@ export function ControlPanel({
       // Manually update local user state for immediate feedback
       setUser(prevUser => {
           if (!prevUser) return null;
-          const wordCount = data.content.sections.reduce((acc, section) => 
-              acc + section.content.reduce((c, b) => c + (b.type === 'text' ? b.text.split(/\s+/).length : 0), 0), 0);
+          
+          const calculateWords = (blocks: ContentBlock[]): number => {
+            return (blocks || []).reduce((count, block) => {
+                if (block.type === 'text') {
+                    return count + block.text.split(/\s+/).filter(Boolean).length;
+                }
+                return count;
+            }, 0);
+          };
+
+          const wordCount = data.content.sections.reduce((acc, section) => {
+              const sectionWords = calculateWords(section.content);
+              const subSectionsWords = (section.subSections || []).reduce(
+                  (subAcc, subSection) => subAcc + calculateWords(subSection.content),
+                  0
+              );
+              return acc + sectionWords + subSectionsWords;
+          }, 0);
           
           return {
               ...prevUser,
@@ -1096,5 +1112,3 @@ export function ControlPanel({
     </div>
   );
 }
-
-    
