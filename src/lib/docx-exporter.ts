@@ -30,11 +30,18 @@ async function renderBlockToDocx(block: ContentBlock, styles: StyleOptions): Pro
     
     case 'image':
       try {
-        const response = await fetch(block.url);
-        if (!response.ok) {
-            throw new Error(`Failed to fetch image: ${response.statusText}`);
+        let imageBuffer: ArrayBuffer;
+        if (block.url.startsWith('data:')) {
+            const base64Data = block.url.split(',')[1];
+            imageBuffer = Buffer.from(base64Data, 'base64');
+        } else {
+            const response = await fetch(block.url);
+            if (!response.ok) {
+                throw new Error(`Failed to fetch image: ${response.statusText}`);
+            }
+            imageBuffer = await response.arrayBuffer();
         }
-        const imageBuffer = await response.arrayBuffer();
+
         return [
           new Paragraph({
             alignment: AlignmentType.CENTER,
@@ -51,7 +58,7 @@ async function renderBlockToDocx(block: ContentBlock, styles: StyleOptions): Pro
           block.caption ? new Paragraph({ text: block.caption, alignment: AlignmentType.CENTER, style: 'default' }) : new Paragraph({}),
         ];
       } catch (error) {
-        console.error('Failed to fetch image for DOCX:', error);
+        console.error('Failed to process image for DOCX:', error);
         return [new Paragraph({ text: `[Image could not be loaded: ${block.url}]`, style: 'default' })];
       }
     
