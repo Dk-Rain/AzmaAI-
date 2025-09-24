@@ -33,7 +33,8 @@ async function renderBlockToDocx(block: ContentBlock, styles: StyleOptions): Pro
         let imageBuffer: ArrayBuffer;
         if (block.url.startsWith('data:')) {
             const base64Data = block.url.split(',')[1];
-            imageBuffer = Buffer.from(base64Data, 'base64');
+            const buffer = Buffer.from(base64Data, 'base64');
+            imageBuffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
         } else {
             const response = await fetch(block.url);
             if (!response.ok) {
@@ -95,7 +96,6 @@ async function renderBlockToDocx(block: ContentBlock, styles: StyleOptions): Pro
       return [table, new Paragraph({ text: block.caption || '', alignment: AlignmentType.CENTER, style: 'default' })];
 
     default:
-      // This will cause a compile-time error if a new block type is added but not handled here.
       const exhaustiveCheck: never = block;
       return [new Paragraph({ text: `[Unsupported Block]`, style: 'default' })];
   }
