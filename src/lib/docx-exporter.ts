@@ -99,7 +99,7 @@ export async function exportToDocx(
   references: References,
   styles: StyleOptions,
   userId: string,
-) {
+): Promise<Document> {
   if (!content) {
     throw new Error('Content is not defined');
   }
@@ -300,5 +300,5 @@ export async function exportToDocx(
     ],
   });
 
-  return { doc };
+  return doc;
 }

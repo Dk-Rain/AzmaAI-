@@ -282,7 +282,7 @@ export async function exportDocxAction(
   userId: string
 ) {
   try {
-    const { doc } = await buildDocx(content, references, styles, userId);
+    const doc = await buildDocx(content, references, styles, userId);
     const buffer = await Packer.toBuffer(doc);
     const base64 = buffer.toString('base64');
     return { data: { file: base64 }, error: null };
