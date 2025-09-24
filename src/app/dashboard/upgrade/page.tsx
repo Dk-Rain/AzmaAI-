@@ -212,7 +212,7 @@ export default function UpgradePage() {
         closePaymentModal();
       },
       onClose: () => {
-        toast({ variant: 'outline', title: 'Payment window closed' });
+        toast({ title: 'Payment window closed' });
       },
     });
   }
