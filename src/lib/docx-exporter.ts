@@ -19,6 +19,8 @@ import type { DocumentContent, References, StyleOptions, ContentBlock } from '@/
 import type { DocumentHistoryEntry } from '@/types/admin';
 import { db } from './firebase';
 import { doc, setDoc } from 'firebase/firestore';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 
 async function renderBlockToDocx(block: ContentBlock): Promise<(Paragraph | Table)[]> {
@@ -114,19 +116,33 @@ export async function exportToDocx(
   };
 
   // Save export record to Firestore
-  try {
-      const exportDocRef = doc(db, 'exports', uniqueId);
-      await setDoc(exportDocRef, exportEntry);
+  const exportDocRef = doc(db, 'exports', uniqueId);
+  setDoc(exportDocRef, exportEntry)
+    .catch((serverError) => {
+        const permissionError = new FirestorePermissionError({
+            path: exportDocRef.path,
+            operation: 'create',
+            requestResourceData: exportEntry,
+        });
+        errorEmitter.emit('permission-error', permissionError);
+        // Also re-throw a more user-friendly error to be caught by the calling action
+        throw new Error('Failed to save document verification record.');
+    });
 
-      // Also save to user's personal history
-      const userExportDocRef = doc(db, 'users', userId, 'exports', uniqueId);
-      await setDoc(userExportDocRef, exportEntry);
+  // Also save to user's personal history
+  const userExportDocRef = doc(db, 'users', userId, 'exports', uniqueId);
+  setDoc(userExportDocRef, exportEntry)
+      .catch((serverError) => {
+          const permissionError = new FirestorePermissionError({
+              path: userExportDocRef.path,
+              operation: 'create',
+              requestResourceData: exportEntry,
+          });
+          errorEmitter.emit('permission-error', permissionError);
+          // This one is less critical for the user to see, so we can just let it be handled in the background.
+          // The main verification record is more important.
+      });
 
-  } catch (error) {
-      console.error("Failed to save export record to Firestore:", error);
-      // This is a critical failure now, so we should throw
-      throw new Error('Failed to save document verification record to the database.');
-  }
   
   const processSection = async (section: DocumentContent['sections'][0]) => {
     const sectionChildren: (Paragraph | Table)[] = [];
