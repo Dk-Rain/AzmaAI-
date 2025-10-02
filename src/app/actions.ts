@@ -363,7 +363,13 @@ export async function verifyPromoCodeAction(code: string, userEmail: string) {
             return { data: null, error: 'This promo code is invalid or does not exist.' };
         }
 
-        const promo = { id: promoDocSnap.id, ...promoDocSnap.data() } as PromoCode;
+        const promoData = promoDocSnap.data();
+        // Ensure redeemedBy is an array, even if it's missing from the document
+        if (!promoData.redeemedBy) {
+            promoData.redeemedBy = [];
+        }
+        
+        const promo = { id: promoDocSnap.id, ...promoData } as PromoCode;
 
         if (!promo.isActive) {
             return { data: null, error: 'This promo code is currently not active.' };
@@ -375,9 +381,7 @@ export async function verifyPromoCodeAction(code: string, userEmail: string) {
             return { data: null, error: 'This promo code has reached its maximum usage limit.' };
         }
 
-        // Safely access redeemedBy, defaulting to an empty array if it doesn't exist
-        const redeemedBy = promo.redeemedBy || [];
-        const userUses = redeemedBy.filter(email => email === userEmail).length;
+        const userUses = promo.redeemedBy.filter(email => email === userEmail).length;
         if (userUses >= promo.usagePerUser) {
             return { data: null, error: 'You have already redeemed this promo code the maximum number of times.' };
         }
