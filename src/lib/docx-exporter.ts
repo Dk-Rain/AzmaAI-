@@ -118,7 +118,7 @@ export async function exportToDocx(
   // Save export record to Firestore
   const exportDocRef = doc(db, 'exports', uniqueId);
   setDoc(exportDocRef, exportEntry)
-    .catch((serverError) => {
+    .catch(async (serverError) => {
         const permissionError = new FirestorePermissionError({
             path: exportDocRef.path,
             operation: 'create',
@@ -132,7 +132,7 @@ export async function exportToDocx(
   // Also save to user's personal history
   const userExportDocRef = doc(db, 'users', userId, 'exports', uniqueId);
   setDoc(userExportDocRef, exportEntry)
-      .catch((serverError) => {
+      .catch(async (serverError) => {
           const permissionError = new FirestorePermissionError({
               path: userExportDocRef.path,
               operation: 'create',
