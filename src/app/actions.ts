@@ -10,7 +10,7 @@ import { verifyReferences } from '@/ai/flows/verify-references';
 import { generateImageForSection } from '@/ai/flows/generate-image-for-section';
 import { exportToDocx as buildDocx } from '@/lib/docx-exporter';
 import { Packer } from 'docx';
-import type { DocumentContent, References, StyleOptions, Section, ContentBlock } from '@/types';
+import type { DocumentContent, References, StyleOptions, Section, ContentBlock, PromoCode } from '@/types';
 import { db } from '@/lib/firebase';
 import { doc, updateDoc, increment, getDoc } from 'firebase/firestore';
 
@@ -351,6 +351,43 @@ export async function generateImageForSectionAction(prompt: string) {
     } catch (error) {
         console.error(error);
         return { data: null, error: 'Failed to generate image.' };
+    }
+}
+
+export async function verifyPromoCodeAction(code: string, userEmail: string) {
+    try {
+        const promoDocRef = doc(db, 'promoCodes', code.toUpperCase());
+        const promoDocSnap = await getDoc(promoDocRef);
+
+        if (!promoDocSnap.exists()) {
+            return { data: null, error: 'This promo code is invalid or does not exist.' };
+        }
+
+        const promo = { id: promoDocSnap.id, ...promoDocSnap.data() } as PromoCode;
+
+        if (!promo.isActive) {
+            return { data: null, error: 'This promo code is currently not active.' };
+        }
+        if (promo.type !== 'fixed') {
+             return { data: null, error: 'This promo code is not for a fixed price plan.' };
+        }
+        if (promo.expiresAt && new Date(promo.expiresAt) < new Date()) {
+            return { data: null, error: 'This promo code has expired.' };
+        }
+        if (promo.usedCount >= promo.usageLimit) {
+            return { data: null, error: 'This promo code has reached its maximum usage limit.' };
+        }
+
+        const userUses = (promo.redeemedBy || []).filter(email => email === userEmail).length;
+        if (userUses >= promo.usagePerUser) {
+            return { data: null, error: 'You have already redeemed this promo code the maximum number of times.' };
+        }
+
+        return { data: promo, error: null };
+
+    } catch (e: any) {
+        console.error("Promo code verification failed:", e);
+        return { data: null, error: 'An unexpected error occurred. Please try again.' };
     }
 }
 

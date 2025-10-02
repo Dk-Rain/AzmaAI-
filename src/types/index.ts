@@ -2,6 +2,8 @@
 import type { ManageReferencesOutput } from '@/ai/flows/manage-references';
 import { z } from 'zod';
 import { academicTaskTypes } from './academic-task-types';
+import type { PromoCode as AdminPromoCode } from './admin';
+
 
 export const TextBlockSchema = z.object({
     type: z.literal('text'),
@@ -133,3 +135,5 @@ export type Workspace = {
   archivedItems: ArchivedItem[];
   sharedDocuments: SharedDocument[];
 }
+
+export type PromoCode = AdminPromoCode;

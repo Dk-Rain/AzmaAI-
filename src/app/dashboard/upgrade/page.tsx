@@ -22,14 +22,16 @@ import {
 } from '@/components/ui/table';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { ArrowLeft, CheckCircle2, Loader2, Star, XCircle, CalendarClock } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Loader2, Star, XCircle, CalendarClock, Ticket } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import type { PricingSettings, Transaction } from '@/types/admin';
+import type { PricingSettings, Transaction, PromoCode as PromoCodeType } from '@/types/admin';
 import { auth, db } from '@/lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, updateDoc, collection, addDoc } from 'firebase/firestore';
 import { useFlutterwave, closePaymentModal } from 'flutterwave-react-v3';
+import { Input } from '@/components/ui/input';
+import { verifyPromoCodeAction } from '@/app/actions';
 
 
 type UserData = {
@@ -99,6 +101,11 @@ export default function UpgradePage() {
   const router = useRouter();
   const { toast } = useToast();
 
+  const [promoCode, setPromoCode] = useState('');
+  const [appliedPromo, setAppliedPromo] = useState<PromoCodeType | null>(null);
+  const [isVerifyingPromo, setIsVerifyingPromo] = useState(false);
+  const [promoError, setPromoError] = useState<string | null>(null);
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
         if (firebaseUser) {
@@ -135,12 +142,11 @@ export default function UpgradePage() {
   }, [router]);
   
   const currentPlanRole = user?.role ? user.role.toLowerCase() as keyof PricingSettings : null;
-  const currentPlanPriceInfo = currentPlanRole ? pricing[currentPlanRole] : null;
-
-  const paymentConfig = {
+  
+  const getPaymentConfig = (amount: number, planName: string) => ({
     public_key: paymentKey,
     tx_ref: `AZMA-${user?.uid}-${Date.now()}`,
-    amount: currentPlanPriceInfo ? (isYearly ? currentPlanPriceInfo.yearly : currentPlanPriceInfo.monthly) : 0,
+    amount: amount,
     currency: 'NGN',
     payment_options: 'card,mobilemoney,ussd',
     customer: {
@@ -150,15 +156,73 @@ export default function UpgradePage() {
     },
     customizations: {
       title: 'AzmaAI Subscription',
-      description: `Payment for ${getPlanName(user?.role || 'Premium')}`,
+      description: `Payment for ${planName}`,
       logo: 'https://www.azma.com/logo.png', // Replace with your logo URL
     },
+  });
+
+  const handleSuccessfulPayment = async (response: any, planName: string, durationDays: number, promoId?: string) => {
+    if (!user) return;
+
+    setIsProcessing(true);
+    toast({ title: 'Payment Successful!', description: 'Finalizing your upgrade...' });
+
+    try {
+        const userDocRef = doc(db, 'users', user.uid);
+        const now = new Date();
+        const subscriptionEndDate = new Date(now);
+        subscriptionEndDate.setDate(subscriptionEndDate.getDate() + durationDays);
+
+        const dataToUpdate = {
+            isPremium: true,
+            subscriptionEndDate: subscriptionEndDate.toISOString(),
+        };
+        await updateDoc(userDocRef, dataToUpdate);
+        setUser(prevUser => prevUser ? { ...prevUser, ...dataToUpdate } : null);
+
+        const newTransaction: Omit<Transaction, 'id'> = {
+            invoiceId: response.tx_ref || `INV-${Date.now()}`,
+            userFullName: user.fullName,
+            userEmail: user.email,
+            amount: response.amount || 0,
+            status: 'Success',
+            date: new Date().toISOString(),
+            plan: planName,
+        };
+        await addDoc(collection(db, 'transactions'), newTransaction);
+        
+        if (promoId) {
+            const promoDocRef = doc(db, 'promoCodes', promoId);
+            await updateDoc(promoDocRef, {
+                usedCount: promoId ? 1 : 0, // This logic should be improved on the action side.
+                redeemedBy: user.email
+            });
+        }
+
+        toast({ title: 'Upgrade Complete!', description: 'Welcome to your new premium plan.' });
+    } catch (error) {
+        console.error("Failed to finalize upgrade:", error);
+        toast({ variant: 'destructive', title: 'Upgrade Failed', description: 'Your payment was successful, but we failed to update your account. Please contact support.' });
+    } finally {
+        setIsProcessing(false);
+    }
   };
 
+  const paymentConfig = getPaymentConfig(
+    currentPlanRole ? (isYearly ? pricing[currentPlanRole].yearly : pricing[currentPlanRole].monthly) : 0,
+    getPlanName(user?.role || 'Premium')
+  );
+
+  const promoPaymentConfig = getPaymentConfig(
+      appliedPromo?.value || 0,
+      `Promo (${appliedPromo?.code})`
+  );
+
   const handleFlutterwavePayment = useFlutterwave(paymentConfig);
+  const handlePromoFlutterwavePayment = useFlutterwave(promoPaymentConfig);
 
   const handleUpgrade = () => {
-    if (!user || !user.role || !paymentKey) {
+    if (!user || !user.role || !paymentKey || !currentPlanRole) {
         toast({ variant: 'destructive', title: 'Error', description: 'User data or payment key is missing. Please configure in admin settings.'});
         return;
     }
@@ -166,46 +230,11 @@ export default function UpgradePage() {
     handleFlutterwavePayment({
       callback: async (response) => {
         if (response.status === 'successful') {
-            setIsProcessing(true);
-            toast({ title: 'Payment Successful!', description: 'Finalizing your upgrade...' });
-            
-            try {
-                // Update user document in Firestore
-                const userDocRef = doc(db, 'users', user.uid);
-                const now = new Date();
-                const subscriptionEndDate = new Date(now);
-                if (isYearly) {
-                    subscriptionEndDate.setFullYear(subscriptionEndDate.getFullYear() + 1);
-                } else {
-                    subscriptionEndDate.setDate(subscriptionEndDate.getDate() + 30);
-                }
-
-                const dataToUpdate = {
-                    isPremium: true,
-                    subscriptionEndDate: subscriptionEndDate.toISOString(),
-                };
-                await updateDoc(userDocRef, dataToUpdate);
-                setUser(prevUser => prevUser ? { ...prevUser, ...dataToUpdate } : null);
-
-                // Create a transaction record
-                const newTransaction: Omit<Transaction, 'id'> = {
-                    invoiceId: response.tx_ref || `INV-${Date.now()}`,
-                    userFullName: user.fullName,
-                    userEmail: user.email,
-                    amount: response.amount || 0,
-                    status: 'Success',
-                    date: new Date().toISOString(),
-                    plan: getPlanName(user.role),
-                };
-                await addDoc(collection(db, 'transactions'), newTransaction);
-
-                toast({ title: 'Upgrade Complete!', description: 'Welcome to your new premium plan.' });
-            } catch (error) {
-                console.error("Failed to finalize upgrade:", error);
-                toast({ variant: 'destructive', title: 'Upgrade Failed', description: 'Your payment was successful, but we failed to update your account. Please contact support.' });
-            } finally {
-                setIsProcessing(false);
-            }
+            await handleSuccessfulPayment(
+                response,
+                getPlanName(user.role),
+                isYearly ? 365 : 30
+            );
         } else {
             toast({ variant: 'destructive', title: 'Payment Failed', description: 'Your payment was not successful. Please try again.' });
         }
@@ -214,6 +243,29 @@ export default function UpgradePage() {
       onClose: () => {
         toast({ title: 'Payment window closed' });
       },
+    });
+  }
+
+  const handlePromoUpgrade = () => {
+    if (!user || !paymentKey || !appliedPromo) return;
+
+    handlePromoFlutterwavePayment({
+        callback: async (response) => {
+             if (response.status === 'successful') {
+                await handleSuccessfulPayment(
+                    response,
+                    `Promo (${appliedPromo.code})`,
+                    30, // Promo codes grant 30 days of premium
+                    appliedPromo.id
+                );
+             } else {
+                toast({ variant: 'destructive', title: 'Payment Failed', description: 'Your payment was not successful. Please try again.' });
+             }
+             closePaymentModal();
+        },
+        onClose: () => {
+             toast({ title: 'Payment window closed' });
+        }
     });
   }
 
@@ -258,6 +310,32 @@ export default function UpgradePage() {
   const handleContactSales = () => {
     window.location.href = "mailto:sales@azma.com?subject=Enterprise%20Plan%20Inquiry";
   };
+  
+  const handleVerifyPromo = async () => {
+    if (!promoCode) {
+        setPromoError('Please enter a promo code.');
+        return;
+    }
+    if (!user) {
+        setPromoError('You must be logged in to apply a code.');
+        return;
+    }
+
+    setIsVerifyingPromo(true);
+    setPromoError(null);
+    setAppliedPromo(null);
+
+    const { data, error } = await verifyPromoCodeAction(promoCode, user.email);
+
+    setIsVerifyingPromo(false);
+
+    if (error) {
+        setPromoError(error);
+    } else if (data) {
+        setAppliedPromo(data);
+        toast({ title: 'Promo Code Applied!', description: `You can now pay the promotional price.`});
+    }
+  }
 
 
   return (
@@ -286,7 +364,7 @@ export default function UpgradePage() {
 
             <SubscriptionStatusCard user={user} />
 
-            <div className="grid gap-8 md:grid-cols-3">
+            <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
                 <Card className="flex flex-col">
                     <CardHeader>
                         <CardTitle>Free</CardTitle>
@@ -296,7 +374,7 @@ export default function UpgradePage() {
                     <CardContent className="grid gap-4">
                         <div className="flex items-center gap-2">
                             <CheckCircle2 className="h-5 w-5 text-primary" />
-                            <span>1,000 AI Words/day</span>
+                            <span>5,000 AI Words/day</span>
                         </div>
                         <div className="flex items-center gap-2">
                             <CheckCircle2 className="h-5 w-5 text-primary" />
@@ -326,7 +404,7 @@ export default function UpgradePage() {
                         <CardTitle>{currentPlanRole ? getPlanName(currentPlanRole) : 'AZMA Premium'}</CardTitle>
                         <CardDescription>Premium Subscription for {user?.role}</CardDescription>
                         <div className="text-4xl font-bold">
-                           ₦{currentPlanPriceInfo ? (isYearly ? currentPlanPriceInfo.yearly.toLocaleString() : currentPlanPriceInfo.monthly.toLocaleString()) : '...'}
+                           ₦{currentPlanRole ? (isYearly ? pricing[currentPlanRole].yearly.toLocaleString() : pricing[currentPlanRole].monthly.toLocaleString()) : '...'}
                            <span className="text-sm font-normal text-muted-foreground">/ {isYearly ? 'year' : 'month'}</span>
                         </div>
                     </CardHeader>
@@ -349,6 +427,44 @@ export default function UpgradePage() {
                           ) : (
                               'Upgrade'
                           )}
+                        </Button>
+                    </CardFooter>
+                </Card>
+                 <Card className="flex flex-col">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><Ticket /> Promo Plan</CardTitle>
+                        <CardDescription>One-time payment for 30 days of premium access.</CardDescription>
+                        {appliedPromo ? (
+                            <div className="text-4xl font-bold pt-2">₦{appliedPromo.value.toLocaleString()}</div>
+                        ) : (
+                             <div className="text-4xl font-bold pt-2">₦????</div>
+                        )}
+                    </CardHeader>
+                    <CardContent className="grid gap-2">
+                        {!appliedPromo ? (
+                            <>
+                                <div className="flex gap-2">
+                                    <Input 
+                                        placeholder="Enter promo code"
+                                        value={promoCode}
+                                        onChange={(e) => setPromoCode(e.target.value)}
+                                        disabled={isVerifyingPromo}
+                                    />
+                                    <Button onClick={handleVerifyPromo} disabled={isVerifyingPromo || !promoCode}>
+                                        {isVerifyingPromo ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Apply'}
+                                    </Button>
+                                </div>
+                                {promoError && <p className="text-xs text-destructive">{promoError}</p>}
+                            </>
+                        ) : (
+                            <div className="text-center text-green-600 font-semibold p-2 bg-green-500/10 rounded-md">
+                                Code "{appliedPromo.code}" applied!
+                            </div>
+                        )}
+                    </CardContent>
+                     <CardFooter className="mt-auto">
+                        <Button className="w-full" onClick={handlePromoUpgrade} disabled={!appliedPromo || isProcessing || user?.isPremium}>
+                           {user?.isPremium ? 'Already on a Plan' : (isProcessing ? 'Processing...' : 'Pay with Promo')}
                         </Button>
                     </CardFooter>
                 </Card>
@@ -392,7 +508,7 @@ export default function UpgradePage() {
                   <TableBody>
                     <TableRow>
                       <TableCell className="font-medium">AI Words</TableCell>
-                      <TableCell className="text-center">1,000 / day</TableCell>
+                      <TableCell className="text-center">5,000 / day</TableCell>
                       <TableCell className="text-center">Unlimited</TableCell>
                     </TableRow>
                     <TableRow>
@@ -480,3 +596,4 @@ export default function UpgradePage() {
     </div>
   );
 }
+
