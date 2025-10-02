@@ -255,7 +255,7 @@ export async function exportToDocx(
     });
   }
 
-  const doc = new Document({
+  const docFile = new Document({
     styles: {
       paragraphStyles: [
         {
@@ -316,5 +316,5 @@ export async function exportToDocx(
     ],
   });
 
-  return doc;
+  return docFile;
 }
