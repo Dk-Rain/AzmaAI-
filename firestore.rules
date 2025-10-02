@@ -26,9 +26,9 @@ service cloud.firestore {
       // Only admins can delete user accounts from the database.
       allow delete: if isAdmin(request.auth.uid);
       
-      // Allow user to write to their own export history sub-collection
+      // Allow users to create their own export history records
       match /exports/{docId} {
-        allow write: if request.auth.uid == userId;
+        allow create: if request.auth.uid == userId;
       }
     }
     
@@ -83,11 +83,8 @@ service cloud.firestore {
         // Anyone can read document history to verify a document's authenticity.
         allow read: if true;
         
-        // Authenticated users can create verification records upon exporting.
+        // Authenticated users can create export records.
         allow create: if request.auth != null;
-
-        // Nobody can update or delete verification records from the client.
-        allow update, delete: if false;
     }
   }
 }
