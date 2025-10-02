@@ -375,7 +375,9 @@ export async function verifyPromoCodeAction(code: string, userEmail: string) {
             return { data: null, error: 'This promo code has reached its maximum usage limit.' };
         }
 
-        const userUses = (promo.redeemedBy || []).filter(email => email === userEmail).length;
+        // Safely access redeemedBy, defaulting to an empty array if it doesn't exist
+        const redeemedBy = promo.redeemedBy || [];
+        const userUses = redeemedBy.filter(email => email === userEmail).length;
         if (userUses >= promo.usagePerUser) {
             return { data: null, error: 'You have already redeemed this promo code the maximum number of times.' };
         }
