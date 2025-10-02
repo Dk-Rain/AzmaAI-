@@ -297,5 +297,3 @@ export async function exportToDocx(
 
   return doc;
 }
-
-    
