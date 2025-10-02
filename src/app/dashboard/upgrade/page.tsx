@@ -298,7 +298,7 @@ export default function UpgradePage() {
   }
   
   const handleContactSales = () => {
-    window.location.href = "mailto:sales@azma.com?subject=Enterprise%20Plan%20Inquiry";
+    window.location.href = "mailto:info@sfarettech.com.ng?subject=Enterprise%20Plan%20Inquiry";
   };
   
   const handleVerifyPromo = async () => {
