@@ -401,5 +401,3 @@ export async function redeemPromoCode(promoId: string, userEmail: string) {
         return { success: false, error: "Could not update promo code usage." };
     }
 }
-
-    

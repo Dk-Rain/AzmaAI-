@@ -145,12 +145,30 @@ export default function UpgradePage() {
   
   const calculatedPrice = useMemo(() => {
     if (!currentPlanRole) return { original: 0, final: 0, discount: 0 };
+    
+    const originalPrice = isYearly ? pricing[currentPlanRole].yearly : pricing[currentPlanRole].monthly;
+
+    if (appliedPromo) {
+        if (appliedPromo.type === 'percentage') {
+            const discount = originalPrice * (appliedPromo.value / 100);
+            return { original: originalPrice, final: originalPrice - discount, discount };
+        }
+        if (appliedPromo.type === 'fixed') {
+            const final = Math.max(0, originalPrice - appliedPromo.value);
+            return { original: originalPrice, final, discount: originalPrice - final };
+        }
+        if (appliedPromo.type === 'plan_upgrade' && appliedPromo.planUpgradePrices) {
+             const final = isYearly ? appliedPromo.planUpgradePrices.yearly : appliedPromo.planUpgradePrices.monthly;
+             return { original: originalPrice, final, discount: originalPrice - final };
+        }
+    }
+
     return {
-        original: isYearly ? pricing[currentPlanRole].yearly : pricing[currentPlanRole].monthly,
-        final: isYearly ? pricing[currentPlanRole].yearly : pricing[currentPlanRole].monthly,
+        original: originalPrice,
+        final: originalPrice,
         discount: 0
     };
-  }, [currentPlanRole, isYearly, pricing]);
+  }, [currentPlanRole, isYearly, pricing, appliedPromo]);
   
   const getPaymentConfig = (amount: number, planName: string, ref_suffix: string) => ({
     public_key: paymentKey,
@@ -220,13 +238,10 @@ export default function UpgradePage() {
   );
 
   const promoPaymentConfig = getPaymentConfig(
-    appliedPromo?.type === 'plan_upgrade' 
-      ? (isYearly ? appliedPromo.planUpgradePrices!.yearly : appliedPromo.planUpgradePrices!.monthly)
-      : appliedPromo?.value || 0,
-    `Promo - ${appliedPromo?.code || ''}`,
+    calculatedPrice.final,
+    `Promo - ${appliedPromo?.code || ''} - ${isYearly ? 'Yearly' : 'Monthly'}`,
     'promo'
   );
-
 
   const handleFlutterwaveStandardPayment = useFlutterwave(standardPaymentConfig);
   const handleFlutterwavePromoPayment = useFlutterwave(promoPaymentConfig);
@@ -238,9 +253,9 @@ export default function UpgradePage() {
     }
     
     const paymentHandler = isPromo ? handleFlutterwavePromoPayment : handleFlutterwaveStandardPayment;
-    const duration = isPromo ? 30 : (isYearly ? 365 : 30);
+    const duration = isYearly ? 365 : 30;
     const planName = isPromo 
-        ? `Promo: ${appliedPromo?.code}`
+        ? `Promo: ${appliedPromo?.code} (${isYearly ? 'Yearly' : 'Monthly'})`
         : `${getPlanName(user.role)} - ${isYearly ? 'Yearly' : 'Monthly'}`;
 
     paymentHandler({
@@ -413,9 +428,30 @@ export default function UpgradePage() {
                             <CheckCircle2 className="h-5 w-5 text-primary" />
                             <span>Unlimited Documents</span>
                         </div>
+                        <div className="space-y-2 mt-4">
+                            <Label htmlFor="promo-code" className="flex items-center gap-1"><Ticket className="h-4 w-4"/> Got a promo code?</Label>
+                            <div className="flex gap-2">
+                                <Input 
+                                    id="promo-code"
+                                    placeholder="Enter code"
+                                    value={promoCode}
+                                    onChange={(e) => {
+                                        setPromoCode(e.target.value);
+                                        setAppliedPromo(null);
+                                        setPromoError(null);
+                                    }}
+                                    disabled={isVerifyingPromo}
+                                />
+                                <Button onClick={handleVerifyPromo} disabled={isVerifyingPromo || !promoCode}>
+                                    {isVerifyingPromo ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Apply'}
+                                </Button>
+                            </div>
+                            {promoError && <p className="text-xs text-destructive">{promoError}</p>}
+                            {appliedPromo && <p className="text-xs text-green-600">Code "{appliedPromo.code}" applied! You save ₦{calculatedPrice.discount.toLocaleString()}.</p>}
+                        </div>
                     </CardContent>
                     <CardFooter className="mt-auto">
-                        <Button className="w-full" onClick={() => handleUpgrade(false)} disabled={user?.isPremium || isProcessing || !paymentKey}>
+                        <Button className="w-full" onClick={() => handleUpgrade(!!appliedPromo)} disabled={user?.isPremium || isProcessing || !paymentKey}>
                           {isProcessing ? (
                               <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing...</>
                           ) : user?.isPremium ? (
@@ -428,46 +464,23 @@ export default function UpgradePage() {
                 </Card>
                 <Card className="flex flex-col">
                     <CardHeader>
-                        <CardTitle>Promo Plan</CardTitle>
-                        <CardDescription>
-                          {appliedPromo ? 'One-time payment for premium access.' : 'Have a special code? Enter it here.'}
-                        </CardDescription>
-                         <div className="text-4xl font-bold">
-                            {appliedPromo ? (
-                                <>
-                                 ₦{(appliedPromo.type === 'plan_upgrade' && appliedPromo.planUpgradePrices) 
-                                      ? (isYearly ? appliedPromo.planUpgradePrices.yearly : appliedPromo.planUpgradePrices.monthly).toLocaleString()
-                                      : appliedPromo.value.toLocaleString()}
-                                </>
-                            ) : `₦????`}
-                         </div>
+                        <CardTitle>Enterprise</CardTitle>
+                        <CardDescription>For organizations</CardDescription>
+                         <div className="text-4xl font-bold">Custom</div>
                     </CardHeader>
                     <CardContent className="grid gap-4">
-                       <div className="space-y-2">
-                            <Label htmlFor="promo-code" className="flex items-center gap-1"><Ticket className="h-4 w-4"/> Got a promo code?</Label>
-                            <div className="flex gap-2">
-                                <Input 
-                                    id="promo-code"
-                                    placeholder="Enter code"
-                                    value={promoCode}
-                                    onChange={(e) => setPromoCode(e.target.value)}
-                                    disabled={isVerifyingPromo || !!appliedPromo}
-                                />
-                                <Button onClick={handleVerifyPromo} disabled={isVerifyingPromo || !promoCode || !!appliedPromo}>
-                                    {isVerifyingPromo ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Apply'}
-                                </Button>
-                            </div>
-                            {promoError && <p className="text-xs text-destructive">{promoError}</p>}
-                            {appliedPromo && <p className="text-xs text-green-600">Code "{appliedPromo.code}" applied!</p>}
+                        <div className="flex items-center gap-2">
+                            <CheckCircle2 className="h-5 w-5 text-primary" />
+                            <span>Private Deployment</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <CheckCircle2 className="h-5 w-5 text-primary" />
+                            <span>Custom Integrations</span>
                         </div>
                     </CardContent>
                      <CardFooter className="mt-auto">
-                        <Button 
-                            className="w-full" 
-                            onClick={() => handleUpgrade(true)} 
-                            disabled={!appliedPromo || isProcessing || user?.isPremium}
-                        >
-                            {isProcessing ? 'Processing...' : `Pay with Promo`}
+                        <Button variant="outline" className="w-full" onClick={handleContactSales}>
+                            Contact Sales
                         </Button>
                      </CardFooter>
                 </Card>
@@ -579,5 +592,3 @@ export default function UpgradePage() {
     </div>
   );
 }
-
-    
