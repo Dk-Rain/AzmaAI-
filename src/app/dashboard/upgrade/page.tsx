@@ -32,6 +32,7 @@ import { doc, getDoc, updateDoc, collection, addDoc } from 'firebase/firestore';
 import { useFlutterwave, closePaymentModal } from 'flutterwave-react-v3';
 import { Input } from '@/components/ui/input';
 import { verifyPromoCodeAction, redeemPromoCode } from '@/app/actions';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 
 
 type UserData = {
@@ -101,10 +102,13 @@ export default function UpgradePage() {
   const router = useRouter();
   const { toast } = useToast();
 
-  const [promoCode, setPromoCode] = useState('');
+  const [isUpgradeDialogOpen, setIsUpgradeDialogOpen] = useState(false);
+  const [dialogStep, setDialogStep] = useState<'ask' | 'promo' | 'pay'>('ask');
+  const [promoCodeInput, setPromoCodeInput] = useState('');
   const [appliedPromo, setAppliedPromo] = useState<PromoCodeType | null>(null);
   const [isVerifyingPromo, setIsVerifyingPromo] = useState(false);
   const [promoError, setPromoError] = useState<string | null>(null);
+
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -170,9 +174,9 @@ export default function UpgradePage() {
     };
   }, [currentPlanRole, isYearly, pricing, appliedPromo]);
   
-  const getPaymentConfig = (amount: number, planName: string, ref_suffix: string) => ({
+  const getPaymentConfig = (amount: number, planName: string) => ({
     public_key: paymentKey,
-    tx_ref: `AZMA-${user?.uid}-${ref_suffix}-${Date.now()}`,
+    tx_ref: `AZMA-${user?.uid}-${Date.now()}`,
     amount: amount,
     currency: 'NGN',
     payment_options: 'card,mobilemoney,ussd',
@@ -228,44 +232,34 @@ export default function UpgradePage() {
         toast({ variant: 'destructive', title: 'Upgrade Failed', description: 'Your payment was successful, but we failed to update your account. Please contact support.' });
     } finally {
         setIsProcessing(false);
+        setIsUpgradeDialogOpen(false); // Close the dialog on completion
     }
   };
 
-  const standardPaymentConfig = getPaymentConfig(
+  const paymentConfig = getPaymentConfig(
     calculatedPrice.final,
-    `${getPlanName(user?.role || 'Premium')} - ${isYearly ? 'Yearly' : 'Monthly'}`,
-    'standard'
+    `${getPlanName(user?.role || 'Premium')} - ${isYearly ? 'Yearly' : 'Monthly'}${appliedPromo ? ` (Promo: ${appliedPromo.code})`: ''}`
   );
 
-  const promoPaymentConfig = getPaymentConfig(
-    calculatedPrice.final,
-    `Promo - ${appliedPromo?.code || ''} - ${isYearly ? 'Yearly' : 'Monthly'}`,
-    'promo'
-  );
+  const handleFlutterwavePayment = useFlutterwave(paymentConfig);
 
-  const handleFlutterwaveStandardPayment = useFlutterwave(standardPaymentConfig);
-  const handleFlutterwavePromoPayment = useFlutterwave(promoPaymentConfig);
-
-  const handleUpgrade = (isPromo: boolean = false) => {
+  const handlePayment = () => {
     if (!user || !user.role || !paymentKey || !currentPlanRole) {
         toast({ variant: 'destructive', title: 'Error', description: 'User data or payment key is missing. Please configure in admin settings.'});
         return;
     }
     
-    const paymentHandler = isPromo ? handleFlutterwavePromoPayment : handleFlutterwaveStandardPayment;
     const duration = isYearly ? 365 : 30;
-    const planName = isPromo 
-        ? `Promo: ${appliedPromo?.code} (${isYearly ? 'Yearly' : 'Monthly'})`
-        : `${getPlanName(user.role)} - ${isYearly ? 'Yearly' : 'Monthly'}`;
+    const planName = `${getPlanName(user.role)} - ${isYearly ? 'Yearly' : 'Monthly'}${appliedPromo ? ` (Promo: ${appliedPromo.code})`: ''}`;
 
-    paymentHandler({
+    handleFlutterwavePayment({
       callback: async (response) => {
         if (response.status === 'successful') {
             await handleSuccessfulPayment(
                 response,
                 planName,
                 duration,
-                isPromo ? appliedPromo?.id : undefined
+                appliedPromo?.id
             );
         } else {
             toast({ variant: 'destructive', title: 'Payment Failed', description: 'Your payment was not successful. Please try again.' });
@@ -323,7 +317,7 @@ export default function UpgradePage() {
   };
   
   const handleVerifyPromo = async () => {
-    if (!promoCode) {
+    if (!promoCodeInput) {
         setPromoError('Please enter a promo code.');
         return;
     }
@@ -336,7 +330,7 @@ export default function UpgradePage() {
     setPromoError(null);
     setAppliedPromo(null);
 
-    const { data, error } = await verifyPromoCodeAction(promoCode, user.email);
+    const { data, error } = await verifyPromoCodeAction(promoCodeInput, user.email);
 
     setIsVerifyingPromo(false);
 
@@ -344,10 +338,19 @@ export default function UpgradePage() {
         setPromoError(error);
     } else if (data) {
         setAppliedPromo(data);
+        setDialogStep('pay');
         toast({ title: 'Promo Code Applied!', description: `Your discount has been calculated.`});
     }
   }
 
+  const openUpgradeDialog = () => {
+    // Reset dialog state every time it opens
+    setDialogStep('ask');
+    setPromoCodeInput('');
+    setAppliedPromo(null);
+    setPromoError(null);
+    setIsUpgradeDialogOpen(true);
+  }
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
@@ -415,7 +418,7 @@ export default function UpgradePage() {
                         <CardTitle>{currentPlanRole ? getPlanName(currentPlanRole) : 'AZMA Premium'}</CardTitle>
                         <CardDescription>Premium Subscription for {user?.role}</CardDescription>
                         <div className="text-4xl font-bold">
-                           ₦{calculatedPrice.final.toLocaleString()}
+                           ₦{(isYearly ? pricing[currentPlanRole!]?.yearly : pricing[currentPlanRole!]?.monthly)?.toLocaleString() || '...'}
                            <span className="text-sm font-normal text-muted-foreground">/ {isYearly ? 'year' : 'month'}</span>
                         </div>
                     </CardHeader>
@@ -428,30 +431,9 @@ export default function UpgradePage() {
                             <CheckCircle2 className="h-5 w-5 text-primary" />
                             <span>Unlimited Documents</span>
                         </div>
-                        <div className="space-y-2 mt-4">
-                            <Label htmlFor="promo-code" className="flex items-center gap-1"><Ticket className="h-4 w-4"/> Got a promo code?</Label>
-                            <div className="flex gap-2">
-                                <Input 
-                                    id="promo-code"
-                                    placeholder="Enter code"
-                                    value={promoCode}
-                                    onChange={(e) => {
-                                        setPromoCode(e.target.value);
-                                        setAppliedPromo(null);
-                                        setPromoError(null);
-                                    }}
-                                    disabled={isVerifyingPromo}
-                                />
-                                <Button onClick={handleVerifyPromo} disabled={isVerifyingPromo || !promoCode}>
-                                    {isVerifyingPromo ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Apply'}
-                                </Button>
-                            </div>
-                            {promoError && <p className="text-xs text-destructive">{promoError}</p>}
-                            {appliedPromo && <p className="text-xs text-green-600">Code "{appliedPromo.code}" applied! You save ₦{calculatedPrice.discount.toLocaleString()}.</p>}
-                        </div>
                     </CardContent>
                     <CardFooter className="mt-auto">
-                        <Button className="w-full" onClick={() => handleUpgrade(!!appliedPromo)} disabled={user?.isPremium || isProcessing || !paymentKey}>
+                        <Button className="w-full" onClick={openUpgradeDialog} disabled={user?.isPremium || isProcessing || !paymentKey}>
                           {isProcessing ? (
                               <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing...</>
                           ) : user?.isPremium ? (
@@ -589,6 +571,86 @@ export default function UpgradePage() {
           </div>
         </main>
       </div>
+
+      <Dialog open={isUpgradeDialogOpen} onOpenChange={setIsUpgradeDialogOpen}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Complete Your Upgrade</DialogTitle>
+                <DialogDescription>
+                    You are upgrading to the <span className="font-semibold">{currentPlanRole ? getPlanName(currentPlanRole) : 'Premium'} - {isYearly ? 'Yearly' : 'Monthly'}</span> plan.
+                </DialogDescription>
+            </DialogHeader>
+
+            {dialogStep === 'ask' && (
+                <div className="py-4 space-y-4 text-center">
+                    <p>Do you have a promo code?</p>
+                    <div className="flex justify-center gap-4">
+                        <Button onClick={() => setDialogStep('promo')}>Yes, I have a code</Button>
+                        <Button variant="outline" onClick={() => {
+                            setAppliedPromo(null); 
+                            setDialogStep('pay');
+                        }}>No, continue to payment</Button>
+                    </div>
+                </div>
+            )}
+
+            {dialogStep === 'promo' && (
+                <div className="py-4 space-y-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="promo-code-dialog">Promo Code</Label>
+                        <div className="flex gap-2">
+                            <Input 
+                                id="promo-code-dialog"
+                                placeholder="Enter your code"
+                                value={promoCodeInput}
+                                onChange={(e) => setPromoCodeInput(e.target.value)}
+                                disabled={isVerifyingPromo}
+                            />
+                            <Button onClick={handleVerifyPromo} disabled={isVerifyingPromo || !promoCodeInput}>
+                                {isVerifyingPromo ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Apply'}
+                            </Button>
+                        </div>
+                        {promoError && <p className="text-xs text-destructive">{promoError}</p>}
+                    </div>
+                    <Button variant="link" size="sm" onClick={() => setDialogStep('ask')}>Back</Button>
+                </div>
+            )}
+
+            {dialogStep === 'pay' && (
+                <div className="py-4 space-y-4">
+                    <Card className="bg-muted/50">
+                        <CardHeader>
+                            <CardTitle className="text-lg">Order Summary</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                                <span>Original Price:</span>
+                                <span>₦{calculatedPrice.original.toLocaleString()}</span>
+                            </div>
+                            {appliedPromo && (
+                                <div className="flex justify-between text-green-600">
+                                    <span>Discount ({appliedPromo.code}):</span>
+                                    <span>- ₦{calculatedPrice.discount.toLocaleString()}</span>
+                                </div>
+                            )}
+                            <div className="flex justify-between font-bold text-base border-t pt-2 mt-2">
+                                <span>Total to Pay:</span>
+                                <span>₦{calculatedPrice.final.toLocaleString()}</span>
+                            </div>
+                        </CardContent>
+                    </Card>
+                    <DialogFooter>
+                        <Button onClick={handlePayment} disabled={isProcessing} className="w-full">
+                            {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
+                            Pay Now
+                        </Button>
+                    </DialogFooter>
+                </div>
+            )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+
+    
