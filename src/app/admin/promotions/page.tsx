@@ -127,11 +127,18 @@ export default function PromotionsPage() {
       toast({ variant: 'destructive', title: "Missing field", description: "Code is required." });
       return;
     }
+    
+    const dataToSave = {
+        ...formData,
+        planUpgradePrices: formData.type === 'plan_upgrade' ? formData.planUpgradePrices : { monthly: 0, yearly: 0 },
+        value: formData.type !== 'plan_upgrade' ? formData.value : 0,
+    };
+
 
     if (editingId) {
         try {
             const promoDocRef = doc(db, 'promoCodes', editingId);
-            await updateDoc(promoDocRef, formData);
+            await updateDoc(promoDocRef, dataToSave);
             toast({ title: 'Promo Code Updated!' });
         } catch (error) {
             console.error("Update failed:", error);
@@ -140,7 +147,7 @@ export default function PromotionsPage() {
     } else {
         try {
             const newCode: Omit<PromoCode, 'id'> = {
-                ...formData,
+                ...dataToSave,
                 usedCount: 0,
                 redeemedBy: [],
                 createdAt: new Date().toISOString(),
@@ -216,8 +223,8 @@ export default function PromotionsPage() {
                     <Select value={formData.type} onValueChange={(v) => setFormData({...formData, type: v as any})}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="percentage">Percentage</SelectItem>
-                            <SelectItem value="fixed">Fixed Amount</SelectItem>
+                            <SelectItem value="percentage">Percentage Discount</SelectItem>
+                            <SelectItem value="fixed">Fixed Amount Discount</SelectItem>
                             <SelectItem value="plan_upgrade">Plan Upgrade (Fixed Price)</SelectItem>
                         </SelectContent>
                     </Select>
@@ -235,7 +242,7 @@ export default function PromotionsPage() {
                               id="upgrade-monthly"
                               type="number"
                               value={formData.planUpgradePrices?.monthly || 0}
-                              onChange={(e) => setFormData({ ...formData, planUpgradePrices: { ...formData.planUpgradePrices, monthly: parseInt(e.target.value, 10) || 0 } as any })}
+                              onChange={(e) => setFormData({ ...formData, planUpgradePrices: { ...formData.planUpgradePrices!, monthly: parseInt(e.target.value, 10) || 0 } })}
                               placeholder="e.g., 1000"
                               required
                           />
@@ -246,7 +253,7 @@ export default function PromotionsPage() {
                               id="upgrade-yearly"
                               type="number"
                               value={formData.planUpgradePrices?.yearly || 0}
-                              onChange={(e) => setFormData({ ...formData, planUpgradePrices: { ...formData.planUpgradePrices, yearly: parseInt(e.target.value, 10) || 0 } as any })}
+                              onChange={(e) => setFormData({ ...formData, planUpgradePrices: { ...formData.planUpgradePrices!, yearly: parseInt(e.target.value, 10) || 0 } })}
                               placeholder="e.g., 10000"
                               required
                           />
@@ -396,3 +403,5 @@ export default function PromotionsPage() {
     </Card>
   );
 }
+
+    
