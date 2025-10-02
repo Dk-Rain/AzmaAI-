@@ -364,12 +364,9 @@ export async function verifyPromoCodeAction(code: string, userEmail: string) {
         }
 
         const promoData = promoDocSnap.data();
-        // Ensure redeemedBy is an array, even if it's missing from the document
-        if (!promoData.redeemedBy) {
-            promoData.redeemedBy = [];
-        }
+        const redeemedBy = promoData.redeemedBy || [];
         
-        const promo = { id: promoDocSnap.id, ...promoData } as PromoCode;
+        const promo = { id: promoDocSnap.id, ...promoData, redeemedBy } as PromoCode;
 
         if (!promo.isActive) {
             return { data: null, error: 'This promo code is currently not active.' };
@@ -394,6 +391,52 @@ export async function verifyPromoCodeAction(code: string, userEmail: string) {
     }
 }
 
+
+export async function verifyUpgradePromoCodeAction(code: string, userEmail: string) {
+    try {
+        const promoDocRef = doc(db, 'promoCodes', code.toUpperCase());
+        const promoDocSnap = await getDoc(promoDocRef);
+
+        if (!promoDocSnap.exists()) {
+            return { data: null, error: 'This promo code is invalid or does not exist.' };
+        }
+
+        const promoData = promoDocSnap.data();
+        // Safely handle the redeemedBy array
+        const redeemedBy = promoData.redeemedBy || [];
+
+        const promo = { id: promoDocSnap.id, ...promoData, redeemedBy } as PromoCode;
+
+        if (!promo.isActive) {
+            return { data: null, error: 'This promo code is currently not active.' };
+        }
+        if (promo.expiresAt && new Date(promo.expiresAt) < new Date()) {
+            return { data: null, error: 'This promo code has expired.' };
+        }
+        if (promo.usedCount >= promo.usageLimit) {
+            return { data: null, error: 'This promo code has reached its maximum usage limit.' };
+        }
+        
+        // Ensure this promo is valid for plan upgrades
+        const validTypes = ['percentage', 'fixed', 'plan_upgrade'];
+        if (!validTypes.includes(promo.type)) {
+            return { data: null, error: 'This promo code is not valid for plan upgrades.' };
+        }
+
+        const userUses = redeemedBy.filter(email => email === userEmail).length;
+        if (userUses >= promo.usagePerUser) {
+            return { data: null, error: 'You have already redeemed this promo code the maximum number of times.' };
+        }
+
+        return { data: promo, error: null };
+
+    } catch (e: any) {
+        console.error("Upgrade promo code verification failed:", e);
+        return { data: null, error: 'An unexpected error occurred. Please try again.' };
+    }
+}
+
+
 export async function redeemPromoCode(promoId: string, userEmail: string) {
     const promoDocRef = doc(db, 'promoCodes', promoId);
     try {
@@ -407,5 +450,7 @@ export async function redeemPromoCode(promoId: string, userEmail: string) {
         return { success: false, error: "Could not update promo code usage." };
     }
 }
+
+    
 
     

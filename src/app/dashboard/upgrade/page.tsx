@@ -31,7 +31,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, updateDoc, collection, addDoc } from 'firebase/firestore';
 import { useFlutterwave, closePaymentModal } from 'flutterwave-react-v3';
 import { Input } from '@/components/ui/input';
-import { verifyPromoCodeAction, redeemPromoCode } from '@/app/actions';
+import { verifyUpgradePromoCodeAction, redeemPromoCode } from '@/app/actions';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 
 
@@ -330,7 +330,7 @@ export default function UpgradePage() {
     setPromoError(null);
     setAppliedPromo(null);
 
-    const { data, error } = await verifyPromoCodeAction(promoCodeInput, user.email);
+    const { data, error } = await verifyUpgradePromoCodeAction(promoCodeInput, user.email);
 
     setIsVerifyingPromo(false);
 
@@ -652,5 +652,6 @@ export default function UpgradePage() {
     </div>
   );
 }
+
 
     
