@@ -145,30 +145,16 @@ export default function UpgradePage() {
   
   const calculatedPrice = useMemo(() => {
     if (!currentPlanRole) return { original: 0, final: 0, discount: 0 };
-
-    const originalPrice = isYearly ? pricing[currentPlanRole].yearly : pricing[currentPlanRole].monthly;
-    let finalPrice = originalPrice;
-    let discount = 0;
-
-    if (appliedPromo) {
-        if (appliedPromo.type === 'fixed') {
-            finalPrice = Math.max(0, originalPrice - appliedPromo.value);
-            discount = originalPrice - finalPrice;
-        } else if (appliedPromo.type === 'percentage') {
-            discount = originalPrice * (appliedPromo.value / 100);
-            finalPrice = originalPrice - discount;
-        } else if (appliedPromo.type === 'plan_upgrade' && appliedPromo.planUpgradePrices) {
-            finalPrice = isYearly ? appliedPromo.planUpgradePrices.yearly : appliedPromo.planUpgradePrices.monthly;
-            discount = originalPrice - finalPrice;
-        }
-    }
-    return { original: originalPrice, final: finalPrice, discount };
-  }, [currentPlanRole, isYearly, pricing, appliedPromo]);
-
+    return {
+        original: isYearly ? pricing[currentPlanRole].yearly : pricing[currentPlanRole].monthly,
+        final: isYearly ? pricing[currentPlanRole].yearly : pricing[currentPlanRole].monthly,
+        discount: 0
+    };
+  }, [currentPlanRole, isYearly, pricing]);
   
-  const getPaymentConfig = (amount: number, planName: string) => ({
+  const getPaymentConfig = (amount: number, planName: string, ref_suffix: string) => ({
     public_key: paymentKey,
-    tx_ref: `AZMA-${user?.uid}-${Date.now()}`,
+    tx_ref: `AZMA-${user?.uid}-${ref_suffix}-${Date.now()}`,
     amount: amount,
     currency: 'NGN',
     payment_options: 'card,mobilemoney,ussd',
@@ -227,27 +213,44 @@ export default function UpgradePage() {
     }
   };
 
-  const paymentConfig = getPaymentConfig(
+  const standardPaymentConfig = getPaymentConfig(
     calculatedPrice.final,
-    `${getPlanName(user?.role || 'Premium')} - ${isYearly ? 'Yearly' : 'Monthly'}`
+    `${getPlanName(user?.role || 'Premium')} - ${isYearly ? 'Yearly' : 'Monthly'}`,
+    'standard'
   );
 
-  const handleFlutterwavePayment = useFlutterwave(paymentConfig);
+  const promoPaymentConfig = getPaymentConfig(
+    appliedPromo?.type === 'plan_upgrade' 
+      ? (isYearly ? appliedPromo.planUpgradePrices!.yearly : appliedPromo.planUpgradePrices!.monthly)
+      : appliedPromo?.value || 0,
+    `Promo - ${appliedPromo?.code || ''}`,
+    'promo'
+  );
 
-  const handleUpgrade = () => {
+
+  const handleFlutterwaveStandardPayment = useFlutterwave(standardPaymentConfig);
+  const handleFlutterwavePromoPayment = useFlutterwave(promoPaymentConfig);
+
+  const handleUpgrade = (isPromo: boolean = false) => {
     if (!user || !user.role || !paymentKey || !currentPlanRole) {
         toast({ variant: 'destructive', title: 'Error', description: 'User data or payment key is missing. Please configure in admin settings.'});
         return;
     }
+    
+    const paymentHandler = isPromo ? handleFlutterwavePromoPayment : handleFlutterwaveStandardPayment;
+    const duration = isPromo ? 30 : (isYearly ? 365 : 30);
+    const planName = isPromo 
+        ? `Promo: ${appliedPromo?.code}`
+        : `${getPlanName(user.role)} - ${isYearly ? 'Yearly' : 'Monthly'}`;
 
-    handleFlutterwavePayment({
+    paymentHandler({
       callback: async (response) => {
         if (response.status === 'successful') {
             await handleSuccessfulPayment(
                 response,
-                `${getPlanName(user.role)} - ${isYearly ? 'Yearly' : 'Monthly'}`,
-                isYearly ? 365 : 30,
-                appliedPromo?.id
+                planName,
+                duration,
+                isPromo ? appliedPromo?.id : undefined
             );
         } else {
             toast({ variant: 'destructive', title: 'Payment Failed', description: 'Your payment was not successful. Please try again.' });
@@ -400,11 +403,6 @@ export default function UpgradePage() {
                            ₦{calculatedPrice.final.toLocaleString()}
                            <span className="text-sm font-normal text-muted-foreground">/ {isYearly ? 'year' : 'month'}</span>
                         </div>
-                        {appliedPromo && (
-                           <div className="text-sm font-semibold text-green-600">
-                                Original: ₦{calculatedPrice.original.toLocaleString()} (You save ₦{calculatedPrice.discount.toLocaleString()})
-                           </div>
-                        )}
                     </CardHeader>
                     <CardContent className="grid gap-4">
                         <div className="flex items-center gap-2">
@@ -415,7 +413,37 @@ export default function UpgradePage() {
                             <CheckCircle2 className="h-5 w-5 text-primary" />
                             <span>Unlimited Documents</span>
                         </div>
-                         <div className="space-y-2">
+                    </CardContent>
+                    <CardFooter className="mt-auto">
+                        <Button className="w-full" onClick={() => handleUpgrade(false)} disabled={user?.isPremium || isProcessing || !paymentKey}>
+                          {isProcessing ? (
+                              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing...</>
+                          ) : user?.isPremium ? (
+                              'Your Current Plan'
+                          ) : (
+                              'Upgrade Now'
+                          )}
+                        </Button>
+                    </CardFooter>
+                </Card>
+                <Card className="flex flex-col">
+                    <CardHeader>
+                        <CardTitle>Promo Plan</CardTitle>
+                        <CardDescription>
+                          {appliedPromo ? 'One-time payment for premium access.' : 'Have a special code? Enter it here.'}
+                        </CardDescription>
+                         <div className="text-4xl font-bold">
+                            {appliedPromo ? (
+                                <>
+                                 ₦{(appliedPromo.type === 'plan_upgrade' && appliedPromo.planUpgradePrices) 
+                                      ? (isYearly ? appliedPromo.planUpgradePrices.yearly : appliedPromo.planUpgradePrices.monthly).toLocaleString()
+                                      : appliedPromo.value.toLocaleString()}
+                                </>
+                            ) : `₦????`}
+                         </div>
+                    </CardHeader>
+                    <CardContent className="grid gap-4">
+                       <div className="space-y-2">
                             <Label htmlFor="promo-code" className="flex items-center gap-1"><Ticket className="h-4 w-4"/> Got a promo code?</Label>
                             <div className="flex gap-2">
                                 <Input 
@@ -433,36 +461,14 @@ export default function UpgradePage() {
                             {appliedPromo && <p className="text-xs text-green-600">Code "{appliedPromo.code}" applied!</p>}
                         </div>
                     </CardContent>
-                    <CardFooter className="mt-auto">
-                        <Button className="w-full" onClick={handleUpgrade} disabled={user?.isPremium || isProcessing || !paymentKey}>
-                          {isProcessing ? (
-                              <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing...</>
-                          ) : user?.isPremium ? (
-                              'Your Current Plan'
-                          ) : (
-                              'Upgrade Now'
-                          )}
-                        </Button>
-                    </CardFooter>
-                </Card>
-                <Card className="flex flex-col">
-                    <CardHeader>
-                        <CardTitle>Enterprise</CardTitle>
-                        <CardDescription>For organizations</CardDescription>
-                        <div className="text-4xl font-bold">Custom</div>
-                    </CardHeader>
-                    <CardContent className="grid gap-4">
-                        <div className="flex items-center gap-2">
-                            <CheckCircle2 className="h-5 w-5 text-primary" />
-                            <span>Private Deployment</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <CheckCircle2 className="h-5 w-5 text-primary" />
-                            <span>Custom Integrations</span>
-                        </div>
-                    </CardContent>
                      <CardFooter className="mt-auto">
-                        <Button variant="outline" className="w-full" onClick={handleContactSales}>Contact Sales</Button>
+                        <Button 
+                            className="w-full" 
+                            onClick={() => handleUpgrade(true)} 
+                            disabled={!appliedPromo || isProcessing || user?.isPremium}
+                        >
+                            {isProcessing ? 'Processing...' : `Pay with Promo`}
+                        </Button>
                      </CardFooter>
                 </Card>
             </div>
@@ -573,3 +579,5 @@ export default function UpgradePage() {
     </div>
   );
 }
+
+    
