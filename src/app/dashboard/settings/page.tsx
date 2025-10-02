@@ -30,7 +30,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { ArrowLeft, Brush, User, Globe, Bell, Mail, Smartphone, Share2, Archive, Trash2, Database, Cloud, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { ArrowLeft, Brush, User, Globe, Bell, Mail, Smartphone, Share2, Archive, Trash2, Database, Cloud, CheckCircle, XCircle, Loader2, History } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -410,6 +410,19 @@ export default function SettingsPage() {
                             <Button variant="outline">
                               <Archive className="mr-2 h-4 w-4" />
                               Manage
+                            </Button>
+                          </Link>
+                        </div>
+                         <Separator />
+                         <div className="flex items-center justify-between space-x-4">
+                          <div className="space-y-1">
+                            <h4 className="font-medium">Export History</h4>
+                            <p className="text-sm text-muted-foreground">View a log of your exported documents.</p>
+                          </div>
+                          <Link href="/dashboard/settings/exports">
+                            <Button variant="outline">
+                              <History className="mr-2 h-4 w-4" />
+                              View History
                             </Button>
                           </Link>
                         </div>

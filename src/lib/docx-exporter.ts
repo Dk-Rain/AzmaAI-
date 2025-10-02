@@ -18,7 +18,7 @@ import {
 import type { DocumentContent, References, StyleOptions, ContentBlock } from '@/types';
 import type { DocumentHistoryEntry } from '@/types/admin';
 import { db } from './firebase';
-import { doc as getFirestoreDoc, setDoc } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 
 
 async function renderBlockToDocx(block: ContentBlock): Promise<(Paragraph | Table)[]> {
@@ -115,12 +115,17 @@ export async function exportToDocx(
 
   // Save export record to Firestore
   try {
-      const exportDocRef = getFirestoreDoc(db, 'export', uniqueId);
+      const exportDocRef = doc(db, 'exports', uniqueId);
       await setDoc(exportDocRef, exportEntry);
+
+      // Also save to user's personal history
+      const userExportDocRef = doc(db, 'users', userId, 'exports', uniqueId);
+      await setDoc(userExportDocRef, exportEntry);
+
   } catch (error) {
       console.error("Failed to save export record to Firestore:", error);
-      // We can decide if this should be a critical error or not.
-      // For now, we'll just log it and continue with document generation.
+      // This is a critical failure now, so we should throw
+      throw new Error('Failed to save document verification record to the database.');
   }
   
   const processSection = async (section: DocumentContent['sections'][0]) => {
