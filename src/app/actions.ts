@@ -105,7 +105,8 @@ export async function generateContentAction(
   try {
     const settingsDocRef = doc(db, 'settings', 'global');
     const settingsDoc = await getDoc(settingsDocRef);
-    const defaultModel = settingsDoc.exists() ? settingsDoc.data().appSettings.defaultModel : 'googleai/gemini-2.5-pro';
+    const appSettings = settingsDoc.exists() ? settingsDoc.data()?.appSettings : null;
+    const defaultModel = appSettings?.defaultModel || 'googleai/gemini-2.5-pro';
 
     const generatedContent = await generateAcademicContent({ ...values, model: defaultModel });
 
@@ -352,3 +353,5 @@ export async function generateImageForSectionAction(prompt: string) {
         return { data: null, error: 'Failed to generate image.' };
     }
 }
+
+    
