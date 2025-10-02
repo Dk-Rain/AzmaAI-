@@ -1,5 +1,6 @@
 
 
+
 export type UserPermissions = {
     canManageUsers: boolean;
     canManageTransactions: boolean;
@@ -45,12 +46,20 @@ export type DocumentHistoryEntry = {
     generatedBy: string; 
 };
 
+export type PlanPricing = {
+    monthly: number;
+    yearly: number;
+    monthlyDiscount?: number;
+    yearlyDiscount?: number;
+    isDiscountActive?: boolean;
+};
+
 export type PricingSettings = {
-    student: { monthly: number; yearly: number };
-    professional: { monthly: number; yearly: number };
-    researcher: { monthly: number; yearly: number };
-    professor: { monthly: number; yearly: number };
-    teacher: { monthly: number; yearly: number };
+    student: PlanPricing;
+    professional: PlanPricing;
+    researcher: PlanPricing;
+    professor: PlanPricing;
+    teacher: PlanPricing;
 };
 
 export type AppSettings = {

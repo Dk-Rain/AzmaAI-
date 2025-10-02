@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -25,7 +26,7 @@ import { Switch } from '@/components/ui/switch';
 import { ArrowLeft, CheckCircle2, Loader2, Star, XCircle, CalendarClock, Ticket } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import type { PricingSettings, Transaction, PromoCode as PromoCodeType } from '@/types/admin';
+import type { PricingSettings, Transaction, PromoCode as PromoCodeType, PlanPricing } from '@/types/admin';
 import { auth, db } from '@/lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, updateDoc, collection, addDoc } from 'firebase/firestore';
@@ -45,12 +46,20 @@ type UserData = {
   phoneNumber?: string;
 };
 
+const defaultPlanPricing: PlanPricing = {
+    monthly: 0,
+    yearly: 0,
+    monthlyDiscount: 0,
+    yearlyDiscount: 0,
+    isDiscountActive: false,
+};
+
 const defaultPricing: PricingSettings = {
-    student: { monthly: 2000, yearly: 8000 },
-    professional: { monthly: 2000, yearly: 8000 },
-    researcher: { monthly: 8000, yearly: 20000 },
-    professor: { monthly: 8000, yearly: 20000 },
-    teacher: { monthly: 5000, yearly: 15000 },
+    student: { ...defaultPlanPricing, monthly: 2000, yearly: 8000 },
+    professional: { ...defaultPlanPricing, monthly: 2000, yearly: 8000 },
+    researcher: { ...defaultPlanPricing, monthly: 8000, yearly: 20000 },
+    professor: { ...defaultPlanPricing, monthly: 8000, yearly: 20000 },
+    teacher: { ...defaultPlanPricing, monthly: 5000, yearly: 15000 },
 };
 
 const SubscriptionStatusCard = ({ user }: { user: UserData | null }) => {
@@ -136,7 +145,17 @@ export default function UpgradePage() {
         const settingsDoc = await getDoc(settingsDocRef);
         if (settingsDoc.exists()) {
             const data = settingsDoc.data();
-            setPricing(data.pricingSettings || defaultPricing);
+             const fetchedPricing = data.pricingSettings || {};
+             const mergedPricing = { ...defaultPricing };
+             for (const role in mergedPricing) {
+                if (fetchedPricing[role as keyof PricingSettings]) {
+                    mergedPricing[role as keyof PricingSettings] = {
+                        ...defaultPricing[role as keyof PricingSettings],
+                        ...fetchedPricing[role as keyof PricingSettings]
+                    };
+                }
+             }
+            setPricing(mergedPricing);
             setPaymentKey(data.appSettings.paymentGatewayPublicKey || '');
         }
     }
@@ -146,33 +165,46 @@ export default function UpgradePage() {
   }, [router]);
   
   const currentPlanRole = user?.role ? user.role.toLowerCase() as keyof PricingSettings : null;
+  const currentPlanPricing = currentPlanRole ? pricing[currentPlanRole] : null;
+
   
   const calculatedPrice = useMemo(() => {
-    if (!currentPlanRole) return { original: 0, final: 0, discount: 0 };
+    if (!currentPlanPricing) return { original: 0, final: 0, discount: 0, hasActiveDiscount: false };
     
-    const originalPrice = isYearly ? pricing[currentPlanRole].yearly : pricing[currentPlanRole].monthly;
+    let originalPrice = isYearly ? currentPlanPricing.yearly : currentPlanPricing.monthly;
+    let finalPrice = originalPrice;
+    let discount = 0;
+    let hasActiveDiscount = false;
 
+    // Check for site-wide discount first
+    if (currentPlanPricing.isDiscountActive) {
+        const discountedPrice = isYearly ? currentPlanPricing.yearlyDiscount : currentPlanPricing.monthlyDiscount;
+        if (discountedPrice && discountedPrice > 0) {
+            finalPrice = discountedPrice;
+            hasActiveDiscount = true;
+        }
+    }
+    
+    // Promo code overrides site-wide discount
     if (appliedPromo) {
         if (appliedPromo.type === 'percentage') {
-            const discount = originalPrice * (appliedPromo.value / 100);
-            return { original: originalPrice, final: originalPrice - discount, discount };
-        }
-        if (appliedPromo.type === 'fixed') {
-            const final = Math.max(0, originalPrice - appliedPromo.value);
-            return { original: originalPrice, final, discount: originalPrice - final };
-        }
-        if (appliedPromo.type === 'plan_upgrade' && appliedPromo.planUpgradePrices) {
-             const final = isYearly ? appliedPromo.planUpgradePrices.yearly : appliedPromo.planUpgradePrices.monthly;
-             return { original: originalPrice, final, discount: originalPrice - final };
+            finalPrice = originalPrice * (1 - (appliedPromo.value / 100));
+        } else if (appliedPromo.type === 'fixed') {
+            finalPrice = Math.max(0, originalPrice - appliedPromo.value);
+        } else if (appliedPromo.type === 'plan_upgrade' && appliedPromo.planUpgradePrices) {
+             finalPrice = isYearly ? appliedPromo.planUpgradePrices.yearly : appliedPromo.planUpgradePrices.monthly;
         }
     }
 
+    discount = originalPrice - finalPrice;
+
     return {
         original: originalPrice,
-        final: originalPrice,
-        discount: 0
+        final: finalPrice,
+        discount,
+        hasActiveDiscount,
     };
-  }, [currentPlanRole, isYearly, pricing, appliedPromo]);
+  }, [currentPlanPricing, isYearly, appliedPromo]);
   
   const getPaymentConfig = (amount: number, planName: string) => ({
     public_key: paymentKey,
@@ -345,7 +377,7 @@ export default function UpgradePage() {
 
   const openUpgradeDialog = () => {
     // Reset dialog state every time it opens
-    setDialogStep('ask');
+    setDialogStep(calculatedPrice.hasActiveDiscount ? 'pay' : 'ask');
     setPromoCodeInput('');
     setAppliedPromo(null);
     setPromoError(null);
@@ -417,9 +449,16 @@ export default function UpgradePage() {
                     <CardHeader>
                         <CardTitle>{currentPlanRole ? getPlanName(currentPlanRole) : 'AZMA Premium'}</CardTitle>
                         <CardDescription>Premium Subscription for {user?.role}</CardDescription>
-                        <div className="text-4xl font-bold">
-                           ₦{(isYearly ? pricing[currentPlanRole!]?.yearly : pricing[currentPlanRole!]?.monthly)?.toLocaleString() || '...'}
-                           <span className="text-sm font-normal text-muted-foreground">/ {isYearly ? 'year' : 'month'}</span>
+                         <div className="text-4xl font-bold">
+                            {calculatedPrice.hasActiveDiscount ? (
+                                <>
+                                <span className="text-2xl font-normal text-muted-foreground line-through mr-2">₦{calculatedPrice.original.toLocaleString()}</span>
+                                ₦{calculatedPrice.final.toLocaleString()}
+                                </>
+                            ) : (
+                                <span>₦{calculatedPrice.original.toLocaleString()}</span>
+                            )}
+                            <span className="text-sm font-normal text-muted-foreground">/ {isYearly ? 'year' : 'month'}</span>
                         </div>
                     </CardHeader>
                     <CardContent className="grid gap-4">
@@ -627,9 +666,9 @@ export default function UpgradePage() {
                                 <span>Original Price:</span>
                                 <span>₦{calculatedPrice.original.toLocaleString()}</span>
                             </div>
-                            {appliedPromo && (
+                            {(appliedPromo || calculatedPrice.hasActiveDiscount) && (
                                 <div className="flex justify-between text-green-600">
-                                    <span>Discount ({appliedPromo.code}):</span>
+                                    <span>Discount {appliedPromo ? `(${appliedPromo.code})` : '(Site-wide)'}:</span>
                                     <span>- ₦{calculatedPrice.discount.toLocaleString()}</span>
                                 </div>
                             )}

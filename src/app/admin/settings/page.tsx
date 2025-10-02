@@ -24,11 +24,12 @@ import {
 import { Switch } from "@/components/ui/switch"
 import { useToast } from "@/hooks/use-toast"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Trash2, KeyRound, Building, Brush, Tag, Megaphone, Loader2, Cpu } from "lucide-react";
+import { Trash2, KeyRound, Building, Brush, Tag, Megaphone, Loader2, Cpu, Percent } from "lucide-react";
 import { useTheme } from "next-themes";
-import type { PricingSettings, AppSettings as AppSettingsType } from '@/types/admin';
+import type { PricingSettings, AppSettings as AppSettingsType, PlanPricing } from '@/types/admin';
 import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { Separator } from "@/components/ui/separator";
 
 
 const initialSettings: AppSettingsType = {
@@ -42,12 +43,20 @@ const initialSettings: AppSettingsType = {
     defaultModel: 'googleai/gemini-2.5-pro',
 };
 
+const initialPlanPricing: PlanPricing = {
+    monthly: 0,
+    yearly: 0,
+    monthlyDiscount: 0,
+    yearlyDiscount: 0,
+    isDiscountActive: false,
+};
+
 const initialPricing: PricingSettings = {
-    student: { monthly: 2000, yearly: 8000 },
-    professional: { monthly: 2000, yearly: 8000 },
-    researcher: { monthly: 8000, yearly: 20000 },
-    professor: { monthly: 8000, yearly: 20000 },
-    teacher: { monthly: 5000, yearly: 15000 },
+    student: { ...initialPlanPricing, monthly: 2000, yearly: 8000 },
+    professional: { ...initialPlanPricing, monthly: 2000, yearly: 8000 },
+    researcher: { ...initialPlanPricing, monthly: 8000, yearly: 20000 },
+    professor: { ...initialPlanPricing, monthly: 8000, yearly: 20000 },
+    teacher: { ...initialPlanPricing, monthly: 5000, yearly: 15000 },
 };
 
 export default function AdminSettingsPage() {
@@ -70,8 +79,20 @@ export default function AdminSettingsPage() {
                 const settingsDoc = await getDoc(settingsDocRef);
                 if (settingsDoc.exists()) {
                     const data = settingsDoc.data();
+                    // Merge fetched data with defaults to avoid missing fields
                     setSettings(prev => ({...prev, ...data.appSettings}));
-                    setPricing(prev => ({...prev, ...data.pricingSettings}));
+                    
+                    const fetchedPricing = data.pricingSettings;
+                    const mergedPricing: PricingSettings = { ...initialPricing };
+                    for (const role in mergedPricing) {
+                        if (fetchedPricing && fetchedPricing[role as keyof PricingSettings]) {
+                             mergedPricing[role as keyof PricingSettings] = {
+                                ...mergedPricing[role as keyof PricingSettings],
+                                ...fetchedPricing[role as keyof PricingSettings]
+                            };
+                        }
+                    }
+                    setPricing(mergedPricing);
                 }
             } catch (error) {
                 console.error("Failed to fetch settings from Firestore:", error);
@@ -84,13 +105,12 @@ export default function AdminSettingsPage() {
         fetchSettings();
     }, [toast]);
     
-    const handlePricingChange = (role: keyof PricingSettings, cycle: 'monthly' | 'yearly', value: string) => {
-        const numericValue = parseInt(value, 10) || 0;
+    const handlePricingChange = (role: keyof PricingSettings, field: keyof PlanPricing, value: string | boolean) => {
         setPricing(prev => ({
             ...prev,
             [role]: {
                 ...prev[role],
-                [cycle]: numericValue,
+                [field]: typeof value === 'boolean' ? value : (parseInt(value, 10) || 0),
             }
         }));
     };
@@ -241,40 +261,88 @@ export default function AdminSettingsPage() {
             <CardHeader>
                 <CardTitle className="flex items-center gap-2"><Tag /> Subscription Pricing</CardTitle>
                 <CardDescription>
-                    Set the monthly and yearly prices for each subscription plan.
+                    Set the monthly and yearly prices for each subscription plan. You can also activate a site-wide discount for each plan.
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-                {Object.keys(pricing).map(role => (
-                    <div key={role} className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end p-4 border rounded-lg">
-                        <div className="md:col-span-1">
-                            <Label className="capitalize font-semibold">{role} Plan</Label>
-                            <p className="text-xs text-muted-foreground">Prices in NGN.</p>
+                {(Object.keys(pricing) as Array<keyof PricingSettings>).map(role => (
+                    <div key={role} className="p-4 border rounded-lg space-y-4">
+                        <div className="flex justify-between items-start">
+                             <div>
+                                <Label className="capitalize font-semibold text-lg">{role} Plan</Label>
+                                <p className="text-xs text-muted-foreground">Prices in NGN.</p>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <Label htmlFor={`discount-switch-${role}`} className="text-sm">Activate Discount</Label>
+                                <Switch
+                                    id={`discount-switch-${role}`}
+                                    checked={pricing[role].isDiscountActive}
+                                    onCheckedChange={(checked) => handlePricingChange(role, 'isDiscountActive', checked)}
+                                />
+                            </div>
                         </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor={`price-${role}-monthly`}>Monthly Price</Label>
-                            <Input
-                                id={`price-${role}-monthly`}
-                                type="number"
-                                value={pricing[role as keyof PricingSettings].monthly}
-                                onChange={(e) => handlePricingChange(role as keyof PricingSettings, 'monthly', e.target.value)}
-                                placeholder="e.g., 2000"
-                            />
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                            <div className="grid gap-2">
+                                <Label htmlFor={`price-${role}-monthly`}>Monthly Price</Label>
+                                <Input
+                                    id={`price-${role}-monthly`}
+                                    type="number"
+                                    value={pricing[role].monthly}
+                                    onChange={(e) => handlePricingChange(role, 'monthly', e.target.value)}
+                                    placeholder="e.g., 2000"
+                                />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor={`price-${role}-yearly`}>Yearly Price</Label>
+                                <Input
+                                    id={`price-${role}-yearly`}
+                                    type="number"
+                                    value={pricing[role].yearly}
+                                    onChange={(e) => handlePricingChange(role, 'yearly', e.target.value)}
+                                    placeholder="e.g., 20000"
+                                />
+                            </div>
                         </div>
-                         <div className="grid gap-2">
-                            <Label htmlFor={`price-${role}-yearly`}>Yearly Price</Label>
-                            <Input
-                                id={`price-${role}-yearly`}
-                                type="number"
-                                value={pricing[role as keyof PricingSettings].yearly}
-                                onChange={(e) => handlePricingChange(role as keyof PricingSettings, 'yearly', e.target.value)}
-                                placeholder="e.g., 20000"
-                            />
+                        
+                        <div className={!pricing[role].isDiscountActive ? 'opacity-50' : ''}>
+                             <Separator className="my-4"/>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                                <div className="grid gap-2">
+                                    <Label htmlFor={`discount-price-${role}-monthly`} className="flex items-center gap-1">
+                                        <Percent className="h-4 w-4 text-primary" />
+                                        Discounted Monthly Price
+                                    </Label>
+                                    <Input
+                                        id={`discount-price-${role}-monthly`}
+                                        type="number"
+                                        value={pricing[role].monthlyDiscount || ''}
+                                        onChange={(e) => handlePricingChange(role, 'monthlyDiscount', e.target.value)}
+                                        placeholder="e.g., 1500"
+                                        disabled={!pricing[role].isDiscountActive}
+                                    />
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor={`discount-price-${role}-yearly`} className="flex items-center gap-1">
+                                        <Percent className="h-4 w-4 text-primary" />
+                                        Discounted Yearly Price
+                                    </Label>
+                                    <Input
+                                        id={`discount-price-${role}-yearly`}
+                                        type="number"
+                                        value={pricing[role].yearlyDiscount || ''}
+                                        onChange={(e) => handlePricingChange(role, 'yearlyDiscount', e.target.value)}
+                                        placeholder="e.g., 15000"
+                                        disabled={!pricing[role].isDiscountActive}
+                                    />
+                                </div>
+                            </div>
                         </div>
                     </div>
                 ))}
             </CardContent>
         </Card>
+
 
         <Card>
             <CardHeader>
