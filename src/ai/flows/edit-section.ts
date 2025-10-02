@@ -72,7 +72,7 @@ const editSectionPrompt = ai.definePrompt({
     *   If the instruction is to change the text, modify the existing 'text' blocks or add new ones.
 3.  **Maintain Structure**: Do not change any other sections of the document. Return the entire document, with only the target section modified.
 4.  **Preserve IDs and Metadata**: The underlying structure and any IDs should be preserved. You are only changing the content of one section.
-5.  **Title Rules**: All titles (document, section, sub-section) must be concise, between 5 and 10 words.
+5.  **Title Rules**: All titles (document, section, sub-section) must be concise, with a maximum of 5 words.
 6.  **Output**: Your output must be the complete, updated document as a single, valid JSON object that strictly adheres to the provided schema.
 
 **Original Document:**

@@ -142,7 +142,7 @@ Your output must be a single, valid JSON object that strictly adheres to the Gen
 3.  **Images/Diagrams (Only if requested)**: {{#if includeImages}}You MUST include visual diagrams, charts, or illustrations where they would enhance a section. Create an 'image_placeholder' block: \`{ "type": "image_placeholder", "prompt": "A descriptive prompt for the image...", "caption": "..." }\`.{{else}}Do NOT include any images, diagrams, or image placeholders.{{/if}}
 4.  **Tables (Only if requested)**: {{#if includeTables}}When presenting structured data (e.g., comparisons, statistics), you MUST use a 'table' block. Format it as: \`{ "type": "table", "caption": "...", "headers": ["Header 1"], "rows": [["Row 1 Col 1"]] }\`.{{else}}Do NOT include any tables.{{/if}}
 5.  **Lists (Only if requested)**: {{#if includeLists}}For sequential steps or itemizations, you MUST use a 'list' block. Ordered: \`{ "type": "list", "style": "ordered", "items": ["First step"] }\`. Unordered: \`{ "type": "list", "style": "unordered", "items": ["Bullet point"] }\`.{{else}}Do NOT include any lists.{{/if}}
-6.  **Title Rules**: All titles (document, section, sub-section) must be concise, between 5 and 10 words.
+6.  **Title Rules**: All titles (document, section, sub-section) must be concise, with a maximum of 5 words.
 
 **User Request:**
 
