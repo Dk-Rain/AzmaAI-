@@ -68,6 +68,7 @@ const initialFormState: Omit<PromoCode, 'id' | 'createdAt' | 'usedCount' | 'rede
   usagePerUser: 1,
   expiresAt: null,
   isActive: true,
+  planUpgradePrices: { monthly: 0, yearly: 0 },
 };
 
 export default function PromotionsPage() {
@@ -106,11 +107,12 @@ export default function PromotionsPage() {
         setFormData({
             code: promo.code,
             type: promo.type,
-            value: promo.value,
+            value: promo.value || 0,
             usageLimit: promo.usageLimit,
             usagePerUser: promo.usagePerUser,
             expiresAt: promo.expiresAt,
             isActive: promo.isActive,
+            planUpgradePrices: promo.planUpgradePrices || { monthly: 0, yearly: 0 },
         });
     } else {
         setEditingId(null);
@@ -121,8 +123,8 @@ export default function PromotionsPage() {
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.code || !formData.value) {
-      toast({ variant: 'destructive', title: "Missing fields", description: "Code and value are required." });
+    if (!formData.code) {
+      toast({ variant: 'destructive', title: "Missing field", description: "Code is required." });
       return;
     }
 
@@ -209,17 +211,48 @@ export default function PromotionsPage() {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="type">Discount Type</Label>
-                        <Select value={formData.type} onValueChange={(v) => setFormData({...formData, type: v as 'percentage' | 'fixed'})}>
-                            <SelectTrigger><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="percentage">Percentage</SelectItem>
-                                <SelectItem value="fixed">Fixed Amount</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
+                <div className="space-y-2">
+                    <Label htmlFor="type">Discount Type</Label>
+                    <Select value={formData.type} onValueChange={(v) => setFormData({...formData, type: v as any})}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="percentage">Percentage</SelectItem>
+                            <SelectItem value="fixed">Fixed Amount</SelectItem>
+                            <SelectItem value="plan_upgrade">Plan Upgrade (Fixed Price)</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+                
+                {formData.type === 'plan_upgrade' ? (
+                  <div className="grid grid-cols-2 gap-4 p-4 border rounded-md">
+                      <div className="space-y-2 col-span-2">
+                          <Label>Plan Upgrade Prices</Label>
+                          <p className="text-xs text-muted-foreground">Set the final price users will pay for a monthly or yearly plan with this code.</p>
+                      </div>
+                      <div className="space-y-2">
+                          <Label htmlFor="upgrade-monthly">Monthly Price (₦)</Label>
+                           <Input
+                              id="upgrade-monthly"
+                              type="number"
+                              value={formData.planUpgradePrices?.monthly || 0}
+                              onChange={(e) => setFormData({ ...formData, planUpgradePrices: { ...formData.planUpgradePrices, monthly: parseInt(e.target.value, 10) || 0 } as any })}
+                              placeholder="e.g., 1000"
+                              required
+                          />
+                      </div>
+                      <div className="space-y-2">
+                          <Label htmlFor="upgrade-yearly">Yearly Price (₦)</Label>
+                           <Input
+                              id="upgrade-yearly"
+                              type="number"
+                              value={formData.planUpgradePrices?.yearly || 0}
+                              onChange={(e) => setFormData({ ...formData, planUpgradePrices: { ...formData.planUpgradePrices, yearly: parseInt(e.target.value, 10) || 0 } as any })}
+                              placeholder="e.g., 10000"
+                              required
+                          />
+                      </div>
+                  </div>
+                ) : (
                     <div className="space-y-2">
                         <Label htmlFor="value">Value</Label>
                          <Input
@@ -231,7 +264,8 @@ export default function PromotionsPage() {
                             required
                         />
                     </div>
-                </div>
+                )}
+
 
                  <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
@@ -306,8 +340,12 @@ export default function PromotionsPage() {
                 {promoCodes.length > 0 ? promoCodes.map(promo => (
                     <TableRow key={promo.id}>
                         <TableCell className="font-mono">{promo.code}</TableCell>
-                        <TableCell className="capitalize">{promo.type}</TableCell>
-                        <TableCell>{promo.type === 'percentage' ? `${promo.value}%` : `₦${promo.value}`}</TableCell>
+                        <TableCell className="capitalize">{promo.type.replace('_', ' ')}</TableCell>
+                        <TableCell>
+                          {promo.type === 'percentage' ? `${promo.value}%` : 
+                           promo.type === 'fixed' ? `₦${promo.value}` : 
+                           `M: ₦${promo.planUpgradePrices?.monthly || 0}, Y: ₦${promo.planUpgradePrices?.yearly || 0}`}
+                        </TableCell>
                         <TableCell>{promo.usedCount} / {promo.usageLimit}</TableCell>
                         <TableCell>{promo.expiresAt ? new Date(promo.expiresAt).toLocaleDateString() : 'Never'}</TableCell>
                         <TableCell>{getStatusBadge(promo)}</TableCell>

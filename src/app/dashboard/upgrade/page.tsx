@@ -154,9 +154,12 @@ export default function UpgradePage() {
         if (appliedPromo.type === 'fixed') {
             finalPrice = Math.max(0, originalPrice - appliedPromo.value);
             discount = originalPrice - finalPrice;
-        } else { // percentage
+        } else if (appliedPromo.type === 'percentage') {
             discount = originalPrice * (appliedPromo.value / 100);
             finalPrice = originalPrice - discount;
+        } else if (appliedPromo.type === 'plan_upgrade' && appliedPromo.planUpgradePrices) {
+            finalPrice = isYearly ? appliedPromo.planUpgradePrices.yearly : appliedPromo.planUpgradePrices.monthly;
+            discount = originalPrice - finalPrice;
         }
     }
     return { original: originalPrice, final: finalPrice, discount };
@@ -460,7 +463,7 @@ export default function UpgradePage() {
                     </CardContent>
                      <CardFooter className="mt-auto">
                         <Button variant="outline" className="w-full" onClick={handleContactSales}>Contact Sales</Button>
-                    </CardFooter>
+                     </CardFooter>
                 </Card>
             </div>
              <Card className="mt-8">

@@ -79,12 +79,13 @@ export type Announcement = {
 export type PromoCode = {
   id: string;
   code: string;
-  type: 'percentage' | 'fixed';
-  value: number;
-  usageLimit: number; // Total number of times the code can be used
+  type: 'percentage' | 'fixed' | 'plan_upgrade';
+  value: number; // For 'percentage' and 'fixed'
+  planUpgradePrices?: { monthly: number; yearly: number }; // For 'plan_upgrade'
+  usageLimit: number;
   usedCount: number;
-  usagePerUser: number; // How many times a single user can use it
-  redeemedBy: string[]; // Array of user emails or IDs
+  usagePerUser: number;
+  redeemedBy: string[];
   expiresAt: string | null;
   createdAt: string;
   isActive: boolean;
