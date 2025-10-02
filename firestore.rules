@@ -3,45 +3,48 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Global isAdmin function for general admin checks
+    // Global helper function to check if the requesting user is an admin.
+    // This can be used in any rule.
     function isGlobalAdmin() {
+      // Check the 'role' field in the user's own document.
       return exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin';
     }
 
     // Rules for the 'users' collection
     match /users/{userId} {
-      // Scoped isAdmin function for use within this block
-      function isAdmin() {
-        return exists(/databases/$(database)/documents/users/$(userId)) &&
-               get(/databases/$(database)/documents/users/$(userId)).data.role == 'Admin';
+      // Local helper function, only for use within the /users/{userId} match.
+      function isRequestingUserAdmin() {
+        return exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+               get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin';
       }
 
       // Any authenticated user can read their own data.
       // Admins can read any user's data.
-      allow read: if request.auth.uid == userId || isGlobalAdmin();
+      allow read: if request.auth.uid == userId || isRequestingUserAdmin();
 
       // A user can create their own user document upon signup.
       // Admins can create new user documents.
-      allow create: if request.auth.uid == userId || isGlobalAdmin();
+      allow create: if request.auth.uid == userId || isRequestingUserAdmin();
 
       // A user can update their own data.
       // Admins can update any user's data.
-      allow update: if request.auth.uid == userId || isGlobalAdmin();
+      allow update: if request.auth.uid == userId || isRequestingUserAdmin();
 
       // Only admins can delete user accounts from the database.
-      allow delete: if isGlobalAdmin();
+      allow delete: if isRequestingUserAdmin();
       
       // Allow users to create their own export history records
       match /exports/{docId} {
         allow create: if request.auth.uid == userId;
+        allow read: if request.auth.uid == userId || isRequestingUserAdmin();
       }
     }
     
     // Rules for the 'workspaces' collection
     match /workspaces/{userId} {
         // A user can read and write to their own workspace.
-        // Admins can read and write to any user's workspace for support/management.
+        // Admins can read and write to any user's workspace.
         allow read, write: if request.auth.uid == userId || isGlobalAdmin();
     }
 
@@ -56,7 +59,7 @@ service cloud.firestore {
     
     // Rules for the 'announcements' collection
     match /announcements/{announcementId} {
-        // Anyone can read announcements (for the popup).
+        // Anyone can read announcements.
         allow read: if true;
         
         // Only admins can create, update, or delete announcements.
@@ -78,18 +81,18 @@ service cloud.firestore {
     
     // Rules for the 'settings' collection
     match /settings/{settingId} {
-        // Allow anyone to read the settings document (e.g. for pricing info on client)
+        // Allow anyone to read the settings document.
         allow read: if true;
-        // Only admins can write to the settings document
+        // Only admins can write to the settings document.
         allow write: if isGlobalAdmin();
     }
 
-    // Rules for the 'exports' collection used for document verification
+    // Rules for the 'exports' collection used for public document verification
     match /exports/{docId} {
         // Anyone can read document history to verify a document's authenticity.
         allow read: if true;
         
-        // Authenticated users can create export records.
+        // Any authenticated user can create an export record.
         allow create: if request.auth != null;
     }
   }
