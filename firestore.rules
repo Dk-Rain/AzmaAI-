@@ -1,61 +1,93 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow public read for shared documents if needed in the future
-    // match /shared/{docId} {
-    //   allow read: if true;
-    // }
 
-    // Allow users to manage their own data
+    // Helper function to check if a user is an admin
+    function isAdmin(userId) {
+      return exists(/databases/$(database)/documents/users/$(userId)) &&
+             get(/databases/$(database)/documents/users/$(userId)).data.role == 'Admin';
+    }
+
+    // Rules for the 'users' collection
     match /users/{userId} {
-      allow read, update: if request.auth != null && request.auth.uid == userId;
-      allow create: if request.auth != null;
+      // Any authenticated user can read their own data.
+      // Admins can read any user's data.
+      allow read: if request.auth.uid == userId || isAdmin(request.auth.uid);
 
-      // Allow users to write to their own exports subcollection
-      match /exports/{exportId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+      // A user can create their own user document upon signup.
+      // Admins can create new user documents.
+      allow create: if request.auth.uid == userId || isAdmin(request.auth.uid);
+
+      // A user can update their own data.
+      // Admins can update any user's data.
+      allow update: if request.auth.uid == userId || isAdmin(request.auth.uid);
+
+      // Only admins can delete user accounts from the database.
+      allow delete: if isAdmin(request.auth.uid);
+      
+      // Allow user to write to their own export history sub-collection
+      match /exports/{docId} {
+        allow write: if request.auth.uid == userId;
       }
     }
     
-    // Allow any authenticated user to create a verification record.
-    // Read/Update/Delete should be restricted.
-    match /exports/{exportId} {
-      allow create: if request.auth != null;
-      allow read: if true; // Allow public reading for verification
-      allow update, delete: if false; // Protect from modification
-    }
-
-    // Allow users to read their own workspace
+    // Rules for the 'workspaces' collection
     match /workspaces/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+        // A user can read and write to their own workspace.
+        // Admins can read and write to any user's workspace for support/management.
+        allow read, write: if request.auth.uid == userId || isAdmin(request.auth.uid);
     }
 
-    // Allow admins to read/write all transactions for auditing
+    // Rules for the 'transactions' collection
     match /transactions/{transactionId} {
-      allow read, write: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin';
+        // Authenticated users can create their own transactions (e.g., when subscribing).
+        allow create: if request.auth != null;
+        
+        // Only admins can read, update, or delete transaction records.
+        allow read, update, delete: if isAdmin(request.auth.uid);
     }
-
-    // Allow admins to read/write all users for management
-    match /users/{userId} {
-      allow read, write: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin';
-    }
-
-    // Settings can be read by any authenticated user, but only written by admins.
-    match /settings/global {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin';
-    }
-
-    // Announcements can be read by anyone, but only written by admins.
+    
+    // Rules for the 'announcements' collection
     match /announcements/{announcementId} {
-      allow read: if true;
-      allow write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin';
+        // Anyone can read announcements (for the popup).
+        allow read: if true;
+        
+        // Only admins can create, update, or delete announcements.
+        allow write: if isAdmin(request.auth.uid);
     }
 
-    // Promo codes are admin-only for write, but can be read by the server-side action (authenticated user)
+    // Rules for the 'promoCodes' collection
     match /promoCodes/{promoId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin';
+        // Authenticated users can read promo codes to verify them.
+        allow read: if request.auth != null;
+        
+        // Admins can create and delete.
+        allow create, delete: if isAdmin(request.auth.uid);
+        
+        // Admins can update any field. Authenticated users can only update specific fields to redeem a code.
+        allow update: if request.auth != null && (isAdmin(request.auth.uid) || 
+          (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['usedCount', 'redeemedBy'])));
+    }
+    
+    // Rules for the 'settings' collection
+    match /settings/{settingId} {
+        // Allow anyone to read the settings document (e.g. for pricing info on client)
+        allow read: if true;
+        // Only admins can write to the settings document
+        allow write: if isAdmin(request.auth.uid);
+    }
+
+    // Rules for the 'exports' collection used for document verification
+    match /exports/{docId} {
+        // Anyone can read document history to verify a document's authenticity.
+        allow read: if true;
+        
+        // Authenticated users can create verification records upon exporting.
+        allow create: if request.auth != null;
+
+        // Nobody can update or delete verification records from the client.
+        allow update, delete: if false;
     }
   }
 }
