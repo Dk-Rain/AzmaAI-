@@ -12,7 +12,7 @@ import { exportToDocx as buildDocx } from '@/lib/docx-exporter';
 import { Packer } from 'docx';
 import type { DocumentContent, References, StyleOptions, Section, ContentBlock, PromoCode } from '@/types';
 import { db } from '@/lib/firebase';
-import { doc, updateDoc, increment, getDoc } from 'firebase/firestore';
+import { doc, updateDoc, increment, getDoc, arrayUnion } from 'firebase/firestore';
 
 
 type GenerationFormValuesWithTemplate = {
@@ -368,9 +368,6 @@ export async function verifyPromoCodeAction(code: string, userEmail: string) {
         if (!promo.isActive) {
             return { data: null, error: 'This promo code is currently not active.' };
         }
-        if (promo.type !== 'fixed') {
-             return { data: null, error: 'This promo code is not for a fixed price plan.' };
-        }
         if (promo.expiresAt && new Date(promo.expiresAt) < new Date()) {
             return { data: null, error: 'This promo code has expired.' };
         }
@@ -388,6 +385,20 @@ export async function verifyPromoCodeAction(code: string, userEmail: string) {
     } catch (e: any) {
         console.error("Promo code verification failed:", e);
         return { data: null, error: 'An unexpected error occurred. Please try again.' };
+    }
+}
+
+export async function redeemPromoCode(promoId: string, userEmail: string) {
+    const promoDocRef = doc(db, 'promoCodes', promoId);
+    try {
+        await updateDoc(promoDocRef, {
+            usedCount: increment(1),
+            redeemedBy: arrayUnion(userEmail)
+        });
+        return { success: true };
+    } catch (error) {
+        console.error("Failed to redeem promo code:", error);
+        return { success: false, error: "Could not update promo code usage." };
     }
 }
 
