@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import { generateAcademicContent } from '@/ai/flows/generate-academic-content';
@@ -423,7 +424,7 @@ export async function verifyUpgradePromoCodeAction(code: string, userEmail: stri
             return { data: null, error: 'This promo code is not valid for plan upgrades.' };
         }
 
-        const userUses = redeemedBy.filter(email => email === userEmail).length;
+        const userUses = redeemedBy.filter((email: string) => email === userEmail).length;
         if (userUses >= promo.usagePerUser) {
             return { data: null, error: 'You have already redeemed this promo code the maximum number of times.' };
         }
