@@ -36,7 +36,7 @@ import type { CheckPlagiarismOutput } from '@/ai/flows/check-plagiarism';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { DisclaimerPopup } from '@/components/disclaimer-popup';
 import DashboardLoading from './loading';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 
 
 const defaultTask: AcademicTaskType = 'Research Paper';
@@ -309,7 +309,7 @@ export function MainPage() {
       </aside>
 
       <main className="flex-1 flex flex-col overflow-hidden print:overflow-visible">
-        <header className="flex h-16 shrink-0 items-center gap-4 border-b bg-background px-6 print:hidden">
+        <header className="flex h-16 shrink-0 items-center gap-4 border-b bg-background px-4 sm:px-6 print:hidden">
           <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
             <SheetTrigger asChild>
                 <Button variant="outline" size="icon" className="md:hidden">
@@ -341,105 +341,110 @@ export function MainPage() {
             </SheetContent>
           </Sheet>
 
-          <div className="flex-1 overflow-x-auto">
-            <div className="flex items-center gap-4 min-w-max">
-                <h1 className="text-lg font-semibold md:text-xl truncate" title={content.title}>
-                {isTemplateMode ? "Custom Template Editor" : content.title}
-                </h1>
+          <div className="flex-1 overflow-hidden">
+            <ScrollArea className="w-full overflow-auto whitespace-nowrap">
+              <div className="flex items-center gap-4">
+                  <h1 className="text-lg font-semibold md:text-xl truncate" title={content.title}>
+                  {isTemplateMode ? "Custom Template Editor" : content.title}
+                  </h1>
 
-                <Button 
-                    onClick={handleScan} 
-                    disabled={isScanning || !isPremium} 
-                    size="sm"
-                    title={!isPremium ? "Upgrade to a premium plan to use this feature" : "Scan for errors"}
-                >
-                    <ScanLine className="mr-2 h-4 w-4" />
-                    Scan
-                </Button>
+                  <Button 
+                      onClick={handleScan} 
+                      disabled={isScanning || !isPremium} 
+                      size="sm"
+                      title={!isPremium ? "Upgrade to a premium plan to use this feature" : "Scan for errors"}
+                  >
+                      <ScanLine className="mr-2 h-4 w-4" />
+                      Scan
+                  </Button>
 
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                    <Button disabled={isExporting} size="sm">
-                        {isExporting ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        ) : (
-                        <Download className="mr-2 h-4 w-4" />
-                        )}
-                        Export
-                        <ChevronDown className="ml-2 h-4 w-4"/>
+                  <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                      <Button disabled={isExporting} size="sm">
+                          {isExporting ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          ) : (
+                          <Download className="mr-2 h-4 w-4" />
+                          )}
+                          Export
+                          <ChevronDown className="ml-2 h-4 w-4"/>
+                      </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="w-56" align="end">
+                          <DropdownMenuLabel>Export Options</DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuGroup>
+                              <DropdownMenuItem onClick={() => handleExport('txt')}>
+                                  <FileText className="mr-2 h-4 w-4"/>
+                                  <span>Export to .txt</span>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleExport('docx')}>
+                                  <FileType className="mr-2 h-4 w-4"/>
+                                  <span>Export to .docx</span>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleExport('pdf')}>
+                                  <FileType className="mr-2 h-4 w-4"/>
+                                  <span>Export to .pdf</span>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleExport('xls')}>
+                                  <FileSpreadsheet className="mr-2 h-4 w-4"/>
+                                  <span>Export to .csv (Excel)</span>
+                              </DropdownMenuItem>
+                          </DropdownMenuGroup>
+                          {!isPremium && (
+                              <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => router.push('/dashboard/upgrade')} className="text-primary focus:text-primary">
+                                  <span>Upgrade for more options</span>
+                              </DropdownMenuItem>
+                              </>
+                          )}
+                      </DropdownMenuContent>
+                  </DropdownMenu>
+              </div>
+              <ScrollBar orientation="horizontal" className="h-2"/>
+            </ScrollArea>
+          </div>
+
+          <div className="ml-auto">
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                        <Avatar className="h-10 w-10">
+                            <AvatarImage src={user?.photoUrl || `https://api.dicebear.com/8.x/lorelei/svg?seed=${user?.username || user?.fullName}`} alt={user?.fullName || 'User'}/>
+                            <AvatarFallback>{user?.fullName?.[0]}</AvatarFallback>
+                        </Avatar>
                     </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-56" align="end">
-                        <DropdownMenuLabel>Export Options</DropdownMenuLabel>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuGroup>
-                            <DropdownMenuItem onClick={() => handleExport('txt')}>
-                                <FileText className="mr-2 h-4 w-4"/>
-                                <span>Export to .txt</span>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleExport('docx')}>
-                                <FileType className="mr-2 h-4 w-4"/>
-                                <span>Export to .docx</span>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleExport('pdf')}>
-                                <FileType className="mr-2 h-4 w-4"/>
-                                <span>Export to .pdf</span>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleExport('xls')}>
-                                <FileSpreadsheet className="mr-2 h-4 w-4"/>
-                                <span>Export to .csv (Excel)</span>
-                            </DropdownMenuItem>
-                        </DropdownMenuGroup>
-                        {!isPremium && (
-                            <>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => router.push('/dashboard/upgrade')} className="text-primary focus:text-primary">
-                                <span>Upgrade for more options</span>
-                            </DropdownMenuItem>
-                            </>
-                        )}
-                    </DropdownMenuContent>
-                </DropdownMenu>
-
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-                            <Avatar className="h-10 w-10">
-                                <AvatarImage src={user?.photoUrl || `https://api.dicebear.com/8.x/lorelei/svg?seed=${user?.username || user?.fullName}`} alt={user?.fullName || 'User'}/>
-                                <AvatarFallback>{user?.fullName?.[0]}</AvatarFallback>
-                            </Avatar>
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-56" align="end" forceMount>
-                    <DropdownMenuLabel className="font-normal">
-                        <div className="flex flex-col space-y-1">
-                        <p className="text-sm font-medium leading-none">{user?.fullName}</p>
-                        <p className="text-xs leading-none text-muted-foreground">
-                            {user ? (user.isPremium ? `${user.role} Plan` : 'Free Plan') : '...'}
-                        </p>
-                        </div>
-                    </DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => router.push('/dashboard/profile')}>
-                        <User className="mr-2 h-4 w-4" />
-                        <span>Profile</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => router.push('/dashboard/upgrade')}>
-                        <CreditCard className="mr-2 h-4 w-4" />
-                        <span>Upgrade Plan</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => router.push('/dashboard/settings')}>
-                        <Settings className="mr-2 h-4 w-4" />
-                        <span>Settings</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={handleLogout}>
-                        <LogOut className="mr-2 h-4 w-4" />
-                        <span>Log out</span>
-                    </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            </div>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56" align="end" forceMount>
+                <DropdownMenuLabel className="font-normal">
+                    <div className="flex flex-col space-y-1">
+                    <p className="text-sm font-medium leading-none">{user?.fullName}</p>
+                    <p className="text-xs leading-none text-muted-foreground">
+                        {user ? (user.isPremium ? `${user.role} Plan` : 'Free Plan') : '...'}
+                    </p>
+                    </div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => router.push('/dashboard/profile')}>
+                    <User className="mr-2 h-4 w-4" />
+                    <span>Profile</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push('/dashboard/upgrade')}>
+                    <CreditCard className="mr-2 h-4 w-4" />
+                    <span>Upgrade Plan</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push('/dashboard/settings')}>
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>Settings</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleLogout}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Log out</span>
+                </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </header>
         {showEditor && (
