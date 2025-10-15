@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { CheckCircle, FolderOpen, Gauge, Library, Lock, PlayCircle, Rocket, School, BookOpenCheck } from 'lucide-react';
+import { CheckCircle, FolderOpen, Gauge, Library, Lock, PlayCircle, Rocket, BookOpenCheck } from 'lucide-react';
 import Image from 'next/image';
 import {
   Carousel,
@@ -25,7 +25,7 @@ export default function LandingPage() {
       <div className="relative z-10 flex flex-col min-h-screen">
         <header className="px-4 lg:px-6 h-14 flex items-center sticky top-0 z-50 bg-background/80 backdrop-blur-sm">
           <Link href="#" className="flex items-center justify-center font-bold text-xl" prefetch={false}>
-            <School className="h-6 w-6 mr-2 text-primary" />
+            <Image src="/img/azmaai.png" alt="AzmaAI Logo" width={24} height={24} className="mr-2" />
             <span className="font-headline">AzmaAI</span>
           </Link>
           <nav className="ml-auto flex items-center gap-4 sm:gap-6">

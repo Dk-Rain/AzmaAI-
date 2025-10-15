@@ -2,12 +2,12 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { School } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { auth, db } from '@/lib/firebase';
 import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
@@ -61,7 +61,7 @@ export default function AdminAuthPage() {
         <Card className="w-full max-w-sm">
             <CardHeader className="text-center">
                  <Link href="/" className="flex items-center justify-center font-bold text-2xl mb-2" prefetch={false}>
-                    <School className="h-7 w-7 mr-2 text-primary" />
+                    <Image src="/img/azmaai.png" alt="AzmaAI Logo" width={28} height={28} className="mr-2" />
                     <span>AZMA AI</span>
                 </Link>
                 <CardTitle className="text-2xl">General Admin Login</CardTitle>

@@ -2,14 +2,13 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   Home,
   Menu,
-  School,
   Users,
   LogOut,
   Settings,
-  PieChart,
   CreditCard,
   Shield,
   BadgeCheck,
@@ -123,7 +122,7 @@ export default function DashboardLayout({
         <div className="flex h-full max-h-screen flex-col gap-2">
           <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
             <Link href="/admin/dashboard" className="flex items-center gap-2 font-semibold">
-              <School className="h-6 w-6" />
+              <Image src="/img/azmaai.png" alt="AzmaAI Logo" width={24} height={24} />
               <span className="">AzmaAI Admin</span>
             </Link>
           </div>
@@ -162,7 +161,7 @@ export default function DashboardLayout({
                   href="#"
                   className="flex items-center gap-2 text-lg font-semibold"
                 >
-                  <School className="h-6 w-6" />
+                  <Image src="/img/azmaai.png" alt="AzmaAI Logo" width={24} height={24} />
                   <span className="sr-only">AzmaAI Admin</span>
                 </Link>
                 {navLinks.map((link) => (

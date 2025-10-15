@@ -3,11 +3,12 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { School, Search, CheckCircle, XCircle, FileClock, BadgeCheck, Ticket, Loader2 } from 'lucide-react';
+import { Search, CheckCircle, XCircle, FileClock, BadgeCheck, Ticket, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { DocumentHistoryEntry, PromoCode } from '@/types/admin';
 import type { User } from '@/types/admin';
@@ -140,7 +141,7 @@ export default function SealVerifyPage() {
         <div className="flex flex-col min-h-screen bg-muted/40">
             <header className="px-4 lg:px-6 h-14 flex items-center border-b bg-background">
                 <Link href="/" className="flex items-center justify-center font-bold text-xl" prefetch={false}>
-                <School className="h-6 w-6 mr-2 text-primary" />
+                <Image src="/img/azmaai.png" alt="AzmaAI Logo" width={24} height={24} className="mr-2" />
                 <span>AZMA AI</span>
                 </Link>
                 <nav className="ml-auto flex gap-4 sm:gap-6">
