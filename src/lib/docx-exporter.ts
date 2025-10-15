@@ -114,13 +114,13 @@ export async function exportToDocx(
   };
 
   try {
-    // Save export record to Firestore
-    const exportDocRef = doc(db, 'exports', uniqueId);
-    await setDoc(exportDocRef, exportEntry);
-
-    // Also save to user's personal history
-    const userExportDocRef = doc(db, 'users', userId, 'exports', uniqueId);
-    await setDoc(userExportDocRef, exportEntry);
+    // Define the document references
+    const publicExportRef = doc(db, 'exports', uniqueId);
+    const userHistoryExportRef = doc(db, 'users', userId, 'exports', uniqueId);
+  
+    // Save to both locations
+    await setDoc(publicExportRef, exportEntry);
+    await setDoc(userHistoryExportRef, exportEntry);
 
   } catch(error: any) {
       console.error("Firestore write failed:", error);

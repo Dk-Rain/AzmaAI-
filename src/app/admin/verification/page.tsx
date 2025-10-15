@@ -34,6 +34,7 @@ export default function VerificationPage() {
     setVerificationResult(null);
 
     try {
+      // Admin verification checks the public 'exports' collection
       const docRef = doc(db, 'exports', docId);
       const docSnap = await getDoc(docRef);
 
@@ -42,6 +43,7 @@ export default function VerificationPage() {
         toast({ title: "Document Verified", description: "The document is authentic."});
       } else {
         setVerificationResult('not_found');
+        toast({ variant: 'destructive', title: "Verification Failed", description: `No document with the ID "${docId}" was found.`});
       }
     } catch (error) {
       console.error('Error verifying document:', error);
@@ -90,8 +92,8 @@ export default function VerificationPage() {
 
           {verificationResult && verificationResult !== 'not_found' && (
             <Card className="border-green-500 bg-green-500/10">
-                <CardContent className="p-6 flex items-center gap-4">
-                    <CheckCircle className="h-10 w-10 text-green-600"/>
+                <CardContent className="p-6 flex items-start gap-4">
+                    <CheckCircle className="h-10 w-10 text-green-600 mt-1 flex-shrink-0"/>
                     <div>
                         <h3 className="font-bold text-green-700 dark:text-green-500">Document Verified</h3>
                         <p className="text-sm text-green-600 dark:text-green-400">

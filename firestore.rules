@@ -4,56 +4,43 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // Global helper function to check if the requesting user is an admin.
-    // This can be used in any rule.
     function isGlobalAdmin() {
-      // Check the 'role' field in the user's own document.
-      return exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+      return request.auth != null && exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin';
     }
 
     // Rules for the 'users' collection
     match /users/{userId} {
-      // Local helper function, only for use within the /users/{userId} match.
-      function isRequestingUserAdmin() {
-        return exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-               get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'Admin';
-      }
+      // A user can manage their own document. Admins can manage any user document.
+      allow read, update: if request.auth.uid == userId || isGlobalAdmin();
 
-      // Any authenticated user can read their own data.
-      // Admins can read any user's data.
-      allow read: if request.auth.uid == userId || isRequestingUserAdmin();
+      // New users can create their own document. Admins can also create users.
+      allow create: if request.auth.uid == userId || isGlobalAdmin();
 
-      // A user can create their own user document upon signup.
-      // Admins can create new user documents.
-      allow create: if request.auth.uid == userId || isRequestingUserAdmin();
-
-      // A user can update their own data.
-      // Admins can update any user's data.
-      allow update: if request.auth.uid == userId || isRequestingUserAdmin();
-
-      // Only admins can delete user accounts from the database.
-      allow delete: if isRequestingUserAdmin();
+      // Only admins can delete user documents.
+      allow delete: if isGlobalAdmin();
       
-      // Allow users to create their own export history records
+      // Rules for user-specific export history
       match /exports/{docId} {
+        // A user can create and read their own export history.
+        // Admins can also read a user's export history.
         allow create: if request.auth.uid == userId;
-        allow read: if request.auth.uid == userId || isRequestingUserAdmin();
+        allow read: if request.auth.uid == userId || isGlobalAdmin();
       }
     }
     
     // Rules for the 'workspaces' collection
     match /workspaces/{userId} {
-        // A user can read and write to their own workspace.
-        // Admins can read and write to any user's workspace.
+        // A user can read and write to their own workspace. Admins can too.
         allow read, write: if request.auth.uid == userId || isGlobalAdmin();
     }
 
     // Rules for the 'transactions' collection
     match /transactions/{transactionId} {
-        // Authenticated users can create their own transactions (e.g., when subscribing).
+        // Any authenticated user can create a transaction (e.g., when subscribing).
         allow create: if request.auth != null;
         
-        // Only admins can read, update, or delete transaction records.
+        // Only admins can manage transaction records.
         allow read, update, delete: if isGlobalAdmin();
     }
     
@@ -61,38 +48,37 @@ service cloud.firestore {
     match /announcements/{announcementId} {
         // Anyone can read announcements.
         allow read: if true;
-        
-        // Only admins can create, update, or delete announcements.
+        // Only admins can write announcements.
         allow write: if isGlobalAdmin();
     }
 
     // Rules for the 'promoCodes' collection
     match /promoCodes/{promoId} {
-        // Authenticated users can read promo codes to verify them.
+        // Authenticated users can read promo codes to verify them. Admins can too.
         allow read: if request.auth != null;
         
-        // Admins can create and delete.
+        // Admins can create and delete promo codes.
         allow create, delete: if isGlobalAdmin();
         
-        // Admins can update any field. Authenticated users can only update specific fields to redeem a code.
-        allow update: if request.auth != null && (isGlobalAdmin() || 
-          (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['usedCount', 'redeemedBy'])));
+        // Admins can update any field. Users can only redeem.
+        allow update: if isGlobalAdmin() || 
+          (request.auth != null && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['usedCount', 'redeemedBy']));
     }
     
     // Rules for the 'settings' collection
     match /settings/{settingId} {
-        // Allow anyone to read the settings document.
+        // Anyone can read global settings (for pricing, etc.).
         allow read: if true;
-        // Only admins can write to the settings document.
+        // Only admins can write settings.
         allow write: if isGlobalAdmin();
     }
 
-    // Rules for the 'exports' collection used for public document verification
+    // Rules for the 'exports' collection (for public verification)
     match /exports/{docId} {
-        // Anyone can read document history to verify a document's authenticity.
+        // Anyone can read an export record to verify a document.
         allow read: if true;
         
-        // Any authenticated user can create an export record.
+        // Any authenticated user can create an export record when they export a file.
         allow create: if request.auth != null;
     }
   }
