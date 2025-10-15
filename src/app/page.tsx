@@ -25,7 +25,7 @@ export default function LandingPage() {
       <div className="relative z-10 flex flex-col min-h-screen">
         <header className="px-4 lg:px-6 h-14 flex items-center sticky top-0 z-50 bg-background/80 backdrop-blur-sm">
           <Link href="#" className="flex items-center justify-center font-bold text-xl" prefetch={false}>
-            <Image src="/img/azmaai.png" alt="AzmaAI Logo" width={24} height={24} className="mr-2" />
+            <Image src="/img/Azmaai logo.png" alt="AzmaAI Logo" width={24} height={24} className="mr-2" />
             <span className="font-headline">AzmaAI</span>
           </Link>
           <nav className="ml-auto flex items-center gap-4 sm:gap-6">

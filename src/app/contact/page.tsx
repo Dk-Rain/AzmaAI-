@@ -38,7 +38,7 @@ export default function ContactPage() {
     <div className="flex flex-col min-h-screen bg-background">
       <header className="px-4 lg:px-6 h-14 flex items-center">
         <Link href="/" className="flex items-center justify-center font-bold text-xl" prefetch={false}>
-          <Image src="/img/azmaai.png" alt="AzmaAI Logo" width={24} height={24} className="mr-2" />
+          <Image src="/img/Azmaai logo.png" alt="AzmaAI Logo" width={24} height={24} className="mr-2" />
           <span>AZMA AI</span>
         </Link>
         <nav className="ml-auto flex gap-4 sm:gap-6">

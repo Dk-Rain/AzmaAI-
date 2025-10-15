@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -8,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { 
     PenSquare, Loader2, Check, AlertCircle, Sparkles, 
-    Trash2, Search, Library, PlusCircle, FolderPlus, MountainIcon, Folder, File, GripVertical, ChevronDown, MoreHorizontal, Edit, FolderInput, PenLine, Archive, Share2, Gauge, X, FileText
+    Trash2, Search, Library, PlusCircle, FolderPlus, Folder, File, GripVertical, ChevronDown, MoreHorizontal, Edit, FolderInput, PenLine, Archive, Share2, Gauge, X, FileText
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { DocumentContent, References, StyleOptions, FontType, Workspace, Project, DocumentItem, SharedDocument, ContentBlock } from '@/types';
@@ -59,6 +58,7 @@ import { Progress } from './ui/progress';
 import { useRouter } from 'next/navigation';
 import { Switch } from './ui/switch';
 import { Checkbox } from './ui/checkbox';
+import Image from 'next/image';
 
 
 const isSameDay = (d1: Date, d2: Date) => {
@@ -641,7 +641,7 @@ export function ControlPanel({
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center gap-2 p-4 border-b">
-        <MountainIcon className="h-8 w-8 text-primary" />
+        <Image src="/img/Azmaai logo.png" alt="AzmaAI Logo" width={28} height={28} />
         <h1 className="text-xl font-bold">AZMA AI</h1>
       </div>
 

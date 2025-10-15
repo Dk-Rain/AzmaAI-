@@ -2,12 +2,12 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { MountainIcon } from 'lucide-react';
 import { auth, db } from '@/lib/firebase';
 import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
@@ -92,7 +92,7 @@ export default function LoginPage() {
         <div className="mx-auto grid w-[350px] gap-6">
           <div className="grid gap-2 text-center">
             <Link href="/" className="flex items-center justify-center font-bold text-xl" prefetch={false}>
-                <MountainIcon className="h-6 w-6 mr-2" />
+                <Image src="/img/Azmaai logo.png" alt="AzmaAI Logo" width={24} height={24} className="mr-2" />
                 <span>AZMA AI</span>
             </Link>
             <h1 className="text-3xl font-bold">Login</h1>

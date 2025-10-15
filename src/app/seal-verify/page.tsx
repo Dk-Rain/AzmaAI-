@@ -141,7 +141,7 @@ export default function SealVerifyPage() {
         <div className="flex flex-col min-h-screen bg-muted/40">
             <header className="px-4 lg:px-6 h-14 flex items-center border-b bg-background">
                 <Link href="/" className="flex items-center justify-center font-bold text-xl" prefetch={false}>
-                <Image src="/img/azmaai.png" alt="AzmaAI Logo" width={24} height={24} className="mr-2" />
+                <Image src="/img/Azmaai logo.png" alt="AzmaAI Logo" width={24} height={24} className="mr-2" />
                 <span>AZMA AI</span>
                 </Link>
                 <nav className="ml-auto flex gap-4 sm:gap-6">

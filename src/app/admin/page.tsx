@@ -61,7 +61,7 @@ export default function AdminAuthPage() {
         <Card className="w-full max-w-sm">
             <CardHeader className="text-center">
                  <Link href="/" className="flex items-center justify-center font-bold text-2xl mb-2" prefetch={false}>
-                    <Image src="/img/azmaai.png" alt="AzmaAI Logo" width={28} height={28} className="mr-2" />
+                    <Image src="/img/Azmaai logo.png" alt="AzmaAI Logo" width={28} height={28} className="mr-2" />
                     <span>AZMA AI</span>
                 </Link>
                 <CardTitle className="text-2xl">General Admin Login</CardTitle>

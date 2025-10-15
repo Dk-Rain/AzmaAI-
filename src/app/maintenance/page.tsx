@@ -1,7 +1,8 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { School, Wrench } from 'lucide-react';
+import { Wrench } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function MaintenancePage() {
   return (
@@ -22,7 +23,7 @@ export default function MaintenancePage() {
             </p>
             <div className="mt-6">
                 <Link href="/" className="flex items-center justify-center font-bold text-xl" prefetch={false}>
-                    <School className="h-6 w-6 mr-2 text-primary" />
+                    <Image src="/img/Azmaai logo.png" alt="AzmaAI Logo" width={24} height={24} className="mr-2" />
                     <span>AZMA AI</span>
                 </Link>
             </div>
@@ -31,5 +32,3 @@ export default function MaintenancePage() {
     </div>
   );
 }
-
-    
