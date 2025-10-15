@@ -560,7 +560,7 @@ export function ControlPanel({
   };
 
 
-  async function onGenerate(values: GenerationFormValues) {
+  async function handleGenerateSubmit(values: GenerationFormValues) {
     if (!user) {
         toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to generate content.' });
         return;
@@ -900,7 +900,7 @@ export function ControlPanel({
                 <div className="p-4 space-y-6">
                     <Form {...generationForm}>
                         <form
-                        onSubmit={generationForm.handleSubmit(onGenerate)}
+                        onSubmit={generationForm.handleSubmit(handleGenerateSubmit)}
                         className="space-y-4"
                         >
                         <h3 className="text-base font-semibold">Generate Content</h3>
