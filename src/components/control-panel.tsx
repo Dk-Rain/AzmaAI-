@@ -159,6 +159,7 @@ interface ControlPanelProps {
     setCustomTemplate: React.Dispatch<React.SetStateAction<string>>;
     isTemplateMode: boolean;
     setIsTemplateMode: React.Dispatch<React.SetStateAction<boolean>>;
+    onGenerate: () => void;
 }
 
 
@@ -174,7 +175,8 @@ export function ControlPanel({
   customTemplate,
   setCustomTemplate,
   isTemplateMode,
-  setIsTemplateMode
+  setIsTemplateMode,
+  onGenerate
 }: ControlPanelProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [workspace, setWorkspace] = useState<Workspace>({ projects: [], standaloneDocuments: [], archivedItems: [], sharedDocuments: [] });
@@ -634,6 +636,7 @@ export function ControlPanel({
         title: 'Content Generated',
         description: 'Your document has been created and saved to your projects.',
       });
+      onGenerate();
     }
   }
 

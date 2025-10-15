@@ -305,6 +305,7 @@ export function MainPage() {
           setCustomTemplate={setCustomTemplate}
           isTemplateMode={isTemplateMode}
           setIsTemplateMode={setIsTemplateMode}
+          onGenerate={() => {}}
         />
       </aside>
 
@@ -321,14 +322,8 @@ export function MainPage() {
                 <ControlPanel
                     user={user}
                     setUser={setUser}
-                    setContent={(newContent) => {
-                        setContent(newContent);
-                        setIsMobileMenuOpen(false);
-                    }}
-                    setReferences={(newRefs) => {
-                        setReferences(newRefs);
-                        setIsMobileMenuOpen(false);
-                    }}
+                    setContent={setContent}
+                    setReferences={setReferences}
                     styles={styles}
                     setStyles={setStyles}
                     references={references}
@@ -337,6 +332,7 @@ export function MainPage() {
                     setCustomTemplate={setCustomTemplate}
                     isTemplateMode={isTemplateMode}
                     setIsTemplateMode={setIsTemplateMode}
+                    onGenerate={() => setIsMobileMenuOpen(false)}
                 />
             </SheetContent>
           </Sheet>
