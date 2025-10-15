@@ -1,4 +1,5 @@
 
+
 'use server';
 
 import {
@@ -16,9 +17,6 @@ import {
   WidthType,
 } from 'docx';
 import type { DocumentContent, References, StyleOptions, ContentBlock } from '@/types';
-import type { DocumentHistoryEntry } from '@/types/admin';
-import { db } from './firebase';
-import { doc, setDoc } from 'firebase/firestore';
 
 
 async function renderBlockToDocx(block: ContentBlock): Promise<(Paragraph | Table)[]> {
@@ -94,7 +92,6 @@ export async function exportToDocx(
   content: DocumentContent,
   references: References,
   styles: StyleOptions,
-  userId: string,
 ): Promise<Document> {
   if (!content) {
     throw new Error('Content is not defined');
@@ -105,28 +102,6 @@ export async function exportToDocx(
   );
 
   const uniqueId = `AZMA-DOC-${Date.now()}-${(content.title || 'untitled').slice(0,10).replace(/\s/g, '')}`;
-
-  const exportEntry: DocumentHistoryEntry = {
-    docId: uniqueId,
-    title: content.title,
-    generatedAt: new Date().toISOString(),
-    generatedBy: userId,
-  };
-
-  try {
-    // Define the document references
-    const publicExportRef = doc(db, 'exports', uniqueId);
-    const userHistoryExportRef = doc(db, 'users', userId, 'exports', uniqueId);
-  
-    // Save to both locations
-    await setDoc(publicExportRef, exportEntry);
-    await setDoc(userHistoryExportRef, exportEntry);
-
-  } catch(error: any) {
-      console.error("Firestore write failed:", error);
-      // Re-throw a more user-friendly error to be caught by the calling action
-      throw new Error(`Failed to save document verification record. Firestore error: ${error.message}`);
-  }
   
   const processSection = async (section: DocumentContent['sections'][0]) => {
     const sectionChildren: (Paragraph | Table)[] = [];

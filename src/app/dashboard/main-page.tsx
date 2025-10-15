@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -194,7 +195,7 @@ export function MainPage() {
 
     if (format === 'docx') {
       try {
-        const { data, error } = await exportDocxAction(content, references, styles, user.id);
+        const { data, error } = await exportDocxAction(content, references, styles);
         setIsExporting(false);
 
         if (error || !data) {
@@ -215,7 +216,7 @@ export function MainPage() {
 
         return toast({
           title: 'Export Successful',
-          description: 'Your document has been downloaded and a verification record has been saved.',
+          description: 'Your document has been downloaded.',
         });
 
       } catch (error) {
@@ -305,7 +306,7 @@ export function MainPage() {
           setCustomTemplate={setCustomTemplate}
           isTemplateMode={isTemplateMode}
           setIsTemplateMode={setIsTemplateMode}
-          onGenerate={() => {}}
+          onGenerate={() => setIsMobileMenuOpen(false)}
         />
       </aside>
 

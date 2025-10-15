@@ -286,11 +286,10 @@ export async function verifyReferencesAction(referencesToVerify: string) {
 export async function exportDocxAction(
   content: DocumentContent,
   references: References,
-  styles: StyleOptions,
-  userId: string
+  styles: StyleOptions
 ) {
   try {
-    const docFile = await buildDocx(content, references, styles, userId);
+    const docFile = await buildDocx(content, references, styles);
     const buffer = await Packer.toBuffer(docFile);
     const base64 = buffer.toString('base64');
     return { data: { file: base64 }, error: null };
