@@ -29,7 +29,7 @@ import { useToast } from '@/hooks/use-toast';
 import type { PricingSettings, Transaction, PromoCode as PromoCodeType, PlanPricing } from '@/types/admin';
 import { auth, db } from '@/lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc, updateDoc, collection, addDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useFlutterwave, closePaymentModal } from 'flutterwave-react-v3';
 import { Input } from '@/components/ui/input';
 import { verifyUpgradePromoCodeAction, redeemPromoCode } from '@/app/actions';
@@ -107,7 +107,6 @@ export default function UpgradePage() {
   const [pricing, setPricing] = useState<PricingSettings>(defaultPricing);
   const [paymentKey, setPaymentKey] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [isDowngrading, setIsDowngrading] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
 
@@ -220,7 +219,7 @@ export default function UpgradePage() {
     customizations: {
       title: 'AzmaAI Subscription',
       description: `Payment for ${planName}`,
-      logo: 'https://www.azma.com/logo.png', // Replace with your logo URL
+      logo: 'https://www.azma.ai/logo.png', // Replace with your logo URL
     },
   });
 
@@ -232,6 +231,8 @@ export default function UpgradePage() {
 
     try {
         const userDocRef = doc(db, 'users', user.uid);
+        
+        // Calculate the new subscription end date
         const now = new Date();
         const subscriptionEndDate = new Date(now);
         subscriptionEndDate.setDate(subscriptionEndDate.getDate() + durationDays);
@@ -239,9 +240,12 @@ export default function UpgradePage() {
         const dataToUpdate = {
             isPremium: true,
             subscriptionEndDate: subscriptionEndDate.toISOString(),
+            lastPayment: serverTimestamp(),
         };
+
         await updateDoc(userDocRef, dataToUpdate);
-        setUser(prevUser => prevUser ? { ...prevUser, ...dataToUpdate } : null);
+
+        setUser(prevUser => prevUser ? { ...prevUser, isPremium: true, subscriptionEndDate: subscriptionEndDate.toISOString() } : null);
 
         const newTransaction: Omit<Transaction, 'id'> = {
             invoiceId: response.tx_ref || `INV-${Date.now()}`,
@@ -294,56 +298,19 @@ export default function UpgradePage() {
                 appliedPromo?.id
             );
         } else {
+            console.error("Flutterwave payment failed with response:", response);
             toast({ variant: 'destructive', title: 'Payment Failed', description: 'Your payment was not successful. Please try again.' });
         }
         closePaymentModal();
       },
       onClose: () => {
         if (!isProcessing) {
-          toast({ title: 'Payment window closed' });
+          // This is a standard close, not a failure.
         }
       },
     });
   }
 
-
-  const handleDowngrade = async () => {
-    if (!user) return;
-    setIsDowngrading(true);
-    toast({
-        title: 'Processing Downgrade...',
-        description: 'Reverting your account to the free plan.'
-    })
-    
-    setTimeout(async () => {
-        try {
-            const userDocRef = doc(db, 'users', user.uid);
-            const dataToUpdate = { 
-                isPremium: false,
-                subscriptionEndDate: null 
-            };
-            await updateDoc(userDocRef, dataToUpdate);
-            
-            setUser(prevUser => prevUser ? { ...prevUser, isPremium: false, subscriptionEndDate: undefined } : null);
-
-            toast({
-                title: 'Downgrade Successful!',
-                description: 'Your account is now on the Free plan.'
-            });
-
-        } catch (error) {
-            console.error("Downgrade failed:", error);
-            toast({
-                variant: 'destructive',
-                title: 'Downgrade Failed',
-                description: 'Could not update your plan. Please try again.'
-            })
-        } finally {
-            setIsDowngrading(false);
-        }
-    }, 1500);
-  }
-  
   const handleContactSales = () => {
     window.location.href = "mailto:info@sfarettech.com.ng?subject=Enterprise%20Plan%20Inquiry";
   };
@@ -428,14 +395,8 @@ export default function UpgradePage() {
                         </div>
                     </CardContent>
                     <CardFooter className="mt-auto">
-                        <Button variant="outline" className="w-full" onClick={handleDowngrade} disabled={!user?.isPremium || isDowngrading}>
-                           {isDowngrading ? (
-                             <><Loader2 className="mr-2 h-4 w-4 animate-spin"/> Downgrading...</>
-                           ) : user?.isPremium ? (
-                             'Downgrade to Free'
-                           ) : (
-                             'Your Current Plan'
-                           )}
+                        <Button variant="outline" className="w-full" disabled={!user?.isPremium}>
+                           {user?.isPremium ? 'Downgrade to Free' : 'Your Current Plan'}
                         </Button>
                     </CardFooter>
                 </Card>
@@ -691,6 +652,5 @@ export default function UpgradePage() {
     </div>
   );
 }
-
 
     
