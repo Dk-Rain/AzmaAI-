@@ -290,7 +290,7 @@ export default function UpgradePage() {
 
     handleFlutterwavePayment({
       callback: async (response) => {
-        if (response.status === 'successful') {
+        if (response?.status === 'successful') {
             await handleSuccessfulPayment(
                 response,
                 planName,
@@ -299,7 +299,7 @@ export default function UpgradePage() {
             );
         } else {
             console.error("Flutterwave payment failed with response:", response);
-            toast({ variant: 'destructive', title: 'Payment Failed', description: 'Your payment was not successful. Please try again.' });
+            toast({ variant: 'destructive', title: 'Payment Not Completed', description: 'The payment process was not successfully completed. Please try again.' });
         }
         closePaymentModal();
       },
