@@ -52,6 +52,8 @@ export default function SettingsPage() {
   const [isGoogleDriveConnected, setIsGoogleDriveConnected] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [taskPush, setTaskPush] = useState(true);
+  const [taskEmail, setTaskEmail] = useState(false);
 
 
   useEffect(() => {
@@ -221,6 +223,16 @@ export default function SettingsPage() {
     });
   };
 
+  const handleTaskNotificationChange = (type: 'push' | 'email', checked: boolean) => {
+    if (type === 'push') {
+        setTaskPush(checked);
+        toast({ title: `Task Push Notifications ${checked ? 'Enabled' : 'Disabled'}` });
+    } else {
+        setTaskEmail(checked);
+        toast({ title: `Task Email Notifications ${checked ? 'Enabled' : 'Disabled'}` });
+    }
+    // Here you would typically save this preference to the user's profile in the database.
+  };
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
@@ -305,11 +317,11 @@ export default function SettingsPage() {
                           <div className="flex items-center space-x-4">
                             <div className="flex items-center space-x-2">
                                <Smartphone className="h-5 w-5 text-muted-foreground"/>
-                               <Switch id="tasks-push" defaultChecked/>
+                               <Switch id="tasks-push" checked={taskPush} onCheckedChange={(checked) => handleTaskNotificationChange('push', checked)} />
                             </div>
                             <div className="flex items-center space-x-2">
                                <Mail className="h-5 w-5 text-muted-foreground"/>
-                               <Switch id="tasks-email" />
+                               <Switch id="tasks-email" checked={taskEmail} onCheckedChange={(checked) => handleTaskNotificationChange('email', checked)} />
                             </div>
                           </div>
                         </div>
