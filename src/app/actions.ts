@@ -38,7 +38,7 @@ function formatAsText(content: DocumentContent, references: References): string 
 
     content.sections.forEach(section => {
         text += `## ${section.title} ##\n\n`;
-        section.content.forEach(block => {
+        (section.content || []).forEach(block => {
             if (block.type === 'text') {
                 text += `${block.text}\n\n`;
             }
@@ -78,7 +78,7 @@ function formatAsCsv(content: DocumentContent, references: References): string {
     );
 
     content.sections.forEach(section => {
-        const sectionContent = section.content.map(b => b.type === 'text' ? b.text : `[${b.type}]`).join(' ');
+        const sectionContent = (section.content || []).map(b => b.type === 'text' ? b.text : `[${b.type}]`).join(' ');
         csv += `Section,${escapeCsv(section.title)},${escapeCsv(sectionContent)}\n`;
         if (section.subSections) {
             section.subSections.forEach(sub => {
@@ -135,7 +135,7 @@ export async function generateContentAction(
     };
 
     const wordCount = generatedContent.sections.reduce((acc, section) => {
-        const sectionWords = calculateWords(section.content);
+        const sectionWords = calculateWords(section.content || []);
         const subSectionsWords = (section.subSections || []).reduce(
             (subAcc, subSection) => subAcc + calculateWords(subSection.content),
             0
@@ -240,7 +240,7 @@ export async function scanAndCleanAction(document: DocumentContent) {
     try {
         const newSections: Section[] = await Promise.all(
             document.sections.map(async (section) => {
-                const cleanedContent = await Promise.all(section.content.map(cleanContentBlock));
+                const cleanedContent = await Promise.all((section.content || []).map(cleanContentBlock));
                 
                 const cleanedSubSections = section.subSections ? await Promise.all(
                     section.subSections.map(async (subSection) => {

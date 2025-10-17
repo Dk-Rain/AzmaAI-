@@ -628,7 +628,7 @@ export function ControlPanel({
           };
 
           const wordCount = data.content.sections.reduce((acc, section) => {
-              const sectionWords = calculateWords(section.content);
+              const sectionWords = calculateWords(section.content || []);
               const subSectionsWords = (section.subSections || []).reduce(
                   (subAcc, subSection) => subAcc + calculateWords(subSection.content),
                   0
