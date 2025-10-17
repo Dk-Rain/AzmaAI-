@@ -75,12 +75,14 @@ export function DocumentEditor({
   // Effect to automatically generate images for placeholders
   useEffect(() => {
     content.sections.forEach((section, sectionIndex) => {
-      section.content.forEach((block, blockIndex) => {
-        if (block.type === 'image_placeholder' && block.prompt) {
-          // Found a placeholder, let's generate an image for it.
-          handleAutoImageGeneration(block.prompt, block.caption, sectionIndex, blockIndex);
-        }
-      });
+      if (section.content) {
+        section.content.forEach((block, blockIndex) => {
+          if (block.type === 'image_placeholder' && block.prompt) {
+            // Found a placeholder, let's generate an image for it.
+            handleAutoImageGeneration(block.prompt, block.caption, sectionIndex, blockIndex);
+          }
+        });
+      }
       // Also check subsections
       section.subSections?.forEach((subSection, subSectionIndex) => {
           subSection.content.forEach((block, blockIndex) => {
@@ -112,7 +114,10 @@ export function DocumentEditor({
                   newSubSections[subSectionIndex] = { ...newSubSections[subSectionIndex], content: newContent };
                   newSections[sectionIndex] = { ...newSections[sectionIndex], subSections: newSubSections };
               } else {
-                  const newContent = [...newSections[sectionIndex].content];
+                  if (!newSections[sectionIndex].content) {
+                      newSections[sectionIndex].content = [];
+                  }
+                  const newContent = [...newSections[sectionIndex].content!];
                   newContent[blockIndex] = newImageBlock;
                   newSections[sectionIndex] = { ...newSections[sectionIndex], content: newContent };
               }
@@ -267,11 +272,11 @@ export function DocumentEditor({
           };
         }
         if (!isSubSection && section.title === sectionTitle) {
+          const newSectionContent = section.content ? [...section.content] : [];
+          newSectionContent[blockIndex] = newBlock;
           return {
             ...section,
-            content: section.content.map((block, idx) =>
-              idx === blockIndex ? newBlock : block
-            ),
+            content: newSectionContent,
           };
         }
         return section;
@@ -340,7 +345,7 @@ export function DocumentEditor({
     parent?: Section
   ) => {
     const newText = e.currentTarget.innerText;
-    const currentBlock = isSub ? parent?.subSections?.find(s => s.title === section.title)?.content[blockIndex] : section.content[blockIndex];
+    const currentBlock = isSub ? parent?.subSections?.find(s => s.title === section.title)?.content[blockIndex] : section.content?.[blockIndex];
     if (currentBlock?.type === 'text' && currentBlock.text !== newText) {
         const newBlock: ContentBlock = { type: 'text', text: newText };
         if (isSub && parent) {
