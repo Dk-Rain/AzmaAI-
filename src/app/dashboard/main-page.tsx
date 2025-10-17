@@ -75,8 +75,41 @@ export function MainPage() {
   const [isTemplateMode, setIsTemplateMode] = useState(false);
   const [customTemplate, setCustomTemplate] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [isStateRestored, setIsStateRestored] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
+
+  // Effect for restoring state from localStorage on initial load
+  useEffect(() => {
+    try {
+      const savedStateJSON = localStorage.getItem('azma_workspace_v2');
+      if (savedStateJSON) {
+        const savedState = JSON.parse(savedStateJSON);
+        if (savedState.content) setContent(savedState.content);
+        if (savedState.references) setReferences(savedState.references);
+        if (savedState.styles) setStyles(savedState.styles);
+      }
+    } catch (error) {
+      console.error("Failed to load workspace from localStorage", error);
+      toast({
+        variant: 'destructive',
+        title: 'Could not load saved work',
+        description: 'Your previous session could not be restored.'
+      });
+    }
+    setIsStateRestored(true);
+  }, [toast]);
+
+  // Effect for saving state to localStorage whenever it changes
+  useEffect(() => {
+    if (!isStateRestored) return; // Don't save until state is restored
+    try {
+      const stateToSave = JSON.stringify({ content, references, styles });
+      localStorage.setItem('azma_workspace_v2', stateToSave);
+    } catch (error) {
+      console.error("Failed to save workspace to localStorage", error);
+    }
+  }, [content, references, styles, isStateRestored]);
   
   useEffect(() => {
     const checkMaintenanceAndAuth = async (firebaseUser: any) => {
@@ -282,7 +315,7 @@ export function MainPage() {
     });
   };
   
-  if (isLoading || !user) {
+  if (isLoading || !user || !isStateRestored) {
     return <DashboardLoading />;
   }
 
