@@ -237,7 +237,7 @@ export default function UpgradePage() {
         const subscriptionEndDate = new Date(now);
         subscriptionEndDate.setDate(subscriptionEndDate.getDate() + durationDays);
 
-        const dataToUpdate = {
+        const dataToUpdate: { isPremium: boolean; subscriptionEndDate: string; lastPayment?: any } = {
             isPremium: true,
             subscriptionEndDate: subscriptionEndDate.toISOString(),
             lastPayment: serverTimestamp(),
@@ -285,6 +285,7 @@ export default function UpgradePage() {
         return;
     }
     
+    setIsProcessing(true); // Set processing to true when payment is initiated
     const duration = isYearly ? 365 : 30;
     const planName = `${getPlanName(user.role)} - ${isYearly ? 'Yearly' : 'Monthly'}${appliedPromo ? ` (Promo: ${appliedPromo.code})`: ''}`;
 
@@ -299,14 +300,22 @@ export default function UpgradePage() {
             );
         } else {
             console.error("Flutterwave payment failed with response:", response);
-            toast({ variant: 'destructive', title: 'Payment Not Completed', description: 'The payment process was not successfully completed. Please try again.' });
+            toast({ variant: 'destructive', title: 'Payment Failed', description: 'The payment was not successful. Please try again or contact support.' });
+            setIsProcessing(false); // Reset processing state on failure
         }
         closePaymentModal();
       },
       onClose: () => {
-        if (!isProcessing) {
-          // This is a standard close, not a failure.
-        }
+         // Only show this if a payment wasn't already being processed.
+         // This prevents the 'closed' message from appearing after a success/fail callback.
+         if (!isProcessing) {
+            // This is a standard close, not a failure.
+         }
+         // If it was processing, the success/fail callback will handle the state.
+         // If not, we need to reset it here.
+         if (isProcessing) {
+           setIsProcessing(false);
+         }
       },
     });
   }
@@ -652,5 +661,3 @@ export default function UpgradePage() {
     </div>
   );
 }
-
-    
