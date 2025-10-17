@@ -21,6 +21,17 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { ArrowLeft, CheckCircle2, Loader2, Star, XCircle, CalendarClock, Ticket } from 'lucide-react';
@@ -232,7 +243,6 @@ export default function UpgradePage() {
     try {
         const userDocRef = doc(db, 'users', user.uid);
         
-        // Calculate the new subscription end date
         const now = new Date();
         const subscriptionEndDate = new Date(now);
         subscriptionEndDate.setDate(subscriptionEndDate.getDate() + durationDays);
@@ -271,6 +281,31 @@ export default function UpgradePage() {
         setIsUpgradeDialogOpen(false); // Close the dialog on completion
     }
   };
+  
+    const handleDowngrade = async () => {
+        if (!user) return;
+
+        setIsProcessing(true);
+        try {
+            const userDocRef = doc(db, 'users', user.uid);
+            await updateDoc(userDocRef, {
+                isPremium: false,
+                subscriptionEndDate: null,
+            });
+            setUser(prev => prev ? { ...prev, isPremium: false, subscriptionEndDate: undefined } : null);
+            toast({
+                variant: 'destructive',
+                title: 'Plan Downgraded',
+                description: 'You are now on the Free plan.'
+            });
+        } catch (error) {
+            console.error("Failed to downgrade:", error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not downgrade your plan.' });
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
 
   const paymentConfig = getPaymentConfig(
     calculatedPrice.final,
@@ -399,9 +434,25 @@ export default function UpgradePage() {
                         </div>
                     </CardContent>
                     <CardFooter className="mt-auto">
-                        <Button variant="outline" className="w-full" disabled={!user?.isPremium}>
-                           {user?.isPremium ? 'Downgrade to Free' : 'Your Current Plan'}
-                        </Button>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="outline" className="w-full" disabled={!user?.isPremium || isProcessing}>
+                                    {user?.isPremium ? 'Downgrade to Free' : 'Your Current Plan'}
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Downgrading will remove your premium features at the end of your current billing cycle. Are you sure you want to proceed?
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handleDowngrade}>Downgrade</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
                     </CardFooter>
                 </Card>
                  <Card className="flex flex-col border-primary shadow-lg relative">
