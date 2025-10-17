@@ -332,7 +332,7 @@ export default function LandingPage() {
              <Link href="/seal-verify" className="text-xs hover:underline underline-offset-4" prefetch={false}>
               SEAL Verify
             </Link>
-             <Link href="#" className="text-xs hover:underline underline-offset-4" prefetch={false}>
+             <Link href="/privacy-policy" className="text-xs hover:underline underline-offset-4" prefetch={false}>
               Privacy Policy
             </Link>
           </nav>
