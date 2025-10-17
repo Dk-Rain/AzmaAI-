@@ -14,6 +14,8 @@ import { Packer } from 'docx';
 import type { DocumentContent, References, StyleOptions, Section, ContentBlock, PromoCode } from '@/types';
 import { db } from '@/lib/firebase';
 import { doc, updateDoc, increment, getDoc, arrayUnion } from 'firebase/firestore';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 
 type GenerationFormValuesWithTemplate = {
@@ -155,30 +157,38 @@ export async function generateContentAction(
 
 export async function updateUsageAction(userId: string, words: number, documents: number) {
     if (!userId) return;
-    try {
-        const userRef = doc(db, 'users', userId);
-        await updateDoc(userRef, {
-            'usage.wordsUsed': increment(words),
-            'usage.documentsCreated': increment(documents),
-            'usage.lastUsage': new Date().toISOString(),
+    const userRef = doc(db, 'users', userId);
+    const data = {
+        'usage.wordsUsed': increment(words),
+        'usage.documentsCreated': increment(documents),
+        'usage.lastUsage': new Date().toISOString(),
+    };
+    updateDoc(userRef, data).catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({
+            path: userRef.path,
+            operation: 'update',
+            requestResourceData: data,
         });
-    } catch (error) {
-        console.error('Failed to update user usage:', error);
-    }
+        errorEmitter.emit('permission-error', permissionError);
+    });
 }
 
 export async function resetUsageAction(userId: string) {
     if (!userId) return;
-    try {
-        const userRef = doc(db, 'users', userId);
-        await updateDoc(userRef, {
-            'usage.wordsUsed': 0,
-            'usage.documentsCreated': 0,
-            'usage.lastUsage': new Date().toISOString(),
+    const userRef = doc(db, 'users', userId);
+    const data = {
+        'usage.wordsUsed': 0,
+        'usage.documentsCreated': 0,
+        'usage.lastUsage': new Date().toISOString(),
+    };
+    updateDoc(userRef, data).catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({
+            path: userRef.path,
+            operation: 'update',
+            requestResourceData: data,
         });
-    } catch (error) {
-        console.error('Failed to reset user usage:', error);
-    }
+        errorEmitter.emit('permission-error', permissionError);
+    });
 }
 
 
@@ -439,20 +449,19 @@ export async function verifyUpgradePromoCodeAction(code: string, userEmail: stri
 
 export async function redeemPromoCode(promoId: string, userEmail: string) {
     const promoDocRef = doc(db, 'promoCodes', promoId);
-    try {
-        await updateDoc(promoDocRef, {
-            usedCount: increment(1),
-            redeemedBy: arrayUnion(userEmail)
-        });
+    const data = {
+        usedCount: increment(1),
+        redeemedBy: arrayUnion(userEmail)
+    };
+    updateDoc(promoDocRef, data).then(() => {
         return { success: true };
-    } catch (error) {
-        console.error("Failed to redeem promo code:", error);
+    }).catch(async (serverError) => {
+        const permissionError = new FirestorePermissionError({
+            path: promoDocRef.path,
+            operation: 'update',
+            requestResourceData: data,
+        });
+        errorEmitter.emit('permission-error', permissionError);
         return { success: false, error: "Could not update promo code usage." };
-    }
+    });
 }
-
-    
-
-    
-
-    

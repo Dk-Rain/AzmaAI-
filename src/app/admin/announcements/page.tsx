@@ -57,6 +57,8 @@ import { Megaphone, PlusCircle, Send, Info, Gift, AlertTriangle, Wrench, Upload,
 import Image from 'next/image';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 
 const audienceOptions = ['All Users', 'Students', 'Professors', 'Teachers', 'Researchers', 'Professionals'];
@@ -121,46 +123,61 @@ export default function AnnouncementsPage() {
     }
 
     if (editingId) {
-        // Update existing announcement in Firestore
-        try {
-            const announcementDocRef = doc(db, 'announcements', editingId);
-            await updateDoc(announcementDocRef, formData);
-            toast({ title: 'Announcement Updated!', description: `"${formData.title}" has been saved.` });
-        } catch (error) {
-            console.error("Update failed", error);
-            toast({ variant: 'destructive', title: 'Error', description: 'Failed to update announcement.'});
-        }
+        const announcementDocRef = doc(db, 'announcements', editingId);
+        updateDoc(announcementDocRef, formData)
+            .then(() => {
+                toast({ title: 'Announcement Updated!', description: `"${formData.title}" has been saved.` });
+                fetchAnnouncements();
+            })
+            .catch(async (serverError) => {
+                const permissionError = new FirestorePermissionError({
+                    path: announcementDocRef.path,
+                    operation: 'update',
+                    requestResourceData: formData,
+                });
+                errorEmitter.emit('permission-error', permissionError);
+            });
     } else {
-        // Create new announcement in Firestore
-        try {
-            const newAnnouncement = {
-                ...formData,
-                createdAt: new Date().toISOString(),
-                status: 'Sent',
-            };
-            await addDoc(collection(db, 'announcements'), newAnnouncement);
-            toast({ title: 'Announcement Sent!', description: `"${newAnnouncement.title}" has been published.` });
-        } catch (error) {
-             console.error("Create failed", error);
-             toast({ variant: 'destructive', title: 'Error', description: 'Failed to create announcement.'});
-        }
+        const newAnnouncement = {
+            ...formData,
+            createdAt: new Date().toISOString(),
+            status: 'Sent',
+        };
+        const announcementsCollection = collection(db, 'announcements');
+        addDoc(announcementsCollection, newAnnouncement)
+            .then(() => {
+                toast({ title: 'Announcement Sent!', description: `"${newAnnouncement.title}" has been published.` });
+                fetchAnnouncements();
+            })
+            .catch(async (serverError) => {
+                const permissionError = new FirestorePermissionError({
+                    path: announcementsCollection.path,
+                    operation: 'create',
+                    requestResourceData: newAnnouncement,
+                });
+                errorEmitter.emit('permission-error', permissionError);
+            });
     }
     
-    fetchAnnouncements(); // Refresh the list from DB
     setIsDialogOpen(false);
     setEditingId(null);
     setFormData(initialFormState);
   };
   
   const handleDelete = async (id: string) => {
-    try {
-        await deleteDoc(doc(db, "announcements", id));
-        fetchAnnouncements(); // Refresh list
-        toast({ variant: 'destructive', title: 'Announcement Deleted' });
-    } catch (error) {
-        console.error("Delete failed", error);
-        toast({ variant: 'destructive', title: 'Error', description: 'Could not delete the announcement.'});
-    }
+    const announcementDocRef = doc(db, "announcements", id);
+    deleteDoc(announcementDocRef)
+        .then(() => {
+            fetchAnnouncements(); // Refresh list
+            toast({ variant: 'destructive', title: 'Announcement Deleted' });
+        })
+        .catch(async (serverError) => {
+            const permissionError = new FirestorePermissionError({
+                path: announcementDocRef.path,
+                operation: 'delete',
+            });
+            errorEmitter.emit('permission-error', permissionError);
+        });
   }
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -372,5 +389,3 @@ export default function AnnouncementsPage() {
     </Card>
   );
 }
-
-    

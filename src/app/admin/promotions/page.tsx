@@ -58,6 +58,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { format } from 'date-fns';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 
 const initialFormState: Omit<PromoCode, 'id' | 'createdAt' | 'usedCount' | 'redeemedBy'> = {
@@ -136,43 +138,60 @@ export default function PromotionsPage() {
 
 
     if (editingId) {
-        try {
-            const promoDocRef = doc(db, 'promoCodes', editingId);
-            await updateDoc(promoDocRef, dataToSave);
-            toast({ title: 'Promo Code Updated!' });
-        } catch (error) {
-            console.error("Update failed:", error);
-            toast({ variant: 'destructive', title: 'Error', description: 'Failed to update promo code.'});
-        }
+        const promoDocRef = doc(db, 'promoCodes', editingId);
+        updateDoc(promoDocRef, dataToSave)
+            .then(() => {
+                toast({ title: 'Promo Code Updated!' });
+                fetchPromoCodes();
+            })
+            .catch(async (serverError) => {
+                const permissionError = new FirestorePermissionError({
+                    path: promoDocRef.path,
+                    operation: 'update',
+                    requestResourceData: dataToSave,
+                });
+                errorEmitter.emit('permission-error', permissionError);
+            });
     } else {
-        try {
-            const newCode: Omit<PromoCode, 'id'> = {
-                ...dataToSave,
-                usedCount: 0,
-                redeemedBy: [],
-                createdAt: new Date().toISOString(),
-            };
-            await addDoc(collection(db, 'promoCodes'), newCode);
-            toast({ title: 'Promo Code Created!' });
-        } catch (error) {
-            console.error("Create failed:", error);
-            toast({ variant: 'destructive', title: 'Error', description: 'Failed to create promo code.'});
-        }
+        const newCode: Omit<PromoCode, 'id'> = {
+            ...dataToSave,
+            usedCount: 0,
+            redeemedBy: [],
+            createdAt: new Date().toISOString(),
+        };
+        const promoCodesCollection = collection(db, 'promoCodes');
+        addDoc(promoCodesCollection, newCode)
+            .then(() => {
+                toast({ title: 'Promo Code Created!' });
+                fetchPromoCodes();
+            })
+            .catch(async (serverError) => {
+                const permissionError = new FirestorePermissionError({
+                    path: promoCodesCollection.path,
+                    operation: 'create',
+                    requestResourceData: newCode,
+                });
+                errorEmitter.emit('permission-error', permissionError);
+            });
     }
 
-    fetchPromoCodes();
     setIsDialogOpen(false);
   };
   
   const handleDelete = async (id: string) => {
-    try {
-        await deleteDoc(doc(db, "promoCodes", id));
-        fetchPromoCodes();
-        toast({ variant: 'destructive', title: 'Promo Code Deleted' });
-    } catch (error) {
-        console.error("Delete failed:", error);
-        toast({ variant: 'destructive', title: 'Error', description: 'Could not delete the promo code.'});
-    }
+    const promoDocRef = doc(db, "promoCodes", id);
+    deleteDoc(promoDocRef)
+        .then(() => {
+            fetchPromoCodes();
+            toast({ variant: 'destructive', title: 'Promo Code Deleted' });
+        })
+        .catch(async (serverError) => {
+            const permissionError = new FirestorePermissionError({
+                path: promoDocRef.path,
+                operation: 'delete',
+            });
+            errorEmitter.emit('permission-error', permissionError);
+        });
   }
 
   const getStatusBadge = (promo: PromoCode) => {
@@ -403,5 +422,3 @@ export default function PromotionsPage() {
     </Card>
   );
 }
-
-    
