@@ -308,11 +308,6 @@ export default function UpgradePage() {
       onClose: () => {
          // Only show this if a payment wasn't already being processed.
          // This prevents the 'closed' message from appearing after a success/fail callback.
-         if (!isProcessing) {
-            // This is a standard close, not a failure.
-         }
-         // If it was processing, the success/fail callback will handle the state.
-         // If not, we need to reset it here.
          if (isProcessing) {
            setIsProcessing(false);
          }
