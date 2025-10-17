@@ -122,7 +122,7 @@ export default function ContactPage() {
           <Link href="#pricing" className="text-xs hover:underline underline-offset-4" prefetch={false}>
             Pricing
           </Link>
-           <Link href="#" className="text-xs hover:underline underline-offset-4" prefetch={false}>
+           <Link href="/privacy-policy" className="text-xs hover:underline underline-offset-4" prefetch={false}>
             Privacy Policy
           </Link>
         </nav>

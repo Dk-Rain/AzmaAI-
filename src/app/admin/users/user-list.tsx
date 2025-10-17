@@ -42,6 +42,8 @@ import {
 import { db } from '@/lib/firebase';
 import { collection, getDocs, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { Input } from '@/components/ui/input';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 export function UserList() {
   const [users, setUsers] = useState<User[]>([]);
@@ -118,21 +120,23 @@ export function UserList() {
 
 
   const handleDeleteUser = async (userId: string) => {
-    try {
-        await deleteDoc(doc(db, "users", userId));
-        setUsers(users.filter(user => user.id !== userId));
-        toast({
-            variant: 'destructive',
-            title: 'User Deleted',
-            description: 'The user has been removed from the system.',
+    const userDocRef = doc(db, "users", userId);
+    deleteDoc(userDocRef)
+        .then(() => {
+            setUsers(users.filter(user => user.id !== userId));
+            toast({
+                variant: 'destructive',
+                title: 'User Deleted',
+                description: 'The user has been removed from the system.',
+            });
+        })
+        .catch(async (serverError) => {
+            const permissionError = new FirestorePermissionError({
+                path: userDocRef.path,
+                operation: 'delete',
+            });
+            errorEmitter.emit('permission-error', permissionError);
         });
-    } catch (error) {
-        toast({
-            variant: 'destructive',
-            title: 'Error',
-            description: 'Could not delete the user.',
-        });
-    }
   }
   
   const handleExportCsv = () => {

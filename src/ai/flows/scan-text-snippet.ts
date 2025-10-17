@@ -29,13 +29,15 @@ const prompt = ai.definePrompt({
   name: 'scanTextSnippetPrompt',
   input: {schema: ScanTextSnippetInputSchema},
   output: {schema: ScanTextSnippetOutputSchema},
-  prompt: `You are an expert text editor. Your task is to scan the provided text for specific formatting artifacts and return a cleaned version.
+  prompt: `You are an expert text editor. Your task is to scan the provided text for common formatting artifacts and return a cleaned version.
 
-You must remove any of the following characters or patterns if they appear inappropriately in the text:
-- Unwanted asterisks (*)
-- Unwanted hyphens or em-dashes (—) used as list markers instead of proper formatting.
+You must perform the following actions:
+- Remove any unwanted Markdown-like characters that are not part of proper sentence structure (e.g., stray asterisks '*', hashes '#', or hyphens '-' at the beginning of lines that are not lists).
+- Correct awkward spacing, such as removing extra spaces between words or before punctuation.
+- Remove any extraneous characters or formatting artifacts that appear to be remnants of a copy-paste or conversion process.
+- Standardize punctuation where appropriate (e.g., converting '--' to an em-dash '—').
 
-Do not correct grammar or spelling. Only remove the specified formatting artifacts and return only the cleaned text.
+Do NOT change the grammar, spelling, or core meaning of the text. Your only job is to clean up the formatting. Return only the cleaned text.
 
 Original Text:
 "{{{text}}}"
