@@ -449,10 +449,10 @@ export function DocumentEditor({
 
     return (
         <div 
-          className="absolute z-10 flex gap-1"
+          className="absolute z-10 flex flex-col gap-1"
           style={{
-            top: rect.top - editorRect.top - 40, // Position above selection
-            left: rect.left - editorRect.left, // Align with left of selection
+            top: rect.top - editorRect.top,
+            left: rect.right - editorRect.left + 10,
           }}
         >
             <Button
