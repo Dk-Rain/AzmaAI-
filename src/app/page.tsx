@@ -188,13 +188,13 @@ export default function LandingPage() {
                 <Card>
                   <CardContent className="p-6">
                     <p className="mb-4">"AzmaAI helped me finish my thesis two weeks early!"</p>
-                    <p className="font-semibold">🎓 Final Year Student</p>
+                    <p className="font-semibold">Gift Effiong</p>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardContent className="p-6">
                     <p className="mb-4">"No more formatting stress my assignments look professional."</p>
-                    <p className="font-semibold">📖 Mark Tiawo</p>
+                    <p className="font-semibold">Mark Tiawo</p>
                   </CardContent>
                 </Card>
                 <Card>
