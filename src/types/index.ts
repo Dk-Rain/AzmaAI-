@@ -45,7 +45,7 @@ export const SubSectionSchema = z.object({
 
 export const SectionSchema = z.object({
   title: z.string().describe('The title of the section, with a maximum of 5 words.'),
-  content: z.array(ContentBlockSchema).describe('The content of the section, which can be text, images, tables, or lists.'),
+  content: z.array(ContentBlockSchema).optional().describe('The content of the section, which can be text, images, tables, or lists.'),
   subSections: z.array(SubSectionSchema).optional().describe('The sub-sections within the section.'),
 });
 

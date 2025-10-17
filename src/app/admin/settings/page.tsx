@@ -30,6 +30,8 @@ import type { PricingSettings, AppSettings as AppSettingsType, PlanPricing } fro
 import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { Separator } from "@/components/ui/separator";
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 
 const initialSettings: AppSettingsType = {
@@ -118,27 +120,29 @@ export default function AdminSettingsPage() {
 
     const handleSave = async () => {
         setIsSaving(true);
-        try {
-            const settingsDocRef = doc(db, 'settings', 'global');
-            await setDoc(settingsDocRef, {
-                appSettings: settings,
-                pricingSettings: pricing,
-            }, { merge: true });
-
-            toast({
-                title: 'Settings Saved',
-                description: 'Your changes have been successfully saved to the database.',
-            });
-        } catch (error) {
-            console.error("Failed to save settings to Firestore:", error);
-            toast({
-                variant: 'destructive',
-                title: 'Save Failed',
-                description: 'Could not save settings to the database.',
+        const settingsDocRef = doc(db, 'settings', 'global');
+        const dataToSave = {
+            appSettings: settings,
+            pricingSettings: pricing,
+        };
+        setDoc(settingsDocRef, dataToSave, { merge: true })
+            .then(() => {
+                toast({
+                    title: 'Settings Saved',
+                    description: 'Your changes have been successfully saved to the database.',
+                });
             })
-        } finally {
-            setIsSaving(false);
-        }
+            .catch(async (serverError) => {
+                const permissionError = new FirestorePermissionError({
+                    path: settingsDocRef.path,
+                    operation: 'write',
+                    requestResourceData: dataToSave,
+                });
+                errorEmitter.emit('permission-error', permissionError);
+            })
+            .finally(() => {
+                setIsSaving(false);
+            });
     };
 
     const handleClearData = () => {

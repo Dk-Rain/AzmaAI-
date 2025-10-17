@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Download, Loader2, User, CreditCard, LogOut, Settings, ChevronDown, FileText, FileSpreadsheet, FileType, Menu, ScanLine, ShieldCheck } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import type { DocumentContent, References, StyleOptions } from '@/types';
+import type { DocumentContent, References, StyleOptions, Workspace } from '@/types';
 import { academicTaskFormats } from '@/types/academic-task-formats';
 import type { AcademicTaskType } from '@/types/academic-task-types';
 import type { User as UserData } from '@/types/admin';
@@ -71,12 +71,47 @@ export function MainPage() {
   const [isCheckingPlagiarism, setIsCheckingPlagiarism] = useState(false);
   const [plagiarismResult, setPlagiarismResult] = useState<CheckPlagiarismOutput | null>(null);
   const [user, setUser] = useState<UserData | null>(null);
+  const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isTemplateMode, setIsTemplateMode] = useState(false);
   const [customTemplate, setCustomTemplate] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [isStateRestored, setIsStateRestored] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
+
+  // Effect for restoring state from localStorage on initial load
+  useEffect(() => {
+    try {
+      const savedStateJSON = localStorage.getItem('azma_workspace_v2');
+      if (savedStateJSON) {
+        const savedState = JSON.parse(savedStateJSON);
+        if (savedState.content) setContent(savedState.content);
+        if (savedState.references) setReferences(savedState.references);
+        if (savedState.styles) setStyles(savedState.styles);
+        if (savedState.workspace) setWorkspace(savedState.workspace);
+      }
+    } catch (error) {
+      console.error("Failed to load workspace from localStorage", error);
+      toast({
+        variant: 'destructive',
+        title: 'Could not load saved work',
+        description: 'Your previous session could not be restored.'
+      });
+    }
+    setIsStateRestored(true);
+  }, [toast]);
+
+  // Effect for saving state to localStorage whenever it changes
+  useEffect(() => {
+    if (!isStateRestored) return; // Don't save until state is restored
+    try {
+      const stateToSave = JSON.stringify({ content, references, styles, workspace });
+      localStorage.setItem('azma_workspace_v2', stateToSave);
+    } catch (error) {
+      console.error("Failed to save workspace to localStorage", error);
+    }
+  }, [content, references, styles, workspace, isStateRestored]);
   
   useEffect(() => {
     const checkMaintenanceAndAuth = async (firebaseUser: any) => {
@@ -282,7 +317,7 @@ export function MainPage() {
     });
   };
   
-  if (isLoading || !user) {
+  if (isLoading || !user || !isStateRestored) {
     return <DashboardLoading />;
   }
 
@@ -296,6 +331,8 @@ export function MainPage() {
          <ControlPanel
           user={user}
           setUser={setUser}
+          workspace={workspace}
+          setWorkspace={setWorkspace}
           setContent={setContent}
           setReferences={setReferences}
           styles={styles}
@@ -323,6 +360,8 @@ export function MainPage() {
                 <ControlPanel
                     user={user}
                     setUser={setUser}
+                    workspace={workspace}
+                    setWorkspace={setWorkspace}
                     setContent={setContent}
                     setReferences={setReferences}
                     styles={styles}

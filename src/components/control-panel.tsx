@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -149,6 +150,8 @@ const UsageMeter = ({ user, setUser }: { user: UserData | null, setUser: React.D
 interface ControlPanelProps {
     user: UserData | null;
     setUser: React.Dispatch<React.SetStateAction<UserData | null>>;
+    workspace: Workspace | null;
+    setWorkspace: React.Dispatch<React.SetStateAction<Workspace | null>>;
     setContent: React.Dispatch<React.SetStateAction<DocumentContent>>;
     setReferences: React.Dispatch<React.SetStateAction<References>>;
     styles: StyleOptions;
@@ -166,6 +169,8 @@ interface ControlPanelProps {
 export function ControlPanel({
   user,
   setUser,
+  workspace,
+  setWorkspace,
   setContent,
   setReferences,
   styles,
@@ -179,7 +184,6 @@ export function ControlPanel({
   onGenerate
 }: ControlPanelProps) {
   const [isGenerating, setIsGenerating] = useState(false);
-  const [workspace, setWorkspace] = useState<Workspace>({ projects: [], standaloneDocuments: [], archivedItems: [], sharedDocuments: [] });
   const [searchQuery, setSearchQuery] = useState('');
   const [newTaskLocation, setNewTaskLocation] = useState<string>('standalone');
   const [isNewTaskDialogOpen, setIsNewTaskDialogOpen] = useState(false);
@@ -240,25 +244,26 @@ export function ControlPanel({
   
   useEffect(() => {
     async function loadWorkspace() {
-        if (!user) return;
+        if (!user || workspace) return; // Load only if user exists and workspace isn't already loaded
         const workspaceRef = doc(db, 'workspaces', user.id);
         const workspaceSnap = await getDoc(workspaceRef);
 
+        const defaultWorkspace = { projects: [], standaloneDocuments: [], archivedItems: [], sharedDocuments: [] };
         if (workspaceSnap.exists()) {
             const workspaceData = workspaceSnap.data() as Workspace;
-            workspaceData.projects = workspaceData.projects || [];
-            workspaceData.standaloneDocuments = workspaceData.standaloneDocuments || [];
-            workspaceData.archivedItems = workspaceData.archivedItems || [];
-            workspaceData.sharedDocuments = workspaceData.sharedDocuments || [];
-            
-            setWorkspace(workspaceData);
-            setExpandedProjects(workspaceData.projects.filter(p => p.documents.length > 0).map(p => p.id));
+            setWorkspace({
+                projects: workspaceData.projects || [],
+                standaloneDocuments: workspaceData.standaloneDocuments || [],
+                archivedItems: workspaceData.archivedItems || [],
+                sharedDocuments: workspaceData.sharedDocuments || [],
+            });
+            setExpandedProjects(workspaceData.projects?.filter(p => p.documents.length > 0).map(p => p.id) || []);
         } else {
-            setWorkspace({ projects: [], standaloneDocuments: [], archivedItems: [], sharedDocuments: [] });
+            setWorkspace(defaultWorkspace);
         }
     }
     loadWorkspace();
-  }, [user]);
+  }, [user, workspace]);
 
   const saveWorkspace = async (newWorkspace: Workspace) => {
     if (!user) {
@@ -277,6 +282,7 @@ export function ControlPanel({
   
 
   const filteredWorkspace = useMemo(() => {
+    if (!workspace) return { projects: [], standaloneDocuments: [], archivedItems: [], sharedDocuments: [] };
     if (!searchQuery) return workspace;
     const lowercasedQuery = searchQuery.toLowerCase();
 
@@ -298,7 +304,7 @@ export function ControlPanel({
 }, [workspace, searchQuery]);
 
   const saveDocument = (documentContent: DocumentContent, documentReferences: References) => {
-    if (!documentContent.title || documentContent.title.includes('New Research Paper Title')) return;
+    if (!workspace || !documentContent.title || documentContent.title.includes('New Research Paper Title')) return;
     
     const newDoc: DocumentItem = {
       id: new Date().toISOString(),
@@ -333,6 +339,7 @@ export function ControlPanel({
   };
 
   const deleteDocument = (id: string, projectId?: string) => {
+    if (!workspace) return;
     let newWorkspace = {...workspace};
     if (projectId) {
         newWorkspace.projects = newWorkspace.projects.map(p => 
@@ -346,12 +353,14 @@ export function ControlPanel({
   };
   
   const deleteProject = (id: string) => {
+    if (!workspace) return;
     let newWorkspace = {...workspace, projects: workspace.projects.filter(p => p.id !== id)};
     saveWorkspace(newWorkspace);
     toast({ variant: 'destructive', title: 'Project Deleted' });
   }
 
   const archiveDocument = (id: string, projectId?: string) => {
+    if (!workspace) return;
     let newWorkspace = { ...workspace };
     let docToArchive: DocumentItem | undefined;
 
@@ -378,6 +387,7 @@ export function ControlPanel({
   };
 
   const archiveProject = (id: string) => {
+      if (!workspace) return;
       let newWorkspace = { ...workspace };
       const projectToArchive = newWorkspace.projects.find(p => p.id === id);
 
@@ -390,6 +400,7 @@ export function ControlPanel({
   };
 
   const shareDocument = (docId: string, projectId?: string) => {
+    if (!workspace) return;
     let docToShare: DocumentItem | undefined;
     const newWorkspace = { ...workspace };
 
@@ -441,6 +452,7 @@ export function ControlPanel({
 
 
   const handleNewProject = () => {
+    if (!workspace) return;
     const projectName = prompt("Enter the name for your new project folder:");
     if (projectName) {
       const newProject: Project = {
@@ -456,6 +468,7 @@ export function ControlPanel({
   }
 
   const createNewDocument = (location: string) => {
+    if (!workspace) return;
     const defaultTask: AcademicTaskType = 'Research Paper';
     const format = academicTaskFormats[defaultTask];
       const sections = format
@@ -507,7 +520,7 @@ export function ControlPanel({
   }
   
   const handleRename = () => {
-    if (!itemToRename || !newName) return;
+    if (!itemToRename || !newName || !workspace) return;
     
     let newWorkspace = {...workspace};
     if(itemToRename.type === 'project') {
@@ -541,6 +554,7 @@ export function ControlPanel({
   }
 
   const moveDocument = (docId: string, targetProjectId: string) => {
+    if (!workspace) return;
     let newWorkspace = { ...workspace };
     const docToMove = newWorkspace.standaloneDocuments.find(d => d.id === docId);
 
@@ -614,7 +628,7 @@ export function ControlPanel({
           };
 
           const wordCount = data.content.sections.reduce((acc, section) => {
-              const sectionWords = calculateWords(section.content);
+              const sectionWords = calculateWords(section.content || []);
               const subSectionsWords = (section.subSections || []).reduce(
                   (subAcc, subSection) => subAcc + calculateWords(subSection.content),
                   0
@@ -640,6 +654,13 @@ export function ControlPanel({
     }
   }
 
+  if (!workspace) {
+    return (
+        <div className="flex-1 flex items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full">

@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -75,12 +74,14 @@ export function DocumentEditor({
   // Effect to automatically generate images for placeholders
   useEffect(() => {
     content.sections.forEach((section, sectionIndex) => {
-      section.content.forEach((block, blockIndex) => {
-        if (block.type === 'image_placeholder' && block.prompt) {
-          // Found a placeholder, let's generate an image for it.
-          handleAutoImageGeneration(block.prompt, block.caption, sectionIndex, blockIndex);
-        }
-      });
+      if (section.content) {
+        section.content.forEach((block, blockIndex) => {
+          if (block.type === 'image_placeholder' && block.prompt) {
+            // Found a placeholder, let's generate an image for it.
+            handleAutoImageGeneration(block.prompt, block.caption, sectionIndex, blockIndex);
+          }
+        });
+      }
       // Also check subsections
       section.subSections?.forEach((subSection, subSectionIndex) => {
           subSection.content.forEach((block, blockIndex) => {
@@ -112,7 +113,10 @@ export function DocumentEditor({
                   newSubSections[subSectionIndex] = { ...newSubSections[subSectionIndex], content: newContent };
                   newSections[sectionIndex] = { ...newSections[sectionIndex], subSections: newSubSections };
               } else {
-                  const newContent = [...newSections[sectionIndex].content];
+                  if (!newSections[sectionIndex].content) {
+                      newSections[sectionIndex].content = [];
+                  }
+                  const newContent = [...newSections[sectionIndex].content!];
                   newContent[blockIndex] = newImageBlock;
                   newSections[sectionIndex] = { ...newSections[sectionIndex], content: newContent };
               }
@@ -212,33 +216,34 @@ export function DocumentEditor({
     if (!selection || selection.rangeCount === 0) return;
 
     const range = selection.getRangeAt(0);
-    const commonAncestor = range.commonAncestorContainer;
-    const editableDiv = commonAncestor.nodeType === Node.ELEMENT_NODE 
-        ? (commonAncestor as Element).closest('[contenteditable="true"]')
-        : commonAncestor.parentElement?.closest('[contenteditable="true"]');
-
+    const editableDiv = range.startContainer.parentElement?.closest('[contenteditable="true"]');
+    
     if (editableDiv) {
+        const fullText = editableDiv.textContent || '';
+        const start = range.startOffset;
+        const end = range.endOffset;
+        
+        // This logic is simplified. A robust implementation would need to handle
+        // selections spanning multiple nodes.
+        const updatedText = fullText.substring(0, start) + newText + fullText.substring(end);
+
         const sectionTitle = editableDiv.getAttribute('data-section-title');
         const subSectionTitle = editableDiv.getAttribute('data-subsection-title');
         const blockIndex = parseInt(editableDiv.getAttribute('data-block-index') || '-1', 10);
         
         if (sectionTitle && blockIndex !== -1) {
-             range.deleteContents();
-             const textNode = document.createTextNode(newText);
-             range.insertNode(textNode);
-             
-             const newBlockContent = editableDiv.textContent || '';
-             
              updateBlockContent(
                 sectionTitle,
                 blockIndex,
-                { type: 'text', text: newBlockContent },
+                { type: 'text', text: updatedText },
                 !!subSectionTitle,
                 subSectionTitle || undefined
              );
         }
     }
     
+    selection.deleteFromDocument();
+    selection.getRangeAt(0).insertNode(document.createTextNode(newText));
     setSelection(null);
 }
 
@@ -267,11 +272,11 @@ export function DocumentEditor({
           };
         }
         if (!isSubSection && section.title === sectionTitle) {
+          const newSectionContent = section.content ? [...section.content] : [];
+          newSectionContent[blockIndex] = newBlock;
           return {
             ...section,
-            content: section.content.map((block, idx) =>
-              idx === blockIndex ? newBlock : block
-            ),
+            content: newSectionContent,
           };
         }
         return section;
@@ -340,7 +345,7 @@ export function DocumentEditor({
     parent?: Section
   ) => {
     const newText = e.currentTarget.innerText;
-    const currentBlock = isSub ? parent?.subSections?.find(s => s.title === section.title)?.content[blockIndex] : section.content[blockIndex];
+    const currentBlock = isSub ? parent?.subSections?.find(s => s.title === section.title)?.content[blockIndex] : section.content?.[blockIndex];
     if (currentBlock?.type === 'text' && currentBlock.text !== newText) {
         const newBlock: ContentBlock = { type: 'text', text: newText };
         if (isSub && parent) {
@@ -427,7 +432,6 @@ export function DocumentEditor({
                 </ListTag>
             );
         default:
-            const exhaustiveCheck: never = block;
             return <p key={blockIndex}>[Unsupported Block Type]</p>;
     }
   };
@@ -444,10 +448,10 @@ export function DocumentEditor({
 
     return (
         <div 
-          className="absolute z-10 flex gap-1"
+          className="absolute z-10 flex flex-col gap-1"
           style={{
-            top: rect.top - editorRect.top - 40, // Position above selection
-            left: rect.left - editorRect.left, // Align with left of selection
+            top: rect.top - editorRect.top,
+            left: rect.right - editorRect.left + 10,
           }}
         >
             <Button

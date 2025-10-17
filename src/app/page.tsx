@@ -188,19 +188,19 @@ export default function LandingPage() {
                 <Card>
                   <CardContent className="p-6">
                     <p className="mb-4">"AzmaAI helped me finish my thesis two weeks early!"</p>
-                    <p className="font-semibold">🎓 Final Year Student</p>
+                    <p className="font-semibold">Gift Effiong</p>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardContent className="p-6">
-                    <p className="mb-4">"No more formatting stress — my assignments look professional."</p>
-                    <p className="font-semibold">📖 University Freshman</p>
+                    <p className="mb-4">"No more formatting stress my assignments look professional."</p>
+                    <p className="font-semibold">Mark Tiawo</p>
                   </CardContent>
                 </Card>
                 <Card>
                   <CardContent className="p-6">
                     <p className="mb-4">"Game-changer for research writing!"</p>
-                    <p className="font-semibold">🧑‍🏫 Lecturer</p>
+                    <p className="font-semibold">Dr Namidi Kabri</p>
                   </CardContent>
                 </Card>
               </div>
@@ -332,7 +332,7 @@ export default function LandingPage() {
              <Link href="/seal-verify" className="text-xs hover:underline underline-offset-4" prefetch={false}>
               SEAL Verify
             </Link>
-             <Link href="#" className="text-xs hover:underline underline-offset-4" prefetch={false}>
+             <Link href="/privacy-policy" className="text-xs hover:underline underline-offset-4" prefetch={false}>
               Privacy Policy
             </Link>
           </nav>
