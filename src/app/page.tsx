@@ -193,8 +193,8 @@ export default function LandingPage() {
                 </Card>
                 <Card>
                   <CardContent className="p-6">
-                    <p className="mb-4">"No more formatting stress — my assignments look professional."</p>
-                    <p className="font-semibold">📖 University Freshman</p>
+                    <p className="mb-4">"No more formatting stress my assignments look professional."</p>
+                    <p className="font-semibold">📖 Mark Tiawo</p>
                   </CardContent>
                 </Card>
                 <Card>
