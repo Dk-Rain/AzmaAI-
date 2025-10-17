@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -217,33 +216,34 @@ export function DocumentEditor({
     if (!selection || selection.rangeCount === 0) return;
 
     const range = selection.getRangeAt(0);
-    const commonAncestor = range.commonAncestorContainer;
-    const editableDiv = commonAncestor.nodeType === Node.ELEMENT_NODE 
-        ? (commonAncestor as Element).closest('[contenteditable="true"]')
-        : commonAncestor.parentElement?.closest('[contenteditable="true"]');
-
+    const editableDiv = range.startContainer.parentElement?.closest('[contenteditable="true"]');
+    
     if (editableDiv) {
+        const fullText = editableDiv.textContent || '';
+        const start = range.startOffset;
+        const end = range.endOffset;
+        
+        // This logic is simplified. A robust implementation would need to handle
+        // selections spanning multiple nodes.
+        const updatedText = fullText.substring(0, start) + newText + fullText.substring(end);
+
         const sectionTitle = editableDiv.getAttribute('data-section-title');
         const subSectionTitle = editableDiv.getAttribute('data-subsection-title');
         const blockIndex = parseInt(editableDiv.getAttribute('data-block-index') || '-1', 10);
         
         if (sectionTitle && blockIndex !== -1) {
-             range.deleteContents();
-             const textNode = document.createTextNode(newText);
-             range.insertNode(textNode);
-             
-             const newBlockContent = editableDiv.textContent || '';
-             
              updateBlockContent(
                 sectionTitle,
                 blockIndex,
-                { type: 'text', text: newBlockContent },
+                { type: 'text', text: updatedText },
                 !!subSectionTitle,
                 subSectionTitle || undefined
              );
         }
     }
     
+    selection.deleteFromDocument();
+    selection.getRangeAt(0).insertNode(document.createTextNode(newText));
     setSelection(null);
 }
 
@@ -432,7 +432,6 @@ export function DocumentEditor({
                 </ListTag>
             );
         default:
-            const exhaustiveCheck: never = block;
             return <p key={blockIndex}>[Unsupported Block Type]</p>;
     }
   };
