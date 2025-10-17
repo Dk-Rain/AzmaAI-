@@ -200,7 +200,7 @@ export default function LandingPage() {
                 <Card>
                   <CardContent className="p-6">
                     <p className="mb-4">"Game-changer for research writing!"</p>
-                    <p className="font-semibold">🧑‍🏫 Lecturer</p>
+                    <p className="font-semibold">Dr Namidi Kabri</p>
                   </CardContent>
                 </Card>
               </div>
